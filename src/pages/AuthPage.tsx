@@ -136,12 +136,12 @@ export default function AuthPage() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   {isLogin && (
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                    <a
+                      href="/forgot-password"
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
                     >
                       Forgot password?
-                    </button>
+                    </a>
                   )}
                 </div>
                 <div className="relative">
