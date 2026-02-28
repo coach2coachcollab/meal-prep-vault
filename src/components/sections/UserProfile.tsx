@@ -13,6 +13,7 @@ import { toast } from "sonner";
 export function UserProfile() {
   const { user, signOut } = useAuth();
   const [name, setName] = useState("");
+  const [useMetric, setUseMetric] = useState(true);
   const [profileData, setProfileData] = useState<{
     goal?: string;
     activity_level?: string;
@@ -24,9 +25,32 @@ export function UserProfile() {
   }>({});
   const [loading, setLoading] = useState(false);
 
+  // Editable body stats
+  const [age, setAge] = useState("");
+  const [height, setHeight] = useState("");
+  const [heightFt, setHeightFt] = useState("");
+  const [heightIn, setHeightIn] = useState("");
+  const [weight, setWeight] = useState("");
+
   useEffect(() => {
     if (user) loadProfile();
   }, [user]);
+
+  useEffect(() => {
+    // When toggling units, convert displayed values
+    if (profileData.height_cm != null) {
+      if (useMetric) {
+        setHeight(String(profileData.height_cm));
+      } else {
+        const totalIn = profileData.height_cm / 2.54;
+        setHeightFt(String(Math.floor(totalIn / 12)));
+        setHeightIn(String(Math.round(totalIn % 12)));
+      }
+    }
+    if (profileData.weight_kg != null) {
+      setWeight(useMetric ? String(profileData.weight_kg) : String(Math.round(profileData.weight_kg * 2.20462)));
+    }
+  }, [useMetric, profileData.height_cm, profileData.weight_kg]);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -37,6 +61,7 @@ export function UserProfile() {
       .single();
     if (data) {
       if (data.name) setName(data.name);
+      if (data.age) setAge(String(data.age));
       setProfileData(data);
     }
   };
@@ -44,13 +69,28 @@ export function UserProfile() {
   const saveProfile = async () => {
     if (!user) return;
     setLoading(true);
+
+    let height_cm = profileData.height_cm;
+    let weight_kg = profileData.weight_kg;
+
+    if (useMetric) {
+      if (height) height_cm = parseFloat(height);
+      if (weight) weight_kg = parseFloat(weight);
+    } else {
+      if (heightFt || heightIn) height_cm = Math.round(((parseFloat(heightFt) || 0) * 12 + (parseFloat(heightIn) || 0)) * 2.54);
+      if (weight) weight_kg = Math.round(parseFloat(weight) / 2.20462 * 10) / 10;
+    }
+
     const { error } = await supabase
       .from("profiles")
-      .update({ name })
+      .update({ name, age: parseInt(age) || null, height_cm: height_cm || null, weight_kg: weight_kg || null })
       .eq("user_id", user.id);
     setLoading(false);
     if (error) toast.error("Failed to save");
-    else toast.success("Profile updated!");
+    else {
+      toast.success("Profile updated!");
+      setProfileData((prev) => ({ ...prev, age: parseInt(age) || undefined, height_cm: height_cm || undefined, weight_kg: weight_kg || undefined }));
+    }
   };
 
   const initials = name
@@ -78,6 +118,40 @@ export function UserProfile() {
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
           </div>
 
+          {/* Unit toggle */}
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Units:</Label>
+            <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
+              <button onClick={() => setUseMetric(true)} className={`px-3 py-1 rounded-md transition-colors ${useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>kg / cm</button>
+              <button onClick={() => setUseMetric(false)} className={`px-3 py-1 rounded-md transition-colors ${!useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>lbs / ft</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Age</Label>
+              <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
+            </div>
+            {useMetric ? (
+              <div className="space-y-1">
+                <Label className="text-xs">Height (cm)</Label>
+                <Input type="number" placeholder="170" value={height} onChange={(e) => setHeight(e.target.value)} />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <Label className="text-xs">Height (ft/in)</Label>
+                <div className="flex gap-1">
+                  <Input type="number" placeholder="5" value={heightFt} onChange={(e) => setHeightFt(e.target.value)} className="w-1/2" />
+                  <Input type="number" placeholder="7" value={heightIn} onChange={(e) => setHeightIn(e.target.value)} className="w-1/2" />
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Weight ({useMetric ? "kg" : "lbs"})</Label>
+              <Input type="number" placeholder={useMetric ? "70" : "154"} value={weight} onChange={(e) => setWeight(e.target.value)} />
+            </div>
+          </div>
+
           <Button onClick={saveProfile} disabled={loading} className="w-full">
             <Save className="h-4 w-4 mr-1" />
             {loading ? "Saving..." : "Save Changes"}
@@ -103,7 +177,12 @@ export function UserProfile() {
             {profileData.age && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Stats</span>
-                <span className="font-medium">{profileData.age}yr · {profileData.height_cm}cm · {profileData.weight_kg}kg</span>
+                <span className="font-medium">
+                  {profileData.age}yr · {useMetric
+                    ? `${profileData.height_cm}cm · ${profileData.weight_kg}kg`
+                    : `${Math.floor((profileData.height_cm || 0) / 2.54 / 12)}′${Math.round((profileData.height_cm || 0) / 2.54 % 12)}″ · ${Math.round((profileData.weight_kg || 0) * 2.20462)}lbs`
+                  }
+                </span>
               </div>
             )}
             {profileData.diet_prefs && profileData.diet_prefs.length > 0 && (
