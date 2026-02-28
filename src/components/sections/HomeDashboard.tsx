@@ -5,6 +5,7 @@ import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, Tr
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 const tips = [
   "Protein at every meal helps maintain muscle mass and keeps you satisfied longer.",
@@ -26,6 +27,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const [waterToday, setWaterToday] = useState({ glasses: 0, goal: 8 });
   const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
   const [streak, setStreak] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [progressSummary, setProgressSummary] = useState<{
     period: "week" | "month";
     weightChange: number | null;
@@ -37,9 +39,9 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
   useEffect(() => {
     if (user) {
-      loadData();
-      loadProgressSummary();
-      loadStreak().then(() => checkMilestones());
+      setIsLoading(true);
+      Promise.all([loadData(), loadProgressSummary(), loadStreak().then(() => checkMilestones())])
+        .finally(() => setIsLoading(false));
     }
   }, [user]);
 
@@ -242,6 +244,8 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   };
 
   const calPercent = macros ? Math.min(100, (todayJournal.calories / macros.calories) * 100) : 0;
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-5">
