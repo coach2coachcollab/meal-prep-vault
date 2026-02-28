@@ -4,8 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { Droplets, Zap, Smile, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const moodMap: Record<string, number> = { "😊": 5, "😐": 3, "😴": 2, "😤": 1, "😢": 1 };
+
+type Range = "week" | "month";
 
 interface DayData {
   day: string;
@@ -18,17 +21,19 @@ interface DayData {
 
 export function WeeklySummaryCharts() {
   const { user } = useAuth();
-  const [weekData, setWeekData] = useState<DayData[]>([]);
+  const [range, setRange] = useState<Range>("week");
+  const [chartData, setChartData] = useState<DayData[]>([]);
 
   useEffect(() => {
-    if (user) loadWeekData();
-  }, [user]);
+    if (user) loadData();
+  }, [user, range]);
 
-  const loadWeekData = async () => {
+  const loadData = async () => {
     if (!user) return;
 
+    const numDays = range === "week" ? 7 : 30;
     const days: string[] = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = numDays - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       days.push(d.toISOString().split("T")[0]);
@@ -40,13 +45,13 @@ export function WeeklySummaryCharts() {
         .select("date, glasses, goal")
         .eq("user_id", user.id)
         .gte("date", days[0])
-        .lte("date", days[6]),
+        .lte("date", days[days.length - 1]),
       supabase
         .from("journal_daily_notes")
         .select("date, energy_level, mood_emoji")
         .eq("user_id", user.id)
         .gte("date", days[0])
-        .lte("date", days[6]),
+        .lte("date", days[days.length - 1]),
     ]);
 
     const waterMap: Record<string, { glasses: number; goal: number }> = {};
@@ -64,7 +69,10 @@ export function WeeklySummaryCharts() {
     });
 
     const result = days.map((d) => {
-      const dayLabel = new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" });
+      const dateObj = new Date(d + "T12:00:00");
+      const dayLabel = range === "week"
+        ? dateObj.toLocaleDateString("en-US", { weekday: "short" })
+        : dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
       return {
         day: dayLabel,
         glasses: waterMap[d]?.glasses || 0,
@@ -75,22 +83,41 @@ export function WeeklySummaryCharts() {
       };
     });
 
-    setWeekData(result);
+    setChartData(result);
   };
 
-  const avgWater = weekData.length > 0
-    ? Math.round((weekData.reduce((s, d) => s + d.glasses, 0) / weekData.length) * 10) / 10
+  const totalDays = chartData.length;
+  const avgWater = totalDays > 0
+    ? Math.round((chartData.reduce((s, d) => s + d.glasses, 0) / totalDays) * 10) / 10
     : 0;
-  const avgEnergy = weekData.length > 0
-    ? Math.round((weekData.reduce((s, d) => s + d.energy, 0) / weekData.filter(d => d.energy > 0).length || 1) * 10) / 10
+  const energyDays = chartData.filter(d => d.energy > 0);
+  const avgEnergy = energyDays.length > 0
+    ? Math.round((energyDays.reduce((s, d) => s + d.energy, 0) / energyDays.length) * 10) / 10
     : 0;
-  const daysLogged = weekData.filter((d) => d.glasses > 0 || d.energy > 0 || d.mood > 0).length;
+  const daysLogged = chartData.filter((d) => d.glasses > 0 || d.energy > 0 || d.mood > 0).length;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="h-5 w-5 text-primary" />
-        <h3 className="font-bold text-lg">Weekly Summary</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          <h3 className="font-bold text-lg">Summary</h3>
+        </div>
+        {/* Toggle */}
+        <div className="flex gap-1 bg-muted rounded-lg p-1">
+          <button
+            onClick={() => setRange("week")}
+            className={cn("text-xs px-3 py-1 rounded-md transition-colors", range === "week" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
+          >
+            7 Days
+          </button>
+          <button
+            onClick={() => setRange("month")}
+            className={cn("text-xs px-3 py-1 rounded-md transition-colors", range === "month" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
+          >
+            30 Days
+          </button>
+        </div>
       </div>
 
       {/* Stats row */}
@@ -112,7 +139,7 @@ export function WeeklySummaryCharts() {
         <Card>
           <CardContent className="pt-3 pb-3 text-center">
             <Smile className="h-4 w-4 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{daysLogged}/7</p>
+            <p className="text-lg font-bold">{daysLogged}/{totalDays}</p>
             <p className="text-[10px] text-muted-foreground">days tracked</p>
           </CardContent>
         </Card>
@@ -125,14 +152,20 @@ export function WeeklySummaryCharts() {
             <Droplets className="h-3.5 w-3.5 text-primary" /> Water Intake
           </p>
           <ResponsiveContainer width="100%" height={140}>
-            <BarChart data={weekData} barSize={20}>
-              <XAxis dataKey="day" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+            <BarChart data={chartData} barSize={range === "week" ? 20 : 6}>
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: range === "week" ? 10 : 8 }}
+                tickLine={false}
+                axisLine={false}
+                interval={range === "month" ? 4 : 0}
+              />
               <YAxis hide />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
                 formatter={(value: number) => [`${value} glasses`, "Water"]}
               />
-              <Bar dataKey="glasses" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="glasses" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -145,9 +178,15 @@ export function WeeklySummaryCharts() {
             <Zap className="h-3.5 w-3.5 text-primary" /> Energy & Mood Trends
           </p>
           <ResponsiveContainer width="100%" height={140}>
-            <LineChart data={weekData}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="day" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: range === "week" ? 10 : 8 }}
+                tickLine={false}
+                axisLine={false}
+                interval={range === "month" ? 4 : 0}
+              />
               <YAxis domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
@@ -156,8 +195,8 @@ export function WeeklySummaryCharts() {
                   return [`${value}/5`, "Mood"];
                 }}
               />
-              <Line type="monotone" dataKey="energy" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} name="energy" />
-              <Line type="monotone" dataKey="mood" stroke="hsl(var(--accent-foreground))" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="4 2" name="mood" />
+              <Line type="monotone" dataKey="energy" stroke="hsl(var(--primary))" strokeWidth={2} dot={range === "week" ? { r: 3 } : false} name="energy" />
+              <Line type="monotone" dataKey="mood" stroke="hsl(var(--accent-foreground))" strokeWidth={2} dot={range === "week" ? { r: 3 } : false} strokeDasharray="4 2" name="mood" />
             </LineChart>
           </ResponsiveContainer>
           <div className="flex gap-4 mt-2 justify-center text-[10px] text-muted-foreground">
