@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Check, MessageCircle, Heart, Reply, Filter } from "lucide-react";
+import { Bell, Check, MessageCircle, Heart, Reply, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,7 +61,7 @@ interface NotificationsPageProps {
 }
 
 export function NotificationsPage({ onNavigateToPost }: NotificationsPageProps) {
-  const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
+  const { notifications, unreadCount, markAllRead, markOneRead, deleteOne, deleteAll } = useNotifications();
   const [activeFilter, setActiveFilter] = useState("all");
 
   const filtered = activeFilter === "all"
@@ -79,11 +79,18 @@ export function NotificationsPage({ onNavigateToPost }: NotificationsPageProps) 
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button size="sm" variant="outline" onClick={markAllRead}>
-            <Check className="h-3.5 w-3.5 mr-1" /> Mark all read
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <Button size="sm" variant="outline" onClick={markAllRead}>
+              <Check className="h-3.5 w-3.5 mr-1" /> Mark all read
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={deleteAll}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear all
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filter chips */}
@@ -130,14 +137,14 @@ export function NotificationsPage({ onNavigateToPost }: NotificationsPageProps) 
                   const config = typeConfig[n.type] || { icon: Bell, label: "sent you a notification" };
                   const Icon = config.icon;
                   return (
-                    <button
+                    <div
                       key={n.id}
                       onClick={() => {
                         if (!n.is_read) markOneRead(n.id);
                         if (n.post_id && onNavigateToPost) onNavigateToPost(n.post_id);
                       }}
                       className={cn(
-                        "w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl transition-colors",
+                        "w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl transition-colors cursor-pointer group",
                         n.is_read ? "opacity-60 hover:opacity-80" : "bg-primary/5 hover:bg-primary/10"
                       )}
                     >
@@ -158,7 +165,14 @@ export function NotificationsPage({ onNavigateToPost }: NotificationsPageProps) 
                         <span className="text-[10px] text-muted-foreground">{timeAgo(n.created_at)}</span>
                       </div>
                       {!n.is_read && <div className="h-2.5 w-2.5 rounded-full bg-primary shrink-0 mt-2.5" />}
-                    </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteOne(n.id); }}
+                        className="shrink-0 mt-1 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete notification"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
               </div>

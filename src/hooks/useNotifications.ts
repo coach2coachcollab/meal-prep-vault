@@ -66,6 +66,20 @@ export function useNotifications() {
     setUnreadCount((c) => Math.max(0, c - 1));
   }, []);
 
+  const deleteOne = useCallback(async (id: string) => {
+    const n = notifications.find((n) => n.id === id);
+    await supabase.from("notifications").delete().eq("id", id);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (n && !n.is_read) setUnreadCount((c) => Math.max(0, c - 1));
+  }, [notifications]);
+
+  const deleteAll = useCallback(async () => {
+    if (!user) return;
+    await supabase.from("notifications").delete().eq("user_id", user.id);
+    setNotifications([]);
+    setUnreadCount(0);
+  }, [user]);
+
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
@@ -84,5 +98,5 @@ export function useNotifications() {
     return () => { supabase.removeChannel(channel); };
   }, [user, loadNotifications]);
 
-  return { notifications, unreadCount, markAllRead, markOneRead, reload: loadNotifications };
+  return { notifications, unreadCount, markAllRead, markOneRead, deleteOne, deleteAll, reload: loadNotifications };
 }
