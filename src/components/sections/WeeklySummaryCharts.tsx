@@ -5,6 +5,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { Droplets, Zap, Smile, TrendingUp, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const MILESTONES = [3, 7, 14, 30];
+const milestoneMessages: Record<number, string> = {
+  3: "🔥 3-day water streak! You're building a habit!",
+  7: "🔥 7-day streak! One full week — amazing consistency!",
+  14: "🔥 14-day streak! Two weeks strong — you're unstoppable! 💪",
+  30: "🔥 30-day streak! A whole month — legendary hydration! 🏆",
+};
 
 const moodMap: Record<string, number> = { "😊": 5, "😐": 3, "😴": 2, "😤": 1, "😢": 1 };
 
@@ -124,6 +133,11 @@ export function WeeklySummaryCharts() {
       d.setDate(d.getDate() - 1);
     }
     setStreak(count);
+
+    // Celebrate milestone if exact match
+    if (MILESTONES.includes(count)) {
+      toast.success(milestoneMessages[count], { duration: 5000 });
+    }
   };
 
   const totalDays = chartData.length;
