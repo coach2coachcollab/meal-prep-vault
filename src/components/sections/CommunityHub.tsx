@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,12 @@ const channels = [
   { id: "saved", label: "⭐ Favourites" },
 ];
 
-export function CommunityHub() {
+interface CommunityHubProps {
+  highlightPostId?: string | null;
+  onHighlightHandled?: () => void;
+}
+
+export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityHubProps) {
   const { user } = useAuth();
   const [activeChannel, setActiveChannel] = useState("wins");
   const [posts, setPosts] = useState<PostData[]>([]);
@@ -31,6 +36,29 @@ export function CommunityHub() {
       loadPosts();
     }
   }, [user, activeChannel]);
+
+  // Handle deep link to a specific post
+  useEffect(() => {
+    if (!highlightPostId || !user) return;
+    const navigateToPost = async () => {
+      // Find which channel the post is in
+      const { data: post } = await supabase.from("community_posts").select("channel").eq("id", highlightPostId).single();
+      if (post && post.channel !== activeChannel) {
+        setActiveChannel(post.channel);
+      }
+      // Scroll to post after render
+      setTimeout(() => {
+        const el = document.getElementById(`post-${highlightPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          setTimeout(() => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 3000);
+        }
+        onHighlightHandled?.();
+      }, 500);
+    };
+    navigateToPost();
+  }, [highlightPostId, user]);
 
   useEffect(() => {
     const channel = supabase
@@ -256,8 +284,8 @@ export function CommunityHub() {
           </Card>
         )}
         {posts.map((p) => (
+          <div key={p.id} id={`post-${p.id}`} className="transition-all duration-300">
           <CommunityPost
-            key={p.id}
             post={p}
             currentUserId={user?.id || ""}
             onToggleReaction={toggleReaction}
@@ -270,6 +298,7 @@ export function CommunityHub() {
             onDeleteComment={deleteComment}
             onToggleCommentLike={toggleCommentLike}
           />
+          </div>
         ))}
       </div>
 
