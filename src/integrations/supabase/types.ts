@@ -696,6 +696,7 @@ export type Database = {
           hips_cm: number | null
           id: string
           notes: string | null
+          photo_url: string | null
           thighs_cm: number | null
           user_id: string
           waist_cm: number | null
@@ -710,6 +711,7 @@ export type Database = {
           hips_cm?: number | null
           id?: string
           notes?: string | null
+          photo_url?: string | null
           thighs_cm?: number | null
           user_id: string
           waist_cm?: number | null
@@ -724,6 +726,7 @@ export type Database = {
           hips_cm?: number | null
           id?: string
           notes?: string | null
+          photo_url?: string | null
           thighs_cm?: number | null
           user_id?: string
           waist_cm?: number | null
