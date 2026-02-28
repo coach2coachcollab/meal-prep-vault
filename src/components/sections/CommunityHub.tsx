@@ -143,6 +143,7 @@ export function CommunityHub() {
       const likes = (allLikes || []).filter((l) => l.comment_id === c.id);
       return {
         ...c,
+        parent_id: (c as any).parent_id || null,
         user_name: nm[c.user_id],
         like_count: likes.length,
         is_liked: likes.some((l) => l.user_id === user!.id),
@@ -150,10 +151,11 @@ export function CommunityHub() {
     });
   };
 
-  const addComment = async (postId: string, text: string) => {
+  const addComment = async (postId: string, text: string, parentId?: string) => {
     if (!user) return;
-    await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text });
-    // Update comment count optimistically
+    const insert: any = { post_id: postId, user_id: user.id, text };
+    if (parentId) insert.parent_id = parentId;
+    await supabase.from("post_comments").insert(insert);
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
   };
 
