@@ -27,6 +27,7 @@ interface Meal {
   user_id: string | null;
   ingredients: any;
   instructions: any;
+  image_url: string | null;
 }
 
 export function MealVault() {
@@ -56,7 +57,7 @@ export function MealVault() {
     setLoading(true);
     const { data, error } = await supabase
       .from("meals")
-      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions")
+      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url")
       .order("created_at", { ascending: false });
     if (data) setMeals(data);
     if (error) console.error("Failed to load meals", error);
@@ -188,8 +189,8 @@ export function MealVault() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((meal) => (
             <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              {(meal as any).image_url && (
-                <img src={(meal as any).image_url} alt={meal.title} className="w-full h-40 object-cover" />
+              {meal.image_url && (
+                <img src={meal.image_url} alt={meal.title} className="w-full h-40 object-cover" />
               )}
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
