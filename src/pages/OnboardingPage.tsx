@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ const allergyOptions = ["None", "Nuts", "Shellfish", "Eggs", "Soy"];
 
 export default function OnboardingPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [goal, setGoal] = useState("");
   const [activity, setActivity] = useState("");
@@ -73,7 +75,7 @@ export default function OnboardingPage() {
       toast.error("Failed to save profile");
     } else {
       toast.success("Welcome to NutriCoach! 🎉");
-      window.location.reload();
+      navigate("/", { replace: true });
     }
   };
 
