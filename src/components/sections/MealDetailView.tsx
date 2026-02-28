@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface Meal {
   id: string;
@@ -38,7 +41,12 @@ interface MealDetailViewProps {
 }
 
 export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: MealDetailViewProps) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("ingredients");
+  const [userRating, setUserRating] = useState<number>(0);
+  const [hoveredStar, setHoveredStar] = useState<number>(0);
+  const [avgRating, setAvgRating] = useState<number>(0);
+  const [ratingCount, setRatingCount] = useState<number>(0);
 
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
@@ -49,6 +57,61 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     ...(meal.diet_tags || []),
     ...(meal.health_tags || []),
   ];
+
+  useEffect(() => {
+    loadRatings();
+  }, [meal.id, user]);
+
+  const loadRatings = async () => {
+    // Load average rating
+    const { data: allRatings } = await supabase
+      .from("meal_ratings")
+      .select("rating")
+      .eq("meal_id", meal.id);
+
+    if (allRatings && allRatings.length > 0) {
+      const avg = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length;
+      setAvgRating(Math.round(avg * 10) / 10);
+      setRatingCount(allRatings.length);
+    }
+
+    // Load user's rating
+    if (user) {
+      const { data: myRating } = await supabase
+        .from("meal_ratings")
+        .select("rating")
+        .eq("meal_id", meal.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (myRating) setUserRating(myRating.rating);
+    }
+  };
+
+  const handleRate = async (rating: number) => {
+    if (!user) {
+      toast.error("Please log in to rate recipes");
+      return;
+    }
+
+    const prev = userRating;
+    setUserRating(rating);
+
+    const { error } = await supabase
+      .from("meal_ratings")
+      .upsert(
+        { meal_id: meal.id, user_id: user.id, rating },
+        { onConflict: "meal_id,user_id" }
+      );
+
+    if (error) {
+      setUserRating(prev);
+      toast.error("Failed to save rating");
+    } else {
+      toast.success(`Rated ${rating} star${rating > 1 ? "s" : ""}`);
+      loadRatings();
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in slide-in-from-right-5 duration-300">
@@ -70,7 +133,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         </Button>
       </div>
 
-      {/* Image + Nutrition side by side */}
+      {/* Image */}
       <div className="grid grid-cols-1 gap-4">
         {meal.image_url && (
           <div className="rounded-xl overflow-hidden aspect-video">
@@ -83,10 +146,31 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-sm">Nutrition Information</h3>
-              <div className="flex gap-0.5">
-                {[1,2,3,4,5].map(s => (
-                  <Star key={s} className="h-4 w-4 text-muted-foreground/30" />
-                ))}
+              {/* Interactive Star Rating */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex gap-0.5" onMouseLeave={() => setHoveredStar(0)}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleRate(s)}
+                      onMouseEnter={() => setHoveredStar(s)}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`h-5 w-5 transition-colors ${
+                          s <= (hoveredStar || userRating)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-muted-foreground/30"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {ratingCount > 0 && (
+                  <span className="text-xs text-muted-foreground ml-1">
+                    {avgRating} ({ratingCount})
+                  </span>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
