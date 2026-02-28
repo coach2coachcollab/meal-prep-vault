@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingDown, TrendingUp, Plus, Ruler, Scale, Trash2, Camera, ImageIcon, Target, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingDown, TrendingUp, Plus, Ruler, Scale, Trash2, Camera, ImageIcon, Target, Check, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -58,6 +58,7 @@ export function ProgressTracker() {
   const [goalWeightKg, setGoalWeightKg] = useState<number | null>(null);
   const [goalInput, setGoalInput] = useState("");
   const [showGoalEdit, setShowGoalEdit] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Multi-angle photo state
   const [angleFiles, setAngleFiles] = useState<Record<Angle, File | null>>({ front: null, back: null, side: null });
@@ -282,6 +283,151 @@ export function ProgressTracker() {
   const getPhotoUrl = (logId: string, angle: Angle) =>
     logPhotos[logId]?.find((p) => p.angle === angle)?.photo_url || null;
 
+  const loadImageAsBase64 = (url: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  };
+
+  const exportPdf = async () => {
+    if (logs.length === 0) { toast.error("No data to export"); return; }
+    setExporting(true);
+    toast.info("Generating PDF...");
+
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = 210;
+      let y = 15;
+
+      const addPage = () => { doc.addPage(); y = 15; };
+      const checkSpace = (needed: number) => { if (y + needed > 280) addPage(); };
+
+      // Title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("Progress Report", pageW / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`, pageW / 2, y, { align: "center" });
+      y += 10;
+
+      // Summary
+      if (firstLog && lastLog) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Summary", 15, y);
+        y += 6;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const summaryLines = [
+          `Entries: ${logs.length}`,
+          `Period: ${new Date(firstLog.date).toLocaleDateString()} — ${new Date(lastLog.date).toLocaleDateString()}`,
+          `Starting Weight: ${displayWeight(firstLog.weight_kg)}`,
+          `Current Weight: ${displayWeight(lastLog.weight_kg)}`,
+          ...(weightChange != null ? [`Change: ${weightChange > 0 ? "+" : ""}${displayWeight(weightChange)}`.replace("—", "N/A")] : []),
+          ...(goalWeightKg ? [`Goal Weight: ${displayWeight(goalWeightKg)}`] : []),
+        ];
+        summaryLines.forEach((line) => { doc.text(line, 15, y); y += 5; });
+        y += 5;
+      }
+
+      // Data table
+      checkSpace(20);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Measurement Log", 15, y);
+      y += 7;
+
+      // Table header
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      const cols = [15, 40, 62, 82, 102, 122, 142, 162];
+      const headers = ["Date", "Weight", "Waist", "Hips", "Chest", "Arms", "Thighs", "BF%"];
+      headers.forEach((h, i) => doc.text(h, cols[i], y));
+      y += 1;
+      doc.setDrawColor(200);
+      doc.line(15, y, 195, y);
+      y += 4;
+
+      doc.setFont("helvetica", "normal");
+      for (const log of logs) {
+        checkSpace(6);
+        const dateStr = new Date(log.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const row = [
+          dateStr,
+          log.weight_kg != null ? (useMetric ? `${log.weight_kg}` : `${Math.round(log.weight_kg * KG_TO_LBS * 10) / 10}`) : "—",
+          log.waist_cm != null ? (useMetric ? `${log.waist_cm}` : `${Math.round(log.waist_cm * CM_TO_IN * 10) / 10}`) : "—",
+          log.hips_cm != null ? (useMetric ? `${log.hips_cm}` : `${Math.round(log.hips_cm * CM_TO_IN * 10) / 10}`) : "—",
+          log.chest_cm != null ? (useMetric ? `${log.chest_cm}` : `${Math.round(log.chest_cm * CM_TO_IN * 10) / 10}`) : "—",
+          log.arms_cm != null ? (useMetric ? `${log.arms_cm}` : `${Math.round(log.arms_cm * CM_TO_IN * 10) / 10}`) : "—",
+          log.thighs_cm != null ? (useMetric ? `${log.thighs_cm}` : `${Math.round(log.thighs_cm * CM_TO_IN * 10) / 10}`) : "—",
+          log.body_fat_pct != null ? `${log.body_fat_pct}` : "—",
+        ];
+        row.forEach((val, i) => doc.text(val, cols[i], y));
+        y += 5;
+      }
+
+      // Photos section
+      const allPhotos: { date: string; angle: string; url: string }[] = [];
+      for (const log of logs) {
+        const photos = logPhotos[log.id] || [];
+        for (const p of photos) {
+          allPhotos.push({ date: log.date, angle: p.angle, url: p.photo_url });
+        }
+      }
+
+      if (allPhotos.length > 0) {
+        addPage();
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Progress Photos", pageW / 2, y, { align: "center" });
+        y += 10;
+
+        const photoW = 55;
+        const photoH = 73;
+        let col = 0;
+
+        for (const photo of allPhotos) {
+          checkSpace(photoH + 12);
+          const base64 = await loadImageAsBase64(photo.url);
+          if (base64) {
+            const x = 15 + col * (photoW + 5);
+            doc.addImage(base64, "JPEG", x, y, photoW, photoH);
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "normal");
+            const label = `${new Date(photo.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${photo.angle}`;
+            doc.text(label, x + photoW / 2, y + photoH + 4, { align: "center" });
+          }
+          col++;
+          if (col >= 3) {
+            col = 0;
+            y += photoH + 12;
+          }
+        }
+      }
+
+      doc.save("progress-report.pdf");
+      toast.success("PDF downloaded! 📄");
+    } catch (err) {
+      console.error(err);
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -300,6 +446,11 @@ export function ProgressTracker() {
           <Button variant="outline" size="sm" onClick={() => setShowAdd(true)}>
             <Plus className="h-4 w-4 mr-1" /> Log
           </Button>
+          {logs.length > 0 && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={exportPdf} disabled={exporting} title="Export PDF">
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
