@@ -54,11 +54,10 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
   useEffect(() => {
-    if (autoOpenLog && !hasAutoOpened) {
+    if (autoOpenLog) {
       setDialogOpen(true);
-      setHasAutoOpened(true);
     }
-  }, [autoOpenLog, hasAutoOpened]);
+  }, [autoOpenLog]);
 
   // Manual entry
   const [foodName, setFoodName] = useState("");
