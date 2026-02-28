@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
-import { Droplets, Zap, Smile, TrendingUp } from "lucide-react";
+import { Droplets, Zap, Smile, TrendingUp, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const moodMap: Record<string, number> = { "😊": 5, "😐": 3, "😴": 2, "😤": 1, "😢": 1 };
@@ -23,10 +23,15 @@ export function WeeklySummaryCharts() {
   const { user } = useAuth();
   const [range, setRange] = useState<Range>("week");
   const [chartData, setChartData] = useState<DayData[]>([]);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     if (user) loadData();
   }, [user, range]);
+
+  useEffect(() => {
+    if (user) loadStreak();
+  }, [user]);
 
   const loadData = async () => {
     if (!user) return;
@@ -86,6 +91,41 @@ export function WeeklySummaryCharts() {
     setChartData(result);
   };
 
+  const loadStreak = async () => {
+    if (!user) return;
+    // Fetch last 90 days of water logs ordered by date descending
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 90);
+    const { data } = await supabase
+      .from("water_logs")
+      .select("date, glasses, goal")
+      .eq("user_id", user.id)
+      .gte("date", startDate.toISOString().split("T")[0])
+      .order("date", { ascending: false });
+
+    if (!data || data.length === 0) { setStreak(0); return; }
+
+    // Build a map of date -> met goal
+    const metMap: Record<string, boolean> = {};
+    data.forEach((w) => { metMap[w.date] = w.glasses >= w.goal; });
+
+    // Count consecutive days starting from today going backward
+    let count = 0;
+    const d = new Date();
+    for (let i = 0; i < 90; i++) {
+      const key = d.toISOString().split("T")[0];
+      if (metMap[key]) {
+        count++;
+      } else {
+        // If today has no entry yet, skip it and keep checking
+        if (i === 0 && !(key in metMap)) { d.setDate(d.getDate() - 1); continue; }
+        break;
+      }
+      d.setDate(d.getDate() - 1);
+    }
+    setStreak(count);
+  };
+
   const totalDays = chartData.length;
   const avgWater = totalDays > 0
     ? Math.round((chartData.reduce((s, d) => s + d.glasses, 0) / totalDays) * 10) / 10
@@ -121,12 +161,19 @@ export function WeeklySummaryCharts() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
+        <Card>
+          <CardContent className="pt-3 pb-3 text-center">
+            <Flame className={cn("h-4 w-4 mx-auto mb-1", streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
+            <p className="text-lg font-bold">{streak}</p>
+            <p className="text-[10px] text-muted-foreground">day streak 🔥</p>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-3 pb-3 text-center">
             <Droplets className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{avgWater}</p>
-            <p className="text-[10px] text-muted-foreground">avg glasses/day</p>
+            <p className="text-[10px] text-muted-foreground">avg/day</p>
           </CardContent>
         </Card>
         <Card>
@@ -140,7 +187,7 @@ export function WeeklySummaryCharts() {
           <CardContent className="pt-3 pb-3 text-center">
             <Smile className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{daysLogged}/{totalDays}</p>
-            <p className="text-[10px] text-muted-foreground">days tracked</p>
+            <p className="text-[10px] text-muted-foreground">tracked</p>
           </CardContent>
         </Card>
       </div>
