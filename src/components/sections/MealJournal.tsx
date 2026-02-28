@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
 const moods = ["😊", "😐", "😴", "😤", "😢"];
@@ -128,7 +129,7 @@ export function MealJournal() {
   };
 
   const addFood = async () => {
-    if (!user || !foodName.trim()) return;
+    if (!user || (!foodName.trim() && !mealPhoto)) return;
 
     let image_url: string | null = null;
     if (mealPhoto) {
@@ -144,7 +145,7 @@ export function MealJournal() {
     }
 
     const { error } = await supabase.from("journal_entries").insert({
-      user_id: user.id, date, meal_type: addMealType, food_name: foodName,
+      user_id: user.id, date, meal_type: addMealType, food_name: foodName.trim() || "Meal photo",
       calories: parseFloat(foodCals) || 0, protein_g: parseFloat(foodProtein) || 0,
       carbs_g: parseFloat(foodCarbs) || 0, fat_g: parseFloat(foodFat) || 0,
       image_url,
@@ -358,17 +359,17 @@ export function MealJournal() {
             </div>
           ) : (
             <div className="space-y-3 pt-1">
-              <div className="space-y-1"><Label>Food Name</Label><Input placeholder="e.g., Chicken breast" value={foodName} onChange={(e) => setFoodName(e.target.value)} /></div>
-              {/* Photo upload */}
+              {/* Photo upload — primary action */}
               <div className="space-y-1">
-                <Label>Meal Photo (optional)</Label>
-                <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
+                <Label>Meal Photo</Label>
+                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
                   {mealPhotoPreview ? (
                     <img src={mealPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex flex-col items-center text-muted-foreground">
-                      <ImagePlus className="h-7 w-7 mb-1" />
-                      <span className="text-xs">Snap or upload a photo</span>
+                      <ImagePlus className="h-8 w-8 mb-1" />
+                      <span className="text-sm font-medium">Snap or upload a photo</span>
+                      <span className="text-xs mt-0.5">Tap to capture your meal</span>
                     </div>
                   )}
                   <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
@@ -377,13 +378,26 @@ export function MealJournal() {
                   }} />
                 </label>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label>Calories</Label><Input type="number" placeholder="0" value={foodCals} onChange={(e) => setFoodCals(e.target.value)} /></div>
-                <div className="space-y-1"><Label>Protein (g)</Label><Input type="number" placeholder="0" value={foodProtein} onChange={(e) => setFoodProtein(e.target.value)} /></div>
-                <div className="space-y-1"><Label>Carbs (g)</Label><Input type="number" placeholder="0" value={foodCarbs} onChange={(e) => setFoodCarbs(e.target.value)} /></div>
-                <div className="space-y-1"><Label>Fat (g)</Label><Input type="number" placeholder="0" value={foodFat} onChange={(e) => setFoodFat(e.target.value)} /></div>
+              <div className="space-y-1">
+                <Label>Food Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input placeholder="e.g., Chicken breast" value={foodName} onChange={(e) => setFoodName(e.target.value)} />
               </div>
-              <Button className="w-full" onClick={addFood}>Log Food</Button>
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground">
+                    + Add macros (optional)
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><Label className="text-xs">Calories</Label><Input type="number" placeholder="0" value={foodCals} onChange={(e) => setFoodCals(e.target.value)} /></div>
+                    <div className="space-y-1"><Label className="text-xs">Protein (g)</Label><Input type="number" placeholder="0" value={foodProtein} onChange={(e) => setFoodProtein(e.target.value)} /></div>
+                    <div className="space-y-1"><Label className="text-xs">Carbs (g)</Label><Input type="number" placeholder="0" value={foodCarbs} onChange={(e) => setFoodCarbs(e.target.value)} /></div>
+                    <div className="space-y-1"><Label className="text-xs">Fat (g)</Label><Input type="number" placeholder="0" value={foodFat} onChange={(e) => setFoodFat(e.target.value)} /></div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              <Button className="w-full" onClick={addFood} disabled={!foodName.trim() && !mealPhoto}>Log Food</Button>
             </div>
           )}
         </DialogContent>
