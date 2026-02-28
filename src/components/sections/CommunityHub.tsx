@@ -7,8 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { CommunityPost, PostData } from "@/components/community/CommunityPost";
-import { CommentsDialog, CommentData } from "@/components/community/CommentsDialog";
+import { CommunityPost, PostData, InlineComment } from "@/components/community/CommunityPost";
 import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
 const channels = [
@@ -24,8 +23,6 @@ export function CommunityHub() {
   const [activeChannel, setActiveChannel] = useState("wins");
   const [posts, setPosts] = useState<PostData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [commentPostId, setCommentPostId] = useState<string | null>(null);
-  const [comments, setComments] = useState<CommentData[]>([]);
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -45,46 +42,24 @@ export function CommunityHub() {
 
   const loadSavedIds = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("saved_posts")
-      .select("post_id")
-      .eq("user_id", user.id);
+    const { data } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id);
     if (data) setSavedPostIds(new Set(data.map((d) => d.post_id)));
   };
 
   const loadPosts = async () => {
     if (!user) return;
-
     let postData: any[] | null = null;
 
     if (activeChannel === "saved") {
-      // Load saved post IDs first, then fetch those posts
-      const { data: savedData } = await supabase
-        .from("saved_posts")
-        .select("post_id")
-        .eq("user_id", user.id)
-        .order("saved_at", { ascending: false });
-      if (!savedData || savedData.length === 0) {
-        setPosts([]);
-        return;
-      }
+      const { data: savedData } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id).order("saved_at", { ascending: false });
+      if (!savedData || savedData.length === 0) { setPosts([]); return; }
       const ids = savedData.map((s) => s.post_id);
-      const { data } = await supabase
-        .from("community_posts")
-        .select("*")
-        .in("id", ids);
-      // Maintain saved order
+      const { data } = await supabase.from("community_posts").select("*").in("id", ids);
       postData = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
     } else {
-      const { data } = await supabase
-        .from("community_posts")
-        .select("*")
-        .eq("channel", activeChannel)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).limit(50);
       postData = data;
     }
-
     if (!postData) return;
 
     const userIds = [...new Set(postData.map((p) => p.user_id))];
@@ -137,9 +112,7 @@ export function CommunityHub() {
       setSavedPostIds((prev) => new Set(prev).add(postId));
       toast.success("Post saved!");
     }
-    // Optimistically update posts
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, is_saved: !isSaved } : p));
-    // If on saved tab, reload to reflect removal
     if (activeChannel === "saved" && isSaved) loadPosts();
   };
 
@@ -155,34 +128,30 @@ export function CommunityHub() {
     toast.success("Post updated");
   };
 
-  const openComments = async (postId: string) => {
-    setCommentPostId(postId);
+  const loadComments = async (postId: string): Promise<InlineComment[]> => {
     const { data } = await supabase.from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
-    if (data) {
-      const uids = [...new Set(data.map((c) => c.user_id))];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, name").in("user_id", uids);
-      const nm = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
-      setComments(data.map((c) => ({ ...c, user_name: nm[c.user_id] })));
-    }
+    if (!data) return [];
+    const uids = [...new Set(data.map((c) => c.user_id))];
+    const { data: profiles } = await supabase.from("profiles").select("user_id, name").in("user_id", uids);
+    const nm = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
+    return data.map((c) => ({ ...c, user_name: nm[c.user_id] }));
   };
 
-  const addComment = async (text: string) => {
-    if (!user || !commentPostId) return;
-    await supabase.from("post_comments").insert({ post_id: commentPostId, user_id: user.id, text });
-    openComments(commentPostId);
-    loadPosts();
+  const addComment = async (postId: string, text: string) => {
+    if (!user) return;
+    await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text });
+    // Update comment count optimistically
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
   };
 
   const editComment = async (commentId: string, newText: string) => {
     await supabase.from("post_comments").update({ text: newText }).eq("id", commentId);
-    if (commentPostId) openComments(commentPostId);
     toast.success("Comment updated");
   };
 
-  const deleteComment = async (commentId: string) => {
+  const deleteComment = async (commentId: string, postId: string) => {
     await supabase.from("post_comments").delete().eq("id", commentId);
-    if (commentPostId) openComments(commentPostId);
-    loadPosts();
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p));
     toast.success("Comment deleted");
   };
 
@@ -192,9 +161,7 @@ export function CommunityHub() {
         <div>
           <h2 className="text-xl font-bold">Community</h2>
           <p className="text-xs text-muted-foreground">
-            {activeChannel === "saved"
-              ? `${posts.length} saved posts`
-              : `${posts.length} posts in this channel`}
+            {activeChannel === "saved" ? `${posts.length} saved posts` : `${posts.length} posts in this channel`}
           </p>
         </div>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
@@ -202,7 +169,6 @@ export function CommunityHub() {
         </Button>
       </div>
 
-      {/* Channel tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {channels.map((ch) => (
           <Badge
@@ -219,7 +185,6 @@ export function CommunityHub() {
         ))}
       </div>
 
-      {/* Posts */}
       <div className="space-y-3">
         {posts.length === 0 && (
           <Card>
@@ -249,15 +214,17 @@ export function CommunityHub() {
             post={p}
             currentUserId={user?.id || ""}
             onToggleReaction={toggleReaction}
-            onOpenComments={openComments}
             onDeletePost={deletePost}
             onEditPost={editPost}
             onToggleSave={toggleSave}
+            onLoadComments={loadComments}
+            onAddComment={addComment}
+            onEditComment={editComment}
+            onDeleteComment={deleteComment}
           />
         ))}
       </div>
 
-      {/* Create post dialog */}
       {user && (
         <CreatePostDialog
           open={dialogOpen}
@@ -266,17 +233,6 @@ export function CommunityHub() {
           onCreated={loadPosts}
         />
       )}
-
-      {/* Comments dialog */}
-      <CommentsDialog
-        open={!!commentPostId}
-        onClose={() => setCommentPostId(null)}
-        comments={comments}
-        currentUserId={user?.id || ""}
-        onAddComment={addComment}
-        onEditComment={editComment}
-        onDeleteComment={deleteComment}
-      />
     </div>
   );
 }
