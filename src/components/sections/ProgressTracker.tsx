@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingDown, TrendingUp, Plus, Ruler, Scale, Trash2, Camera, ImageIcon } from "lucide-react";
+import { TrendingDown, TrendingUp, Plus, Ruler, Scale, Trash2, Camera, ImageIcon, Target, Check } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +43,9 @@ export function ProgressTracker() {
   const [uploading, setUploading] = useState(false);
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [goalWeightKg, setGoalWeightKg] = useState<number | null>(null);
+  const [goalInput, setGoalInput] = useState("");
+  const [showGoalEdit, setShowGoalEdit] = useState(false);
 
   const [form, setForm] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -51,10 +55,29 @@ export function ProgressTracker() {
   useEffect(() => {
     if (user) {
       loadLogs();
+      loadGoalWeight();
       const saved = localStorage.getItem(`preferred_units_${user.id}`);
       if (saved) setUseMetric(saved === "metric");
     }
   }, [user]);
+
+  const loadGoalWeight = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("profiles").select("goal_weight_kg").eq("user_id", user.id).single();
+    if (data?.goal_weight_kg) setGoalWeightKg(data.goal_weight_kg);
+  };
+
+  const saveGoalWeight = async () => {
+    if (!user || !goalInput) return;
+    const kg = useMetric ? parseFloat(goalInput) : parseFloat(goalInput) / KG_TO_LBS;
+    const rounded = Math.round(kg * 10) / 10;
+    const { error } = await supabase.from("profiles").update({ goal_weight_kg: rounded }).eq("user_id", user.id);
+    if (error) { toast.error("Failed to save goal"); return; }
+    setGoalWeightKg(rounded);
+    setGoalInput("");
+    setShowGoalEdit(false);
+    toast.success("Goal weight set! 🎯");
+  };
 
   const loadLogs = async () => {
     if (!user) return;
@@ -221,6 +244,64 @@ export function ProgressTracker() {
           </Card>
         </div>
       )}
+
+      {/* Goal weight card */}
+      {(() => {
+        const currentWeight = lastLog?.weight_kg;
+        const startWeight = firstLog?.weight_kg;
+        if (goalWeightKg && currentWeight != null && startWeight != null) {
+          const totalToLose = startWeight - goalWeightKg;
+          const lost = startWeight - currentWeight;
+          const progressPct = totalToLose !== 0 ? Math.min(100, Math.max(0, Math.round((lost / totalToLose) * 100))) : 0;
+          const remaining = currentWeight - goalWeightKg;
+          const reached = remaining <= 0;
+          return (
+            <Card className={reached ? "border-primary/50 bg-primary/5" : ""}>
+              <CardContent className="pt-4 pb-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Target className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold">Goal Weight</span>
+                  </div>
+                  <button onClick={() => { setGoalInput(useMetric ? String(goalWeightKg) : String(Math.round(goalWeightKg * KG_TO_LBS * 10) / 10)); setShowGoalEdit(true); }} className="text-[10px] text-muted-foreground hover:text-foreground">Edit</button>
+                </div>
+                <div className="flex items-end justify-between">
+                  <span className="text-lg font-bold">{displayWeight(goalWeightKg)}</span>
+                  {reached ? (
+                    <span className="text-xs font-medium text-primary flex items-center gap-1"><Check className="h-3 w-3" /> Goal reached!</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{displayWeight(Math.round(remaining * 10) / 10)} to go</span>
+                  )}
+                </div>
+                <Progress value={progressPct} className="h-2" />
+                <p className="text-[10px] text-muted-foreground text-right">{progressPct}% there</p>
+              </CardContent>
+            </Card>
+          );
+        }
+        if (!goalWeightKg && logs.length > 0) {
+          return (
+            <Card className="border-dashed">
+              <CardContent className="py-4">
+                {showGoalEdit ? (
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Goal Weight ({useMetric ? "kg" : "lbs"})</Label>
+                      <Input type="number" step="0.1" placeholder={useMetric ? "65.0" : "143.0"} value={goalInput} onChange={(e) => setGoalInput(e.target.value)} />
+                    </div>
+                    <Button size="sm" onClick={saveGoalWeight}>Set</Button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowGoalEdit(true)} className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Target className="h-4 w-4" /> Set a goal weight
+                  </button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        }
+        return null;
+      })()}
 
       {/* Photo comparison */}
       {photosWithDates.length >= 2 && (
@@ -448,6 +529,22 @@ export function ProgressTracker() {
           ) : (
             <p className="text-sm text-muted-foreground text-center py-6">Upload at least 2 photos to compare.</p>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Goal weight edit dialog */}
+      <Dialog open={showGoalEdit && goalWeightKg != null} onOpenChange={setShowGoalEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> Edit Goal Weight</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Goal Weight ({useMetric ? "kg" : "lbs"})</Label>
+              <Input type="number" step="0.1" value={goalInput} onChange={(e) => setGoalInput(e.target.value)} />
+            </div>
+            <Button className="w-full" onClick={saveGoalWeight}>Update Goal</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
