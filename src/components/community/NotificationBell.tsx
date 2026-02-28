@@ -59,10 +59,12 @@ function NotificationItem({ n, onRead }: { n: Notification; onRead: (id: string)
 
 interface NotificationBellProps {
   onNavigateToCommunity?: () => void;
+  onViewAll?: () => void;
 }
 
-export function NotificationBell({ onNavigateToCommunity }: NotificationBellProps) {
+export function NotificationBell({ onNavigateToCommunity, onViewAll }: NotificationBellProps) {
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
+  const preview = notifications.slice(0, 8);
 
   return (
     <Popover>
@@ -93,12 +95,19 @@ export function NotificationBell({ onNavigateToCommunity }: NotificationBellProp
             </div>
           ) : (
             <div className="p-1 space-y-0.5">
-              {notifications.map((n) => (
+              {preview.map((n) => (
                 <NotificationItem key={n.id} n={n} onRead={markOneRead} />
               ))}
             </div>
           )}
         </ScrollArea>
+        {notifications.length > 0 && onViewAll && (
+          <div className="border-t px-4 py-2">
+            <Button variant="ghost" size="sm" className="w-full text-xs" onClick={onViewAll}>
+              View all notifications
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
