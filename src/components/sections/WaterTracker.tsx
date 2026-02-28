@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { WeeklySummaryCharts } from "./WeeklySummaryCharts";
 
 const moods = ["😊", "😐", "😴", "😤", "😢"];
 
@@ -294,6 +295,9 @@ export function WaterTracker() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Weekly Summary */}
+      <WeeklySummaryCharts />
     </div>
   );
 }
