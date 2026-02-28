@@ -289,39 +289,6 @@ export function MealJournal() {
         );
       })}
 
-      {/* Mood & Energy */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Mood & Energy</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label className="text-xs">Energy Level</Label>
-            <div className="flex gap-1 mt-1">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} onClick={() => setDailyNote({ ...dailyNote, energy_level: n })}>
-                  <Star className={cn("h-6 w-6", n <= dailyNote.energy_level ? "fill-primary text-primary" : "text-muted")} />
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">Mood</Label>
-            <div className="flex gap-2 mt-1">
-              {moods.map((m) => (
-                <button key={m} onClick={() => setDailyNote({ ...dailyNote, mood_emoji: m })}
-                  className={cn("text-2xl p-1 rounded", dailyNote.mood_emoji === m && "bg-primary/10 ring-2 ring-primary/30")}
-                >{m}</button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Notes (optional)</Label>
-            <Textarea placeholder="Any notes about today?" rows={2} value={dailyNote.notes} onChange={(e) => setDailyNote({ ...dailyNote, notes: e.target.value })} />
-          </div>
-          <Button size="sm" variant="outline" onClick={saveDailyNote}>Save Notes</Button>
-        </CardContent>
-      </Card>
 
       {/* Add food dialog — recipe picker + manual */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
