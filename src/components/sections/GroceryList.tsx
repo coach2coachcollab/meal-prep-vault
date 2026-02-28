@@ -129,12 +129,12 @@ export function GroceryList() {
     if (navigator.share) {
       try {
         await navigator.share({ title: "Grocery List", text });
+        return;
       } catch {
-        // User cancelled
+        // Share failed or was cancelled — fall through to copy
       }
-    } else {
-      copyList();
     }
+    copyList();
   };
 
   return (
