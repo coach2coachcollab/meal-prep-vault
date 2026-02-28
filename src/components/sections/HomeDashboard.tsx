@@ -255,24 +255,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          { icon: Flame, label: "Log Meal", tab: "nutrition" },
-          { icon: Calendar, label: "View Plan", tab: "plan" },
-          { icon: Target, label: "My Macros", tab: "nutrition" },
-          { icon: Users, label: "Community", tab: "community" },
-        ].map((action) => (
-          <button
-            key={action.label}
-            onClick={() => onNavigate(action.tab)}
-            className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-card border hover:bg-accent transition-colors"
-          >
-            <action.icon className="h-5 w-5 text-primary" />
-            <span className="text-[10px] font-medium text-muted-foreground">{action.label}</span>
-          </button>
-        ))}
-      </div>
 
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
