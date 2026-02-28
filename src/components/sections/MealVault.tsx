@@ -186,55 +186,53 @@ export function MealVault() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3">
           {filtered.map((meal) => (
             <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              {meal.image_url && (
-                <img src={meal.image_url} alt={meal.title} className="w-full h-40 object-cover" />
-              )}
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg leading-tight">{meal.title}</CardTitle>
-                  <button onClick={() => toggleFavorite(meal.id)} className="shrink-0 ml-2">
-                    <Heart className={`h-5 w-5 transition-colors ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-destructive"}`} />
-                  </button>
-                </div>
-                {meal.description && <p className="text-sm text-muted-foreground">{meal.description}</p>}
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-2 mb-3 text-center text-xs">
-                  <div className="p-2 rounded bg-primary/10">
-                    <Flame className="h-3 w-3 mx-auto mb-1 text-primary" />
-                    <p className="font-semibold">{meal.calories || 0}</p>
-                    <p className="text-muted-foreground">cal</p>
+              <div className="flex">
+                <div className="flex-1 min-w-0 p-4">
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="font-semibold text-sm leading-tight truncate pr-2">{meal.title}</h3>
+                    <button onClick={() => toggleFavorite(meal.id)} className="shrink-0">
+                      <Heart className={`h-4 w-4 transition-colors ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-destructive"}`} />
+                    </button>
                   </div>
-                  <div className="p-2 rounded bg-destructive/10">
-                    <p className="font-semibold">{meal.protein || 0}g</p>
-                    <p className="text-muted-foreground">protein</p>
-                  </div>
-                  <div className="p-2 rounded bg-accent">
-                    <p className="font-semibold">{meal.carbs || 0}g</p>
-                    <p className="text-muted-foreground">carbs</p>
-                  </div>
-                  <div className="p-2 rounded bg-secondary">
-                    <p className="font-semibold">{meal.fats || 0}g</p>
-                    <p className="text-muted-foreground">fats</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                  {(meal.prep_time || meal.cook_time) && (
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {(meal.prep_time || 0) + (meal.cook_time || 0)}min</span>
+                  {meal.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{meal.description}</p>
                   )}
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] mb-2">
+                    <span className="font-medium text-primary">{meal.calories || 0}<span className="text-muted-foreground font-normal">cal</span></span>
+                    <span>{meal.protein || 0}g<span className="text-muted-foreground"> protein</span></span>
+                    <span>{meal.carbs || 0}g<span className="text-muted-foreground"> carbs</span></span>
+                    <span>{meal.fats || 0}g<span className="text-muted-foreground"> fats</span></span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    {(meal.prep_time || meal.cook_time) && (
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {(meal.prep_time || 0) + (meal.cook_time || 0)}min</span>
+                    )}
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
+                  </div>
+                  {meal.tags && meal.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {meal.tags.slice(0, 3).map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                      ))}
+                      {meal.tags.length > 3 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{meal.tags.length - 3}</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {meal.tags && meal.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {meal.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-                    ))}
+                {meal.image_url && (
+                  <div className="w-24 shrink-0">
+                    <img
+                      src={meal.image_url}
+                      alt={meal.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 )}
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
