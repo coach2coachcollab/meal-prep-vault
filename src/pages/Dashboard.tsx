@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [planSub, setPlanSub] = useState("plans");
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
+  const [autoOpenLog, setAutoOpenLog] = useState(false);
 
   const navigateToPost = (postId: string) => {
     setHighlightPostId(postId);
@@ -46,7 +47,7 @@ export default function Dashboard() {
               <TabsTrigger value="habits">Habits</TabsTrigger>
               <TabsTrigger value="vault">Vault</TabsTrigger>
             </TabsList>
-            <TabsContent value="journal"><MealJournal /></TabsContent>
+            <TabsContent value="journal"><MealJournal autoOpenLog={autoOpenLog} /></TabsContent>
             <TabsContent value="water"><WaterTracker /></TabsContent>
             <TabsContent value="habits"><HabitTracker /></TabsContent>
             <TabsContent value="vault"><MealVault /></TabsContent>
@@ -123,8 +124,12 @@ export default function Dashboard() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onSubTabChange={(tab, sub) => {
+          setAutoOpenLog(false);
           setActiveTab(tab);
-          if (tab === "nutrition") setNutritionSub(sub);
+          if (tab === "nutrition") {
+            setNutritionSub(sub);
+            if (sub === "journal") setAutoOpenLog(true);
+          }
           if (tab === "plan") setPlanSub(sub);
         }}
       />
