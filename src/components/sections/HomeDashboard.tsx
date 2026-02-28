@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -22,6 +22,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const [macros, setMacros] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
   const [todayJournal, setTodayJournal] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [habitsToday, setHabitsToday] = useState({ done: 0, total: 0 });
+  const [waterToday, setWaterToday] = useState({ glasses: 0, goal: 8 });
   const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
 
   useEffect(() => {
@@ -67,6 +68,10 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     const { data: habits } = await supabase.from("user_habits").select("id").eq("user_id", user.id).eq("is_active", true);
     const { data: logs } = await supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true);
     setHabitsToday({ done: logs?.length || 0, total: habits?.length || 0 });
+
+    // Today's water
+    const { data: water } = await supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle();
+    if (water) setWaterToday({ glasses: water.glasses, goal: water.goal });
   };
 
   const greeting = () => {
@@ -147,19 +152,38 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         ))}
       </div>
 
-      {/* Habits Today */}
-      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("profile")}>
-        <CardContent className="pt-5 pb-5">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-primary" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Habits Today</p>
-              <p className="text-xs text-muted-foreground">{habitsToday.done} of {habitsToday.total} completed</p>
+      {/* Habits & Water */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
+          <CardContent className="pt-4 pb-4 flex flex-col items-center">
+            <CheckCircle2 className="h-5 w-5 text-primary mb-1" />
+            <p className="text-lg font-bold">{habitsToday.done}/{habitsToday.total}</p>
+            <p className="text-[10px] text-muted-foreground">Habits done</p>
+            <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
+          <CardContent className="pt-4 pb-4 flex flex-col items-center">
+            <div className="relative h-12 w-12 mb-1">
+              <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
+                <circle cx="24" cy="24" r="20" fill="none" className="stroke-muted" strokeWidth="4" />
+                <circle
+                  cx="24" cy="24" r="20" fill="none"
+                  className="stroke-primary"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={`${Math.min(waterToday.glasses / waterToday.goal, 1) * 125.6} ${125.6 - Math.min(waterToday.glasses / waterToday.goal, 1) * 125.6}`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Droplets className="h-4 w-4 text-primary" />
+              </div>
             </div>
-            <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-20 h-2" />
-          </div>
-        </CardContent>
-      </Card>
+            <p className="text-lg font-bold">{waterToday.glasses}/{waterToday.goal}</p>
+            <p className="text-[10px] text-muted-foreground">Glasses of water</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Daily Tip */}
       <Card className="bg-primary/5 border-primary/20">
