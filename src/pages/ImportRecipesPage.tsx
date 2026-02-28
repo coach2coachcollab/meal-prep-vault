@@ -8,8 +8,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Upload, FileJson, ImagePlus, CheckCircle2, XCircle, Loader2,
-  ArrowLeft, AlertTriangle, Trash2, Sparkles, Eye,
+  ArrowLeft, AlertTriangle, Trash2, Sparkles, Eye, Pencil, Plus, X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 
 interface RecipeJson {
@@ -81,6 +84,77 @@ export default function ImportRecipesPage() {
   const [extractingAll, setExtractingAll] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const updateRecipeField = (index: number, field: keyof RecipeJson, value: any) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) =>
+        i === index && r.recipe
+          ? { ...r, recipe: { ...r.recipe, [field]: value } }
+          : r
+      )
+    );
+  };
+
+  const updateIngredient = (recipeIndex: number, ingIndex: number, value: string) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) => {
+        if (i !== recipeIndex || !r.recipe) return r;
+        const ingredients = [...(r.recipe.ingredients || [])];
+        ingredients[ingIndex] = value;
+        return { ...r, recipe: { ...r.recipe, ingredients } };
+      })
+    );
+  };
+
+  const addIngredient = (recipeIndex: number) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) => {
+        if (i !== recipeIndex || !r.recipe) return r;
+        return { ...r, recipe: { ...r.recipe, ingredients: [...(r.recipe.ingredients || []), ""] } };
+      })
+    );
+  };
+
+  const removeIngredient = (recipeIndex: number, ingIndex: number) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) => {
+        if (i !== recipeIndex || !r.recipe) return r;
+        const ingredients = (r.recipe.ingredients || []).filter((_, j) => j !== ingIndex);
+        return { ...r, recipe: { ...r.recipe, ingredients } };
+      })
+    );
+  };
+
+  const updateInstruction = (recipeIndex: number, stepIndex: number, value: string) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) => {
+        if (i !== recipeIndex || !r.recipe) return r;
+        const instructions = [...(r.recipe.instructions || [])];
+        instructions[stepIndex] = value;
+        return { ...r, recipe: { ...r.recipe, instructions } };
+      })
+    );
+  };
+
+  const addInstruction = (recipeIndex: number) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) => {
+        if (i !== recipeIndex || !r.recipe) return r;
+        return { ...r, recipe: { ...r.recipe, instructions: [...(r.recipe.instructions || []), ""] } };
+      })
+    );
+  };
+
+  const removeInstruction = (recipeIndex: number, stepIndex: number) => {
+    setAiRecipes((prev) =>
+      prev.map((r, i) => {
+        if (i !== recipeIndex || !r.recipe) return r;
+        const instructions = (r.recipe.instructions || []).filter((_, j) => j !== stepIndex);
+        return { ...r, recipe: { ...r.recipe, instructions } };
+      })
+    );
+  };
 
   const handleJsonFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -457,9 +531,25 @@ export default function ImportRecipesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
+                              title="Preview"
+                              onClick={() => {
+                                setEditingIndex(null);
+                                setExpandedIndex(expandedIndex === i ? null : i);
+                              }}
                             >
                               <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Edit"
+                              onClick={() => {
+                                setExpandedIndex(null);
+                                setEditingIndex(editingIndex === i ? null : i);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
@@ -483,7 +573,7 @@ export default function ImportRecipesPage() {
                       </div>
                     </div>
 
-                    {/* Expanded preview */}
+                    {/* Read-only preview */}
                     {expandedIndex === i && entry.recipe && (
                       <div className="text-xs border-t pt-2 space-y-1">
                         {entry.recipe.description && (
@@ -517,6 +607,132 @@ export default function ImportRecipesPage() {
                             </ol>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Editable form */}
+                    {editingIndex === i && entry.recipe && (
+                      <div className="border-t pt-3 space-y-3 text-sm">
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Title</Label>
+                          <Input
+                            value={entry.recipe.title || ""}
+                            onChange={(e) => updateRecipeField(i, "title", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Description</Label>
+                          <Textarea
+                            value={entry.recipe.description || ""}
+                            onChange={(e) => updateRecipeField(i, "description", e.target.value)}
+                            className="text-sm min-h-[60px]"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Calories</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.calories ?? ""} onChange={(e) => updateRecipeField(i, "calories", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Protein (g)</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.protein ?? ""} onChange={(e) => updateRecipeField(i, "protein", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Carbs (g)</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.carbs ?? ""} onChange={(e) => updateRecipeField(i, "carbs", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Fat (g)</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.fats ?? ""} onChange={(e) => updateRecipeField(i, "fats", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Prep (min)</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.prep_time ?? ""} onChange={(e) => updateRecipeField(i, "prep_time", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Cook (min)</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.cook_time ?? ""} onChange={(e) => updateRecipeField(i, "cook_time", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Servings</Label>
+                            <Input type="number" className="h-7 text-xs" value={entry.recipe.servings ?? ""} onChange={(e) => updateRecipeField(i, "servings", e.target.value ? Number(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Category</Label>
+                            <Input className="h-7 text-xs" value={entry.recipe.category || ""} onChange={(e) => updateRecipeField(i, "category", e.target.value || null)} placeholder="e.g. lunch" />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Cuisine</Label>
+                            <Input className="h-7 text-xs" value={entry.recipe.cuisine || ""} onChange={(e) => updateRecipeField(i, "cuisine", e.target.value || null)} placeholder="e.g. italian" />
+                          </div>
+                        </div>
+
+                        {/* Ingredients editor */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Ingredients</Label>
+                            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => addIngredient(i)}>
+                              <Plus className="h-3 w-3 mr-1" /> Add
+                            </Button>
+                          </div>
+                          {(entry.recipe.ingredients || []).map((ing, j) => (
+                            <div key={j} className="flex gap-1">
+                              <Input
+                                className="h-7 text-xs flex-1"
+                                value={ing}
+                                onChange={(e) => updateIngredient(i, j, e.target.value)}
+                              />
+                              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeIngredient(i, j)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Instructions editor */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Instructions</Label>
+                            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => addInstruction(i)}>
+                              <Plus className="h-3 w-3 mr-1" /> Add Step
+                            </Button>
+                          </div>
+                          {(entry.recipe.instructions || []).map((step, j) => (
+                            <div key={j} className="flex gap-1 items-start">
+                              <span className="text-xs text-muted-foreground mt-1.5 w-5 text-right shrink-0">{j + 1}.</span>
+                              <Textarea
+                                className="text-xs flex-1 min-h-[28px]"
+                                rows={1}
+                                value={step}
+                                onChange={(e) => updateInstruction(i, j, e.target.value)}
+                              />
+                              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeInstruction(i, j)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Coach Notes</Label>
+                          <Textarea
+                            value={entry.recipe.coach_notes || ""}
+                            onChange={(e) => updateRecipeField(i, "coach_notes", e.target.value || null)}
+                            className="text-sm min-h-[40px]"
+                            rows={1}
+                            placeholder="Optional notes..."
+                          />
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button size="sm" onClick={() => setEditingIndex(null)}>
+                            <CheckCircle2 className="h-4 w-4 mr-1" /> Done Editing
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
