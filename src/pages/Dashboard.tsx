@@ -92,26 +92,28 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
-        <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-end gap-2">
-          {streak > 0 && (
+        <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
+          {streak > 0 ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
               <Zap className="h-3.5 w-3.5 text-primary" />
               <span className="text-xs font-bold text-foreground">{streak}🔥</span>
             </div>
-          )}
-          <NotificationBell
-            onNavigateToCommunity={() => setActiveTab("community")}
-            onViewAll={() => setActiveTab("notifications")}
-            onNavigateToPost={navigateToPost}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full"
-            onClick={() => setActiveTab("profile")}
-          >
-            <User className="h-5 w-5" />
-          </Button>
+          ) : <div />}
+          <div className="flex items-center gap-2">
+            <NotificationBell
+              onNavigateToCommunity={() => setActiveTab("community")}
+              onViewAll={() => setActiveTab("notifications")}
+              onNavigateToPost={navigateToPost}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={() => setActiveTab("profile")}
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">
