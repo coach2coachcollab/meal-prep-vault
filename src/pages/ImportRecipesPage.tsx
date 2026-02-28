@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Upload, FileJson, ImagePlus, CheckCircle2, XCircle, Loader2,
-  ArrowLeft, AlertTriangle, Trash2,
+  ArrowLeft, AlertTriangle, Trash2, Sparkles, Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -48,22 +48,39 @@ interface ImageUploadResult {
   url?: string;
 }
 
+interface AiExtractedRecipe {
+  file: File;
+  previewUrl: string;
+  recipe: RecipeJson | null;
+  status: "pending" | "extracting" | "extracted" | "error" | "saved";
+  error?: string;
+}
+
 export default function ImportRecipesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const aiImageInputRef = useRef<HTMLInputElement>(null);
 
+  // JSON import state
   const [recipes, setRecipes] = useState<RecipeJson[]>([]);
   const [jsonFileName, setJsonFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [importProgress, setImportProgress] = useState(0);
 
+  // Batch image upload state
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageResults, setImageResults] = useState<ImageUploadResult[]>([]);
   const [imageProgress, setImageProgress] = useState(0);
+
+  // AI extraction state
+  const [aiRecipes, setAiRecipes] = useState<AiExtractedRecipe[]>([]);
+  const [extractingAll, setExtractingAll] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const handleJsonFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,6 +109,134 @@ export default function ImportRecipesPage() {
     setImageResults([]);
     if (files.length) toast.success(`${files.length} image(s) selected`);
   }, []);
+
+  const handleAiImageFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const newEntries: AiExtractedRecipe[] = files.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      recipe: null,
+      status: "pending" as const,
+    }));
+    setAiRecipes((prev) => [...prev, ...newEntries]);
+    toast.success(`${files.length} image(s) added for AI extraction`);
+  }, []);
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const extractSingleRecipe = async (index: number) => {
+    const entry = aiRecipes[index];
+    if (!entry || entry.status === "extracting") return;
+
+    setAiRecipes((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, status: "extracting" as const, error: undefined } : r))
+    );
+
+    try {
+      const base64 = await fileToBase64(entry.file);
+      const { data, error } = await supabase.functions.invoke("extract-recipe-from-image", {
+        body: { imageBase64: base64, mimeType: entry.file.type },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      setAiRecipes((prev) =>
+        prev.map((r, i) =>
+          i === index ? { ...r, status: "extracted" as const, recipe: data.recipe } : r
+        )
+      );
+    } catch (err: any) {
+      setAiRecipes((prev) =>
+        prev.map((r, i) =>
+          i === index ? { ...r, status: "error" as const, error: err.message } : r
+        )
+      );
+    }
+  };
+
+  const extractAllRecipes = async () => {
+    setExtractingAll(true);
+    for (let i = 0; i < aiRecipes.length; i++) {
+      if (aiRecipes[i].status === "pending" || aiRecipes[i].status === "error") {
+        await extractSingleRecipe(i);
+      }
+    }
+    setExtractingAll(false);
+    toast.success("AI extraction complete!");
+  };
+
+  const saveExtractedRecipe = async (index: number) => {
+    const entry = aiRecipes[index];
+    if (!entry?.recipe || !user) return;
+
+    try {
+      // Upload the image first
+      const path = `ai-${Date.now()}-${entry.file.name}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("recipe-images")
+        .upload(path, entry.file, { upsert: true, contentType: entry.file.type });
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(path);
+
+      const r = entry.recipe;
+      const { error } = await supabase.from("meals").insert({
+        user_id: user.id,
+        title: r.title,
+        description: r.description || null,
+        calories: r.calories || 0,
+        protein: r.protein || 0,
+        carbs: r.carbs || 0,
+        fats: r.fats || 0,
+        prep_time: r.prep_time || null,
+        cook_time: r.cook_time || null,
+        servings: r.servings || 1,
+        tags: r.tags || [],
+        diet_tags: r.diet_tags || [],
+        health_tags: r.health_tags || [],
+        category: r.category || null,
+        cuisine: r.cuisine || null,
+        coach_notes: r.coach_notes || null,
+        ingredients: r.ingredients || [],
+        instructions: r.instructions || [],
+        image_url: urlData.publicUrl,
+        image_filename: entry.file.name,
+        is_public: r.is_public ?? false,
+      });
+
+      if (error) throw error;
+
+      setAiRecipes((prev) =>
+        prev.map((rr, i) => (i === index ? { ...rr, status: "saved" as const } : rr))
+      );
+      toast.success(`"${r.title}" saved to Meal Vault!`);
+    } catch (err: any) {
+      toast.error(`Failed to save: ${err.message}`);
+    }
+  };
+
+  const saveAllExtracted = async () => {
+    setSavingAll(true);
+    for (let i = 0; i < aiRecipes.length; i++) {
+      if (aiRecipes[i].status === "extracted") {
+        await saveExtractedRecipe(i);
+      }
+    }
+    setSavingAll(false);
+    toast.success("All extracted recipes saved!");
+  };
 
   const importRecipes = async () => {
     if (!user || recipes.length === 0) return;
@@ -148,7 +293,6 @@ export default function ImportRecipesPage() {
     for (let i = 0; i < imageFiles.length; i++) {
       const file = imageFiles[i];
       try {
-        const ext = file.name.split(".").pop();
         const path = `${file.name}`;
         const { error } = await supabase.storage
           .from("recipe-images")
@@ -156,8 +300,6 @@ export default function ImportRecipesPage() {
         if (error) throw error;
 
         const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(path);
-
-        // Update any meal with matching image_filename
         const baseName = file.name;
         await supabase.from("meals").update({ image_url: urlData.publicUrl }).eq("image_filename", baseName);
 
@@ -179,17 +321,211 @@ export default function ImportRecipesPage() {
   const imgSuccessCount = imageResults.filter((r) => r.status === "success").length;
   const imgErrorCount = imageResults.filter((r) => r.status === "error").length;
 
+  const extractedCount = aiRecipes.filter((r) => r.status === "extracted").length;
+  const savedCount = aiRecipes.filter((r) => r.status === "saved").length;
+  const aiErrorCount = aiRecipes.filter((r) => r.status === "error").length;
+
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-8 max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-4 sm:p-8 max-w-4xl mx-auto space-y-6 pb-24">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Import Recipes</h1>
-          <p className="text-sm text-muted-foreground">Bulk import recipes via JSON and upload images</p>
+          <p className="text-sm text-muted-foreground">Import via AI image scan, JSON, or batch upload</p>
         </div>
       </div>
+
+      {/* AI Image Extraction — TOP */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-primary" /> AI Recipe Scanner
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Upload recipe images (screenshots, photos, cards) and AI will extract all the details automatically.
+          </p>
+
+          <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+            <input
+              ref={aiImageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleAiImageFiles}
+            />
+            <Sparkles className="h-10 w-10 mx-auto mb-3 text-primary/60" />
+            <p className="text-sm text-muted-foreground mb-2">
+              Drop recipe images or click to browse
+            </p>
+            <Button variant="outline" size="sm" onClick={() => aiImageInputRef.current?.click()}>
+              <ImagePlus className="h-4 w-4 mr-1" /> Select Recipe Images
+            </Button>
+          </div>
+
+          {aiRecipes.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-sm font-medium">
+                  {aiRecipes.length} image(s) • {extractedCount} extracted • {savedCount} saved
+                  {aiErrorCount > 0 && <span className="text-destructive"> • {aiErrorCount} failed</span>}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAiRecipes([])}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Clear
+                  </Button>
+                  {aiRecipes.some((r) => r.status === "pending" || r.status === "error") && (
+                    <Button size="sm" onClick={extractAllRecipes} disabled={extractingAll}>
+                      {extractingAll ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-1" />
+                      )}
+                      Extract All
+                    </Button>
+                  )}
+                  {extractedCount > 0 && (
+                    <Button size="sm" onClick={saveAllExtracted} disabled={savingAll}>
+                      {savingAll ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-1" />
+                      )}
+                      Save All to Vault
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {aiRecipes.map((entry, i) => (
+                  <div
+                    key={i}
+                    className="border rounded-lg p-3 bg-muted/20 space-y-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={entry.previewUrl}
+                        alt="Recipe"
+                        className="w-14 h-14 object-cover rounded-md shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {entry.recipe?.title || entry.file.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {entry.status === "pending" && (
+                            <Badge variant="secondary" className="text-[10px]">Pending</Badge>
+                          )}
+                          {entry.status === "extracting" && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Extracting…
+                            </Badge>
+                          )}
+                          {entry.status === "extracted" && (
+                            <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Extracted
+                            </Badge>
+                          )}
+                          {entry.status === "saved" && (
+                            <Badge className="text-[10px] bg-green-500/20 text-green-700 border-green-500/30">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Saved
+                            </Badge>
+                          )}
+                          {entry.status === "error" && (
+                            <Badge variant="destructive" className="text-[10px]">
+                              <XCircle className="h-3 w-3 mr-1" /> {entry.error || "Error"}
+                            </Badge>
+                          )}
+                          {entry.recipe?.calories && (
+                            <Badge variant="outline" className="text-[10px]">{entry.recipe.calories} cal</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        {entry.status === "extracted" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-8"
+                              onClick={() => saveExtractedRecipe(i)}
+                            >
+                              Save
+                            </Button>
+                          </>
+                        )}
+                        {(entry.status === "pending" || entry.status === "error") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => extractSingleRecipe(i)}
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" /> Extract
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expanded preview */}
+                    {expandedIndex === i && entry.recipe && (
+                      <div className="text-xs border-t pt-2 space-y-1">
+                        {entry.recipe.description && (
+                          <p className="text-muted-foreground">{entry.recipe.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {entry.recipe.protein != null && <span>Protein: {entry.recipe.protein}g</span>}
+                          {entry.recipe.carbs != null && <span>Carbs: {entry.recipe.carbs}g</span>}
+                          {entry.recipe.fats != null && <span>Fat: {entry.recipe.fats}g</span>}
+                          {entry.recipe.servings && <span>Servings: {entry.recipe.servings}</span>}
+                          {entry.recipe.prep_time && <span>Prep: {entry.recipe.prep_time}m</span>}
+                          {entry.recipe.cook_time && <span>Cook: {entry.recipe.cook_time}m</span>}
+                        </div>
+                        {entry.recipe.ingredients && entry.recipe.ingredients.length > 0 && (
+                          <div>
+                            <strong>Ingredients:</strong>
+                            <ul className="list-disc pl-4 mt-0.5">
+                              {entry.recipe.ingredients.map((ing, j) => (
+                                <li key={j}>{ing}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {entry.recipe.instructions && entry.recipe.instructions.length > 0 && (
+                          <div>
+                            <strong>Instructions:</strong>
+                            <ol className="list-decimal pl-4 mt-0.5">
+                              {entry.recipe.instructions.map((step, j) => (
+                                <li key={j}>{step}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* JSON Import */}
       <Card>
@@ -225,7 +561,6 @@ export default function ImportRecipesPage() {
                 </div>
               </div>
 
-              {/* Preview */}
               <div className="max-h-48 overflow-y-auto space-y-1 text-xs border rounded-lg p-3 bg-muted/30">
                 {recipes.slice(0, 20).map((r, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -238,7 +573,6 @@ export default function ImportRecipesPage() {
                 {recipes.length > 20 && <p className="text-muted-foreground pl-8">...and {recipes.length - 20} more</p>}
               </div>
 
-              {/* Progress */}
               {importing && (
                 <div className="space-y-2">
                   <Progress value={importProgress} className="h-2" />
@@ -246,7 +580,6 @@ export default function ImportRecipesPage() {
                 </div>
               )}
 
-              {/* Results */}
               {importResults.length > 0 && !importing && (
                 <div className="space-y-2">
                   <div className="flex gap-3 text-sm">
@@ -272,7 +605,6 @@ export default function ImportRecipesPage() {
             </div>
           )}
 
-          {/* JSON format reference */}
           <details className="text-xs">
             <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Expected JSON format</summary>
             <pre className="mt-2 p-3 bg-muted rounded-lg overflow-x-auto">
@@ -311,7 +643,7 @@ export default function ImportRecipesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            Upload images that match the <code className="bg-muted px-1 rounded">image_filename</code> field in your recipes. Matching meals will be auto-linked.
+            Upload images that match the <code className="bg-muted px-1 rounded">image_filename</code> field in your recipes.
           </p>
 
           <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
