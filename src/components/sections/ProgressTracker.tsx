@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingDown, TrendingUp, Plus, Ruler, Scale, Trash2, Camera, ImageIcon, Target, Check } from "lucide-react";
+import { TrendingDown, TrendingUp, Plus, Ruler, Scale, Trash2, Camera, ImageIcon, Target, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -53,6 +53,8 @@ export function ProgressTracker() {
   const [compareAngle, setCompareAngle] = useState<Angle>("front");
   const [uploading, setUploading] = useState(false);
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
+  const [viewPhotoList, setViewPhotoList] = useState<{ url: string; label: string }[]>([]);
+  const [viewPhotoIndex, setViewPhotoIndex] = useState(0);
   const [goalWeightKg, setGoalWeightKg] = useState<number | null>(null);
   const [goalInput, setGoalInput] = useState("");
   const [showGoalEdit, setShowGoalEdit] = useState(false);
@@ -135,6 +137,20 @@ export function ProgressTracker() {
     }
     setAngleFiles((prev) => ({ ...prev, [angle]: file }));
     setAnglePreviews((prev) => ({ ...prev, [angle]: URL.createObjectURL(file) }));
+  };
+
+  const openPhotoViewer = (photos: { url: string; label: string }[], startIndex = 0) => {
+    setViewPhotoList(photos);
+    setViewPhotoIndex(startIndex);
+    setViewPhoto("open");
+  };
+
+  const openLogPhotos = (logId: string, startAngle?: string) => {
+    const photos = logPhotos[logId] || [];
+    if (photos.length === 0) return;
+    const list = photos.map((p) => ({ url: p.photo_url, label: ANGLE_LABELS[p.angle] || p.angle }));
+    const idx = startAngle ? photos.findIndex((p) => p.angle === startAngle) : 0;
+    openPhotoViewer(list, Math.max(0, idx));
   };
 
   const uploadAnglePhoto = async (angle: Angle, file: File): Promise<string | null> => {
@@ -393,7 +409,7 @@ export function ProgressTracker() {
                 const photos = logPhotos[log.id] || [];
                 const firstPhoto = photos[0];
                 return (
-                  <button key={log.id} onClick={() => setViewPhoto(firstPhoto?.photo_url || null)} className="shrink-0 w-16 space-y-1">
+                  <button key={log.id} onClick={() => openLogPhotos(log.id)} className="shrink-0 w-16 space-y-1">
                     <AspectRatio ratio={3 / 4} className="rounded-md overflow-hidden bg-muted relative">
                       <img src={firstPhoto?.photo_url} alt={`Progress ${log.date}`} className="object-cover w-full h-full" />
                       {photos.length > 1 && (
@@ -453,7 +469,7 @@ export function ProgressTracker() {
                     {photos.length > 0 && (
                       <div className="shrink-0 flex gap-1">
                         {photos.map((p) => (
-                          <button key={p.id} onClick={() => setViewPhoto(p.photo_url)} className="w-10 h-14 rounded-md overflow-hidden bg-muted relative">
+                          <button key={p.id} onClick={() => openLogPhotos(log.id, p.angle)} className="w-10 h-14 rounded-md overflow-hidden bg-muted relative">
                             <img src={p.photo_url} alt={p.angle} className="object-cover w-full h-full" />
                             <span className="absolute bottom-0 inset-x-0 bg-background/70 text-[7px] text-center capitalize">{p.angle[0]}</span>
                           </button>
@@ -461,7 +477,7 @@ export function ProgressTracker() {
                       </div>
                     )}
                     {!photos.length && log.photo_url && (
-                      <button onClick={() => setViewPhoto(log.photo_url)} className="shrink-0 w-12 h-16 rounded-md overflow-hidden bg-muted">
+                      <button onClick={() => openPhotoViewer([{ url: log.photo_url!, label: "Photo" }])} className="shrink-0 w-12 h-16 rounded-md overflow-hidden bg-muted">
                         <img src={log.photo_url} alt="Progress" className="object-cover w-full h-full" />
                       </button>
                     )}
@@ -591,13 +607,62 @@ export function ProgressTracker() {
         </DialogContent>
       </Dialog>
 
-      {/* Photo viewer */}
+      {/* Photo viewer with swipe */}
       <Dialog open={!!viewPhoto} onOpenChange={() => setViewPhoto(null)}>
         <DialogContent className="max-w-sm p-2">
-          {viewPhoto && (
-            <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden">
-              <img src={viewPhoto} alt="Progress photo" className="object-cover w-full h-full" />
-            </AspectRatio>
+          {viewPhotoList.length > 0 && (
+            <div
+              className="relative"
+              onTouchStart={(e) => { (e.currentTarget as any)._touchX = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                const startX = (e.currentTarget as any)._touchX;
+                if (startX == null) return;
+                const diff = e.changedTouches[0].clientX - startX;
+                if (Math.abs(diff) > 50) {
+                  if (diff < 0 && viewPhotoIndex < viewPhotoList.length - 1) setViewPhotoIndex((i) => i + 1);
+                  if (diff > 0 && viewPhotoIndex > 0) setViewPhotoIndex((i) => i - 1);
+                }
+              }}
+            >
+              <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden">
+                <img src={viewPhotoList[viewPhotoIndex]?.url} alt="Progress photo" className="object-cover w-full h-full" />
+              </AspectRatio>
+              {/* Angle label */}
+              <span className="absolute top-2 left-2 bg-background/80 text-xs font-medium px-2 py-0.5 rounded-md">
+                {viewPhotoList[viewPhotoIndex]?.label}
+              </span>
+              {/* Navigation arrows */}
+              {viewPhotoList.length > 1 && (
+                <>
+                  {viewPhotoIndex > 0 && (
+                    <button
+                      onClick={() => setViewPhotoIndex((i) => i - 1)}
+                      className="absolute left-1 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-1.5 hover:bg-background transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                  )}
+                  {viewPhotoIndex < viewPhotoList.length - 1 && (
+                    <button
+                      onClick={() => setViewPhotoIndex((i) => i + 1)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-1.5 hover:bg-background transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  )}
+                  {/* Dots */}
+                  <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5">
+                    {viewPhotoList.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setViewPhotoIndex(i)}
+                        className={cn("w-1.5 h-1.5 rounded-full transition-colors", i === viewPhotoIndex ? "bg-primary" : "bg-background/60")}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
