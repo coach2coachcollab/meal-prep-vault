@@ -14,7 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ImportRecipesPage from "./pages/ImportRecipesPage";
 import { AdminRoute } from "./components/layout/AdminRoute";
-import { Loader2 } from "lucide-react";
+import { AppLoadingSkeleton } from "./components/skeletons/DashboardSkeleton";
 
 const queryClient = new QueryClient();
 
@@ -37,11 +37,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [user, loading]);
 
   if (loading || checkingOnboarding) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   if (!user) return <Navigate to="/auth" replace />;
@@ -53,11 +49,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   if (user) return <Navigate to="/" replace />;
@@ -66,7 +58,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 
 function OnboardingRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) return <AppLoadingSkeleton />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
