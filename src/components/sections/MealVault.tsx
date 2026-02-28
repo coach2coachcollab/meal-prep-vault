@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +48,7 @@ export function MealVault() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
@@ -56,6 +57,7 @@ export function MealVault() {
 
   useEffect(() => {
     loadMeals();
+    loadRatings();
     if (user) loadFavorites();
   }, [user]);
 
@@ -74,6 +76,22 @@ export function MealVault() {
     if (!user) return;
     const { data } = await supabase.from("favorite_meals").select("meal_id").eq("user_id", user.id);
     if (data) setFavorites(data.map((f) => f.meal_id));
+  };
+
+  const loadRatings = async () => {
+    const { data } = await supabase.from("meal_ratings").select("meal_id, rating");
+    if (data) {
+      const map: Record<string, number[]> = {};
+      data.forEach((r) => {
+        if (!map[r.meal_id]) map[r.meal_id] = [];
+        map[r.meal_id].push(r.rating);
+      });
+      const result: Record<string, { avg: number; count: number }> = {};
+      Object.entries(map).forEach(([id, vals]) => {
+        result[id] = { avg: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10, count: vals.length };
+      });
+      setRatings(result);
+    }
   };
 
   const toggleFavorite = async (mealId: string) => {
@@ -202,6 +220,7 @@ export function MealVault() {
           {filtered.map((meal) => {
             const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
             const allTags = [...(meal.tags || []), ...(meal.diet_tags || []), ...(meal.health_tags || [])];
+            const mealRating = ratings[meal.id];
 
             return (
               <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
@@ -242,7 +261,7 @@ export function MealVault() {
                     </Badge>
                   </div>
 
-                  {/* Time + servings */}
+                  {/* Time + servings + rating */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-3">
                       {totalTime > 0 && (
@@ -250,6 +269,13 @@ export function MealVault() {
                       )}
                       <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
                     </div>
+                    {mealRating && (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{mealRating.avg}</span>
+                        <span>({mealRating.count})</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tags */}
