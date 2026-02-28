@@ -250,13 +250,13 @@ export function MealVault() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold">{meal.calories || 0}</span>
                     <span className="text-[10px] text-muted-foreground">cal</span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 border-0 font-semibold">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-protein/15 text-macro-protein border-0 font-semibold">
                       {meal.protein || 0}g <span className="font-normal ml-0.5">protein</span>
                     </Badge>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-600 border-0 font-semibold">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-carbs/15 text-macro-carbs border-0 font-semibold">
                       {meal.carbs || 0}g <span className="font-normal ml-0.5">carbs</span>
                     </Badge>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-700 border-0 font-semibold">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-fat/15 text-macro-fat border-0 font-semibold">
                       {meal.fats || 0}g <span className="font-normal ml-0.5">fat</span>
                     </Badge>
                   </div>
@@ -271,7 +271,7 @@ export function MealVault() {
                     </div>
                     {mealRating && (
                       <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <Star className="h-3 w-3 fill-star text-star" />
                         <span className="font-medium">{mealRating.avg}</span>
                         <span>({mealRating.count})</span>
                       </div>

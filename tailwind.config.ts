@@ -57,6 +57,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        "macro-protein": "hsl(var(--macro-protein))",
+        "macro-carbs": "hsl(var(--macro-carbs))",
+        "macro-fat": "hsl(var(--macro-fat))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
+        star: "hsl(var(--star))",
+        streak: "hsl(var(--streak))",
       },
       borderRadius: {
         lg: "var(--radius)",

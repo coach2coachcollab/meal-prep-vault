@@ -209,7 +209,7 @@ export function WeeklySummaryCharts() {
       <div className="grid grid-cols-4 gap-2">
         <Card>
           <CardContent className="pt-3 pb-3 text-center">
-            <Flame className={cn("h-4 w-4 mx-auto mb-1", streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
+            <Flame className={cn("h-4 w-4 mx-auto mb-1", streak > 0 ? "text-streak" : "text-muted-foreground")} />
             <p className="text-lg font-bold">{streak}</p>
             <p className="text-[10px] text-muted-foreground">streak 🔥</p>
             {bestStreak > 0 && (
