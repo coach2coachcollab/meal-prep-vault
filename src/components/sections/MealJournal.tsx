@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Trash2, Search, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -23,6 +24,20 @@ interface JournalEntry {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  recipe_id: string | null;
+}
+
+interface DbMeal {
+  id: string;
+  title: string;
+  description: string | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  image_url: string | null;
+  tags: string[] | null;
+  servings: number | null;
 }
 
 export function MealJournal() {
@@ -33,15 +48,41 @@ export function MealJournal() {
   const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addMealType, setAddMealType] = useState("Breakfast");
+
+  // Manual entry
   const [foodName, setFoodName] = useState("");
   const [foodCals, setFoodCals] = useState("");
   const [foodProtein, setFoodProtein] = useState("");
   const [foodCarbs, setFoodCarbs] = useState("");
   const [foodFat, setFoodFat] = useState("");
 
+  // Recipe picker
+  const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
+  const [recipeSearch, setRecipeSearch] = useState("");
+  const [mode, setMode] = useState<"pick" | "manual">("pick");
+
+  // Map recipe_id -> image for entries
+  const [mealImages, setMealImages] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    if (user) loadData();
+    if (user) {
+      loadData();
+      loadMeals();
+    }
   }, [user, date]);
+
+  const loadMeals = async () => {
+    const { data } = await supabase
+      .from("meals")
+      .select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings")
+      .order("title");
+    if (data) {
+      setDbMeals(data);
+      const imgMap: Record<string, string> = {};
+      data.forEach((m) => { if (m.image_url) imgMap[m.id] = m.image_url; });
+      setMealImages(imgMap);
+    }
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -65,6 +106,22 @@ export function MealJournal() {
     const d = new Date(date);
     d.setDate(d.getDate() + dir);
     setDate(d.toISOString().split("T")[0]);
+  };
+
+  const logFromRecipe = async (meal: DbMeal) => {
+    if (!user) return;
+    const { error } = await supabase.from("journal_entries").insert({
+      user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
+      calories: meal.calories || 0, protein_g: meal.protein || 0,
+      carbs_g: meal.carbs || 0, fat_g: meal.fats || 0,
+      recipe_id: meal.id, servings: meal.servings || 1,
+    });
+    if (!error) {
+      setDialogOpen(false);
+      setRecipeSearch("");
+      loadData();
+      toast.success(`${meal.title} logged!`);
+    }
   };
 
   const addFood = async () => {
@@ -103,6 +160,18 @@ export function MealJournal() {
     return { text: "No worries — one day doesn't define your progress. ❤️", color: "text-muted-foreground" };
   };
 
+  const filteredMeals = dbMeals.filter((m) =>
+    m.title.toLowerCase().includes(recipeSearch.toLowerCase()) ||
+    (m.tags || []).some((t) => t.toLowerCase().includes(recipeSearch.toLowerCase()))
+  );
+
+  const openDialog = (type: string) => {
+    setAddMealType(type);
+    setMode("pick");
+    setRecipeSearch("");
+    setDialogOpen(true);
+  };
+
   return (
     <div className="space-y-5">
       {/* Date nav */}
@@ -137,7 +206,7 @@ export function MealJournal() {
           <div key={type}>
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-sm">{type}</h3>
-              <Button variant="ghost" size="sm" onClick={() => { setAddMealType(type); setDialogOpen(true); }}>
+              <Button variant="ghost" size="sm" onClick={() => openDialog(type)}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -146,11 +215,23 @@ export function MealJournal() {
                 {typeEntries.map((e) => (
                   <Card key={e.id}>
                     <CardContent className="py-3 px-4 flex items-center gap-3">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{e.food_name}</p>
+                      {/* Meal photo */}
+                      {e.recipe_id && mealImages[e.recipe_id] ? (
+                        <img
+                          src={mealImages[e.recipe_id]}
+                          alt={e.food_name}
+                          className="h-12 w-12 rounded-lg object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{e.food_name}</p>
                         <p className="text-xs text-muted-foreground">{e.calories} kcal · {e.protein_g}P · {e.carbs_g}C · {e.fat_g}F</p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteEntry(e.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => deleteEntry(e.id)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </CardContent>
@@ -198,20 +279,78 @@ export function MealJournal() {
         </CardContent>
       </Card>
 
-      {/* Add food dialog */}
+      {/* Add food dialog — recipe picker + manual */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Log Food — {addMealType}</DialogTitle></DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div className="space-y-1"><Label>Food Name</Label><Input placeholder="e.g., Chicken breast" value={foodName} onChange={(e) => setFoodName(e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Calories</Label><Input type="number" placeholder="0" value={foodCals} onChange={(e) => setFoodCals(e.target.value)} /></div>
-              <div className="space-y-1"><Label>Protein (g)</Label><Input type="number" placeholder="0" value={foodProtein} onChange={(e) => setFoodProtein(e.target.value)} /></div>
-              <div className="space-y-1"><Label>Carbs (g)</Label><Input type="number" placeholder="0" value={foodCarbs} onChange={(e) => setFoodCarbs(e.target.value)} /></div>
-              <div className="space-y-1"><Label>Fat (g)</Label><Input type="number" placeholder="0" value={foodFat} onChange={(e) => setFoodFat(e.target.value)} /></div>
-            </div>
-            <Button className="w-full" onClick={addFood}>Log Food</Button>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Log {addMealType}</DialogTitle></DialogHeader>
+
+          {/* Tab toggle */}
+          <div className="flex gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setMode("pick")}
+              className={cn("flex-1 text-sm py-1.5 rounded-md transition-colors", mode === "pick" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
+            >
+              From Vault
+            </button>
+            <button
+              onClick={() => setMode("manual")}
+              className={cn("flex-1 text-sm py-1.5 rounded-md transition-colors", mode === "manual" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
+            >
+              Manual Entry
+            </button>
           </div>
+
+          {mode === "pick" ? (
+            <div className="space-y-3 pt-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search recipes..." className="pl-10" value={recipeSearch} onChange={(e) => setRecipeSearch(e.target.value)} />
+              </div>
+
+              {filteredMeals.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No recipes found. Add meals in the Meal Vault first!</p>
+              ) : (
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                  {filteredMeals.map((meal) => (
+                    <button
+                      key={meal.id}
+                      onClick={() => logFromRecipe(meal)}
+                      className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center"
+                    >
+                      {meal.image_url ? (
+                        <img src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{meal.title}</p>
+                        {meal.description && <p className="text-xs text-muted-foreground truncate">{meal.description}</p>}
+                        <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                          <span>{meal.calories || 0} cal</span>
+                          <span>{meal.protein || 0}g P</span>
+                          <span>{meal.carbs || 0}g C</span>
+                          <span>{meal.fats || 0}g F</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 pt-1">
+              <div className="space-y-1"><Label>Food Name</Label><Input placeholder="e.g., Chicken breast" value={foodName} onChange={(e) => setFoodName(e.target.value)} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label>Calories</Label><Input type="number" placeholder="0" value={foodCals} onChange={(e) => setFoodCals(e.target.value)} /></div>
+                <div className="space-y-1"><Label>Protein (g)</Label><Input type="number" placeholder="0" value={foodProtein} onChange={(e) => setFoodProtein(e.target.value)} /></div>
+                <div className="space-y-1"><Label>Carbs (g)</Label><Input type="number" placeholder="0" value={foodCarbs} onChange={(e) => setFoodCarbs(e.target.value)} /></div>
+                <div className="space-y-1"><Label>Fat (g)</Label><Input type="number" placeholder="0" value={foodFat} onChange={(e) => setFoodFat(e.target.value)} /></div>
+              </div>
+              <Button className="w-full" onClick={addFood}>Log Food</Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
