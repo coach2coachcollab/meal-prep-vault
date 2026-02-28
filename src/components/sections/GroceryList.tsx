@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ShoppingCart, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, Plus, Trash2, Copy, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -100,6 +100,43 @@ export function GroceryList() {
 
   const checkedCount = items.filter((i) => i.is_checked).length;
 
+  const getListAsText = () => {
+    const unchecked = items.filter((i) => !i.is_checked);
+    const checked = items.filter((i) => i.is_checked);
+    let text = "🛒 Grocery List\n\n";
+    if (unchecked.length > 0) {
+      text += unchecked.map((i) => `☐ ${i.ingredient}${i.quantity ? ` (${i.quantity})` : ""}`).join("\n");
+    }
+    if (checked.length > 0) {
+      if (unchecked.length > 0) text += "\n\n";
+      text += checked.map((i) => `☑ ${i.ingredient}${i.quantity ? ` (${i.quantity})` : ""}`).join("\n");
+    }
+    return text;
+  };
+
+  const copyList = async () => {
+    const text = getListAsText();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Grocery list copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  const shareList = async () => {
+    const text = getListAsText();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Grocery List", text });
+      } catch {
+        // User cancelled
+      }
+    } else {
+      copyList();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -112,11 +149,23 @@ export function GroceryList() {
             {items.length} items · {checkedCount} checked
           </p>
         </div>
-        {checkedCount > 0 && (
-          <Button variant="outline" size="sm" onClick={clearChecked}>
-            Clear Checked
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {items.length > 0 && (
+            <>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={copyList} title="Copy list">
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={shareList} title="Share list">
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          {checkedCount > 0 && (
+            <Button variant="outline" size="sm" onClick={clearChecked}>
+              Clear Checked
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
