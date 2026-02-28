@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Flame, Loader2, ChefHat } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Flame, Loader2, ChefHat, ImagePlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +38,8 @@ export function MealVault() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Create form state
   const [form, setForm] = useState({
@@ -90,6 +92,23 @@ export function MealVault() {
     const instructionList = form.instructions.split("\n").filter(Boolean).map((i) => i.trim());
     const tagList = form.tags.split(",").filter(Boolean).map((t) => t.trim().toLowerCase());
 
+    let image_url: string | null = null;
+    let image_filename: string | null = null;
+
+    if (imageFile) {
+      const ext = imageFile.name.split(".").pop();
+      const fileName = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("recipe-images").upload(fileName, imageFile);
+      if (uploadErr) {
+        toast.error("Image upload failed");
+        setSaving(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(fileName);
+      image_url = urlData.publicUrl;
+      image_filename = fileName;
+    }
+
     const { error } = await supabase.from("meals").insert({
       user_id: user.id,
       title: form.title,
@@ -105,6 +124,8 @@ export function MealVault() {
       ingredients: ingredientList,
       instructions: instructionList,
       is_public: false,
+      image_url,
+      image_filename,
     });
 
     if (error) {
@@ -112,6 +133,8 @@ export function MealVault() {
     } else {
       toast.success("Recipe created! 🎉");
       setForm({ title: "", description: "", calories: "", protein: "", carbs: "", fats: "", prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "" });
+      setImageFile(null);
+      setImagePreview(null);
       setShowCreate(false);
       loadMeals();
     }
@@ -165,6 +188,9 @@ export function MealVault() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((meal) => (
             <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
+              {(meal as any).image_url && (
+                <img src={(meal as any).image_url} alt={meal.title} className="w-full h-40 object-cover" />
+              )}
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-lg leading-tight">{meal.title}</CardTitle>
@@ -227,6 +253,26 @@ export function MealVault() {
             <div className="space-y-2">
               <Label>Description</Label>
               <Input placeholder="Brief description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Photo</Label>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <ImagePlus className="h-8 w-8 mb-1" />
+                    <span className="text-xs">Click to upload</span>
+                  </div>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }} />
+              </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
