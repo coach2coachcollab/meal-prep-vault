@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenges: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date?: string | null
+        }
+        Relationships: []
+      }
+      community_posts: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          image_url: string | null
+          recipe_id: string | null
+          text: string
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          recipe_id?: string | null
+          text: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          recipe_id?: string | null
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorite_meals: {
         Row: {
           created_at: string
@@ -98,6 +158,119 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          date?: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          date?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "user_habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_daily_notes: {
+        Row: {
+          created_at: string
+          date: string
+          energy_level: number | null
+          id: string
+          mood_emoji: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          energy_level?: number | null
+          id?: string
+          mood_emoji?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          energy_level?: number | null
+          id?: string
+          mood_emoji?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          calories: number | null
+          carbs_g: number | null
+          date: string
+          fat_g: number | null
+          food_name: string
+          id: string
+          logged_at: string
+          meal_type: string
+          protein_g: number | null
+          recipe_id: string | null
+          servings: number | null
+          user_id: string
+        }
+        Insert: {
+          calories?: number | null
+          carbs_g?: number | null
+          date?: string
+          fat_g?: number | null
+          food_name: string
+          id?: string
+          logged_at?: string
+          meal_type: string
+          protein_g?: number | null
+          recipe_id?: string | null
+          servings?: number | null
+          user_id: string
+        }
+        Update: {
+          calories?: number | null
+          carbs_g?: number | null
+          date?: string
+          fat_g?: number | null
+          food_name?: string
+          id?: string
+          logged_at?: string
+          meal_type?: string
+          protein_g?: number | null
+          recipe_id?: string | null
+          servings?: number | null
           user_id?: string
         }
         Relationships: []
@@ -235,11 +408,17 @@ export type Database = {
         Row: {
           calories: number | null
           carbs: number | null
+          category: string | null
+          coach_notes: string | null
           cook_time: number | null
           created_at: string
+          cuisine: string | null
           description: string | null
+          diet_tags: string[] | null
           fats: number | null
+          health_tags: string[] | null
           id: string
+          image_filename: string | null
           image_url: string | null
           ingredients: Json | null
           instructions: Json | null
@@ -255,11 +434,17 @@ export type Database = {
         Insert: {
           calories?: number | null
           carbs?: number | null
+          category?: string | null
+          coach_notes?: string | null
           cook_time?: number | null
           created_at?: string
+          cuisine?: string | null
           description?: string | null
+          diet_tags?: string[] | null
           fats?: number | null
+          health_tags?: string[] | null
           id?: string
+          image_filename?: string | null
           image_url?: string | null
           ingredients?: Json | null
           instructions?: Json | null
@@ -275,11 +460,17 @@ export type Database = {
         Update: {
           calories?: number | null
           carbs?: number | null
+          category?: string | null
+          coach_notes?: string | null
           cook_time?: number | null
           created_at?: string
+          cuisine?: string | null
           description?: string | null
+          diet_tags?: string[] | null
           fats?: number | null
+          health_tags?: string[] | null
           id?: string
+          image_filename?: string | null
           image_url?: string | null
           ingredients?: Json | null
           instructions?: Json | null
@@ -294,28 +485,313 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      partner_clicks: {
         Row: {
-          avatar_url: string | null
+          action: string
+          clicked_at: string
+          id: string
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          clicked_at?: string
+          id?: string
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          clicked_at?: string
+          id?: string
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_clicks_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          added_at: string
+          category: string
+          description: string | null
+          discount_label: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          is_members_only: boolean | null
+          logo_url: string | null
+          name: string
+          promo_code: string | null
+          website_url: string | null
+        }
+        Insert: {
+          added_at?: string
+          category: string
+          description?: string | null
+          discount_label?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          is_members_only?: boolean | null
+          logo_url?: string | null
+          name: string
+          promo_code?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          added_at?: string
+          category?: string
+          description?: string | null
+          discount_label?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          is_members_only?: boolean | null
+          logo_url?: string | null
+          name?: string
+          promo_code?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      post_comments: {
+        Row: {
           created_at: string
           id: string
+          post_id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          allergies: string[] | null
+          avatar_url: string | null
+          created_at: string
+          diet_prefs: string[] | null
+          goal: string | null
+          height_cm: number | null
+          id: string
           name: string | null
+          onboarding_completed: boolean | null
+          updated_at: string
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[] | null
+          avatar_url?: string | null
+          created_at?: string
+          diet_prefs?: string[] | null
+          goal?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[] | null
+          avatar_url?: string | null
+          created_at?: string
+          diet_prefs?: string[] | null
+          goal?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      shopping_lists: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json | null
+          updated_at: string
+          user_id: string
+          week_start_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json | null
+          updated_at?: string
+          user_id: string
+          week_start_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json | null
+          updated_at?: string
+          user_id?: string
+          week_start_date?: string | null
+        }
+        Relationships: []
+      }
+      user_favorites: {
+        Row: {
+          id: string
+          recipe_id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          recipe_id: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          recipe_id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_habits: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_macros: {
+        Row: {
+          calculation_method: string | null
+          calories: number
+          carbs_g: number
+          created_at: string
+          fat_g: number
+          id: string
+          is_custom: boolean | null
+          protein_g: number
           updated_at: string
           user_id: string
         }
         Insert: {
-          avatar_url?: string | null
+          calculation_method?: string | null
+          calories?: number
+          carbs_g?: number
           created_at?: string
+          fat_g?: number
           id?: string
-          name?: string | null
+          is_custom?: boolean | null
+          protein_g?: number
           updated_at?: string
           user_id: string
         }
         Update: {
-          avatar_url?: string | null
+          calculation_method?: string | null
+          calories?: number
+          carbs_g?: number
           created_at?: string
+          fat_g?: number
           id?: string
-          name?: string | null
+          is_custom?: boolean | null
+          protein_g?: number
           updated_at?: string
           user_id?: string
         }

@@ -1,41 +1,80 @@
 import { useState } from "react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app/AppSidebar";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { HomeDashboard } from "@/components/sections/HomeDashboard";
 import { MacroCalculator } from "@/components/sections/MacroCalculator";
 import { MealVault } from "@/components/sections/MealVault";
+import { MealJournal } from "@/components/sections/MealJournal";
 import { MealPlans } from "@/components/sections/MealPlans";
 import { GroceryList } from "@/components/sections/GroceryList";
 import { RecipePlanner } from "@/components/sections/RecipePlanner";
+import { CommunityHub } from "@/components/sections/CommunityHub";
 import { UserProfile } from "@/components/sections/UserProfile";
+import { HabitTracker } from "@/components/sections/HabitTracker";
+import { PartnerHub } from "@/components/sections/PartnerHub";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
-  const [activeSection, setActiveSection] = useState("macro-calc");
+  const [activeTab, setActiveTab] = useState("home");
+  const [nutritionSub, setNutritionSub] = useState("vault");
+  const [planSub, setPlanSub] = useState("plans");
+  const [profileSub, setProfileSub] = useState("profile");
 
-  const renderSection = () => {
-    switch (activeSection) {
-      case "macro-calc": return <MacroCalculator />;
-      case "meal-vault": return <MealVault />;
-      case "meal-plans": return <MealPlans />;
-      case "grocery-list": return <GroceryList />;
-      case "recipe-planner": return <RecipePlanner />;
-      case "profile": return <UserProfile />;
-      default: return <MacroCalculator />;
+  const renderContent = () => {
+    switch (activeTab) {
+      case "home":
+        return <HomeDashboard onNavigate={setActiveTab} />;
+      case "nutrition":
+        return (
+          <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
+            <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsTrigger value="vault">Meal Vault</TabsTrigger>
+              <TabsTrigger value="journal">Journal</TabsTrigger>
+              <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
+            </TabsList>
+            <TabsContent value="vault"><MealVault /></TabsContent>
+            <TabsContent value="journal"><MealJournal /></TabsContent>
+            <TabsContent value="recipe"><RecipePlanner /></TabsContent>
+          </Tabs>
+        );
+      case "plan":
+        return (
+          <Tabs value={planSub} onValueChange={setPlanSub}>
+            <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsTrigger value="plans">Meal Plans</TabsTrigger>
+              <TabsTrigger value="grocery">Shopping List</TabsTrigger>
+              <TabsTrigger value="macros">Macros</TabsTrigger>
+            </TabsList>
+            <TabsContent value="plans"><MealPlans /></TabsContent>
+            <TabsContent value="grocery"><GroceryList /></TabsContent>
+            <TabsContent value="macros"><MacroCalculator /></TabsContent>
+          </Tabs>
+        );
+      case "community":
+        return <CommunityHub />;
+      case "profile":
+        return (
+          <Tabs value={profileSub} onValueChange={setProfileSub}>
+            <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="habits">Habits</TabsTrigger>
+              <TabsTrigger value="partners">Deals</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profile"><UserProfile /></TabsContent>
+            <TabsContent value="habits"><HabitTracker /></TabsContent>
+            <TabsContent value="partners"><PartnerHub /></TabsContent>
+          </Tabs>
+        );
+      default:
+        return <HomeDashboard onNavigate={setActiveTab} />;
     }
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-        <SidebarInset>
-          <header className="flex h-14 items-center border-b px-4">
-            <SidebarTrigger />
-          </header>
-          <main className="flex-1 p-6">
-            {renderSection()}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <div className="min-h-screen bg-background pb-20">
+      <main className="max-w-lg mx-auto px-4 py-6">
+        {renderContent()}
+      </main>
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+    </div>
   );
 }
