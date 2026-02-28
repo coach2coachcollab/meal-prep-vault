@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check } from "lucide-react";
+import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const reactions = ["💪", "❤️", "🎉", "🔥", "👏"];
@@ -21,6 +21,7 @@ export interface PostData {
   reaction_counts: Record<string, number>;
   user_reactions: string[];
   comment_count: number;
+  is_saved: boolean;
 }
 
 interface CommunityPostProps {
@@ -30,9 +31,10 @@ interface CommunityPostProps {
   onOpenComments: (postId: string) => void;
   onDeletePost: (postId: string) => void;
   onEditPost: (postId: string, newText: string) => void;
+  onToggleSave: (postId: string) => void;
 }
 
-export function CommunityPost({ post, currentUserId, onToggleReaction, onOpenComments, onDeletePost, onEditPost }: CommunityPostProps) {
+export function CommunityPost({ post, currentUserId, onToggleReaction, onOpenComments, onDeletePost, onEditPost, onToggleSave }: CommunityPostProps) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
 
@@ -145,7 +147,16 @@ export function CommunityPost({ post, currentUserId, onToggleReaction, onOpenCom
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-auto px-2 py-1"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
-                <span>{post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}</span>
+                <span>{post.comment_count}</span>
+              </button>
+              <button
+                onClick={() => onToggleSave(post.id)}
+                className={cn(
+                  "px-2 py-1 transition-colors",
+                  post.is_saved ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Bookmark className={cn("h-3.5 w-3.5", post.is_saved && "fill-current")} />
               </button>
             </div>
           </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ const channels = [
   { id: "wins", label: "🏆 Wins & Progress" },
   { id: "meals", label: "🥗 Meal Sharing" },
   { id: "questions", label: "❓ Questions" },
+  { id: "saved", label: "🔖 Saved" },
 ];
 
 export function CommunityHub() {
@@ -25,9 +26,13 @@ export function CommunityHub() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<CommentData[]>([]);
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (user) loadPosts();
+    if (user) {
+      loadSavedIds();
+      loadPosts();
+    }
   }, [user, activeChannel]);
 
   useEffect(() => {
@@ -38,14 +43,48 @@ export function CommunityHub() {
     return () => { supabase.removeChannel(channel); };
   }, [activeChannel]);
 
+  const loadSavedIds = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("saved_posts")
+      .select("post_id")
+      .eq("user_id", user.id);
+    if (data) setSavedPostIds(new Set(data.map((d) => d.post_id)));
+  };
+
   const loadPosts = async () => {
     if (!user) return;
-    const { data: postData } = await supabase
-      .from("community_posts")
-      .select("*")
-      .eq("channel", activeChannel)
-      .order("created_at", { ascending: false })
-      .limit(50);
+
+    let postData: any[] | null = null;
+
+    if (activeChannel === "saved") {
+      // Load saved post IDs first, then fetch those posts
+      const { data: savedData } = await supabase
+        .from("saved_posts")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .order("saved_at", { ascending: false });
+      if (!savedData || savedData.length === 0) {
+        setPosts([]);
+        return;
+      }
+      const ids = savedData.map((s) => s.post_id);
+      const { data } = await supabase
+        .from("community_posts")
+        .select("*")
+        .in("id", ids);
+      // Maintain saved order
+      postData = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
+    } else {
+      const { data } = await supabase
+        .from("community_posts")
+        .select("*")
+        .eq("channel", activeChannel)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      postData = data;
+    }
+
     if (!postData) return;
 
     const userIds = [...new Set(postData.map((p) => p.user_id))];
@@ -69,6 +108,7 @@ export function CommunityHub() {
         reaction_counts: counts,
         user_reactions: userR,
         comment_count: (commentCounts || []).filter((c) => c.post_id === p.id).length,
+        is_saved: savedPostIds.has(p.id),
       };
     });
     setPosts(enriched);
@@ -83,6 +123,24 @@ export function CommunityHub() {
       await supabase.from("post_reactions").insert({ post_id: postId, user_id: user.id, reaction_type: type });
     }
     loadPosts();
+  };
+
+  const toggleSave = async (postId: string) => {
+    if (!user) return;
+    const isSaved = savedPostIds.has(postId);
+    if (isSaved) {
+      await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", user.id);
+      setSavedPostIds((prev) => { const n = new Set(prev); n.delete(postId); return n; });
+      toast.success("Post removed from saved");
+    } else {
+      await supabase.from("saved_posts").insert({ post_id: postId, user_id: user.id });
+      setSavedPostIds((prev) => new Set(prev).add(postId));
+      toast.success("Post saved!");
+    }
+    // Optimistically update posts
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, is_saved: !isSaved } : p));
+    // If on saved tab, reload to reflect removal
+    if (activeChannel === "saved" && isSaved) loadPosts();
   };
 
   const deletePost = async (id: string) => {
@@ -133,7 +191,11 @@ export function CommunityHub() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">Community</h2>
-          <p className="text-xs text-muted-foreground">{posts.length} posts in this channel</p>
+          <p className="text-xs text-muted-foreground">
+            {activeChannel === "saved"
+              ? `${posts.length} saved posts`
+              : `${posts.length} posts in this channel`}
+          </p>
         </div>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> Post
@@ -162,12 +224,22 @@ export function CommunityHub() {
         {posts.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-3xl mb-2">💬</p>
-              <p className="text-muted-foreground font-medium">No posts yet in this channel</p>
-              <p className="text-sm text-muted-foreground mt-1">Be the first to share something!</p>
-              <Button size="sm" className="mt-4" onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" /> Create Post
-              </Button>
+              {activeChannel === "saved" ? (
+                <>
+                  <Bookmark className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-muted-foreground font-medium">No saved posts yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Bookmark posts to find them here later</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl mb-2">💬</p>
+                  <p className="text-muted-foreground font-medium">No posts yet in this channel</p>
+                  <p className="text-sm text-muted-foreground mt-1">Be the first to share something!</p>
+                  <Button size="sm" className="mt-4" onClick={() => setDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Create Post
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -180,6 +252,7 @@ export function CommunityHub() {
             onOpenComments={openComments}
             onDeletePost={deletePost}
             onEditPost={editPost}
+            onToggleSave={toggleSave}
           />
         ))}
       </div>
