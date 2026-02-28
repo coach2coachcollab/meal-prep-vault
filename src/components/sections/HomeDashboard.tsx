@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -24,6 +24,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const [habitsToday, setHabitsToday] = useState({ done: 0, total: 0 });
   const [waterToday, setWaterToday] = useState({ glasses: 0, goal: 8 });
   const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
+  const [streak, setStreak] = useState(0);
   const [progressSummary, setProgressSummary] = useState<{
     period: "week" | "month";
     weightChange: number | null;
@@ -37,6 +38,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     if (user) {
       loadData();
       loadProgressSummary();
+      loadStreak();
     }
   }, [user]);
 
@@ -82,6 +84,46 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     const { data: water } = await supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle();
     if (water) setWaterToday({ glasses: water.glasses, goal: water.goal });
   };
+
+  const loadStreak = async () => {
+    if (!user) return;
+    // Get distinct dates with journal entries or completed habits, last 90 days
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+    const sinceStr = since.toISOString().split("T")[0];
+
+    const [{ data: journalDates }, { data: habitDates }] = await Promise.all([
+      supabase
+        .from("journal_entries")
+        .select("date")
+        .eq("user_id", user.id)
+        .gte("date", sinceStr),
+      supabase
+        .from("habit_logs")
+        .select("date")
+        .eq("user_id", user.id)
+        .eq("completed", true)
+        .gte("date", sinceStr),
+    ]);
+
+    const activeDays = new Set<string>();
+    journalDates?.forEach((j) => activeDays.add(j.date));
+    habitDates?.forEach((h) => activeDays.add(h.date));
+
+    // Count consecutive days ending today or yesterday
+    let count = 0;
+    const d = new Date();
+    // Check if today counts
+    if (!activeDays.has(d.toISOString().split("T")[0])) {
+      d.setDate(d.getDate() - 1); // allow streak from yesterday
+    }
+    while (activeDays.has(d.toISOString().split("T")[0])) {
+      count++;
+      d.setDate(d.getDate() - 1);
+    }
+    setStreak(count);
+  };
+
 
   const loadProgressSummary = async () => {
     if (!user) return;
@@ -254,6 +296,23 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           </CardContent>
         </Card>
       </div>
+
+      {/* Streak Counter */}
+      {streak > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 pb-4 flex items-center gap-4">
+            <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
+              <Zap className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">{streak} day{streak !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted-foreground">
+                🔥 Logging streak — keep it going!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Progress Summary */}
       {progressSummary && (
