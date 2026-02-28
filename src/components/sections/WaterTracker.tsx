@@ -43,6 +43,10 @@ export function WaterTracker() {
       setGlasses(data.glasses);
       setGoal(data.goal);
       setEditGoal(String(data.goal));
+    } else {
+      setGlasses(0);
+      setGoal(8);
+      setEditGoal("8");
     }
   };
 
