@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Trash2, Search, UtensilsCrossed, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,7 @@ export function MealJournal() {
   const [foodFat, setFoodFat] = useState("");
   const [mealPhoto, setMealPhoto] = useState<File | null>(null);
   const [mealPhotoPreview, setMealPhotoPreview] = useState<string | null>(null);
+  const [saveToVault, setSaveToVault] = useState(false);
 
   // Recipe picker
   const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
@@ -144,18 +146,40 @@ export function MealJournal() {
       image_url = urlData.publicUrl;
     }
 
+    let recipe_id: string | null = null;
+
+    // Optionally save to Meal Vault as a reusable recipe
+    if (saveToVault && (foodName.trim() || image_url)) {
+      const { data: mealData, error: mealErr } = await supabase.from("meals").insert({
+        user_id: user.id,
+        title: foodName.trim() || "Meal photo",
+        calories: parseFloat(foodCals) || 0,
+        protein: parseFloat(foodProtein) || 0,
+        carbs: parseFloat(foodCarbs) || 0,
+        fats: parseFloat(foodFat) || 0,
+        image_url,
+        servings: 1,
+        is_public: false,
+      }).select("id").single();
+      if (!mealErr && mealData) {
+        recipe_id = mealData.id;
+      }
+    }
+
     const { error } = await supabase.from("journal_entries").insert({
       user_id: user.id, date, meal_type: addMealType, food_name: foodName.trim() || "Meal photo",
       calories: parseFloat(foodCals) || 0, protein_g: parseFloat(foodProtein) || 0,
       carbs_g: parseFloat(foodCarbs) || 0, fat_g: parseFloat(foodFat) || 0,
       image_url,
+      ...(recipe_id ? { recipe_id } : {}),
     });
     if (!error) {
       setFoodName(""); setFoodCals(""); setFoodProtein(""); setFoodCarbs(""); setFoodFat("");
-      setMealPhoto(null); setMealPhotoPreview(null);
+      setMealPhoto(null); setMealPhotoPreview(null); setSaveToVault(false);
       setDialogOpen(false);
       loadData();
-      toast.success("Food logged!");
+      if (recipe_id) loadMeals(); // refresh vault data
+      toast.success(recipe_id ? "Food logged & saved to Vault! 🎉" : "Food logged!");
     }
   };
 
