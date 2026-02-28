@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Droplets, Plus, Minus, Settings2, Star, Smile, Zap, StickyNote } from "lucide-react";
+import { Droplets, Plus, Minus, Settings2, Star, Smile, Zap, StickyNote, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -15,21 +15,29 @@ const moods = ["😊", "😐", "😴", "😤", "😢"];
 
 export function WaterTracker() {
   const { user } = useAuth();
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [glasses, setGlasses] = useState(0);
   const [goal, setGoal] = useState(8);
   const [editGoal, setEditGoal] = useState("8");
-  const today = new Date().toISOString().split("T")[0];
 
   // Mood / Energy / Notes
   const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
   const [noteSaved, setNoteSaved] = useState(false);
+
+  const isToday = date === new Date().toISOString().split("T")[0];
+
+  const shiftDate = (dir: number) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + dir);
+    setDate(d.toISOString().split("T")[0]);
+  };
 
   useEffect(() => {
     if (user) {
       loadWater();
       loadDailyNote();
     }
-  }, [user]);
+  }, [user, date]);
 
   const loadWater = async () => {
     if (!user) return;
@@ -37,7 +45,7 @@ export function WaterTracker() {
       .from("water_logs")
       .select("glasses, goal")
       .eq("user_id", user.id)
-      .eq("date", today)
+      .eq("date", date)
       .maybeSingle();
     if (data) {
       setGlasses(data.glasses);
@@ -56,7 +64,7 @@ export function WaterTracker() {
       .from("journal_daily_notes")
       .select("*")
       .eq("user_id", user.id)
-      .eq("date", today)
+      .eq("date", date)
       .maybeSingle();
     if (data) {
       setDailyNote({
@@ -75,7 +83,7 @@ export function WaterTracker() {
     const { error } = await supabase
       .from("water_logs")
       .upsert(
-        { user_id: user.id, date: today, glasses: newCount, goal },
+        { user_id: user.id, date, glasses: newCount, goal },
         { onConflict: "user_id,date" }
       );
     if (error) console.error("Water log error", error);
@@ -89,7 +97,7 @@ export function WaterTracker() {
     await supabase
       .from("water_logs")
       .upsert(
-        { user_id: user.id, date: today, glasses, goal: newGoal },
+        { user_id: user.id, date, glasses, goal: newGoal },
         { onConflict: "user_id,date" }
       );
     toast.success("Goal updated!");
@@ -98,7 +106,7 @@ export function WaterTracker() {
   const saveDailyNote = async () => {
     if (!user) return;
     const { error } = await supabase.from("journal_daily_notes").upsert({
-      user_id: user.id, date: today, ...dailyNote,
+      user_id: user.id, date, ...dailyNote,
     }, { onConflict: "user_id,date" });
     if (!error) {
       setNoteSaved(true);
@@ -114,6 +122,16 @@ export function WaterTracker() {
 
   return (
     <div className="space-y-5">
+      {/* Date nav */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="icon" onClick={() => shiftDate(-1)}><ChevronLeft className="h-5 w-5" /></Button>
+        <div className="text-center">
+          <p className="font-semibold">{new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</p>
+          {isToday && <p className="text-xs text-primary">Today</p>}
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => shiftDate(1)}><ChevronRight className="h-5 w-5" /></Button>
+      </div>
+
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2">
@@ -122,7 +140,6 @@ export function WaterTracker() {
         </h2>
         <p className="text-sm text-muted-foreground">Track your water, mood & energy</p>
       </div>
-
       {/* Water + Mood side by side */}
       <div className="grid grid-cols-2 gap-3">
         {/* Water Ring */}
