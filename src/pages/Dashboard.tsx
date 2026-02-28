@@ -13,6 +13,7 @@ import { HabitTracker } from "@/components/sections/HabitTracker";
 import { PartnerHub } from "@/components/sections/PartnerHub";
 import { WaterTracker } from "@/components/sections/WaterTracker";
 import { ProgressTracker } from "@/components/sections/ProgressTracker";
+import { NotificationsPage } from "@/components/sections/NotificationsPage";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -58,6 +59,8 @@ export default function Dashboard() {
         );
       case "community":
         return <CommunityHub />;
+      case "notifications":
+        return <NotificationsPage />;
       case "profile":
         return (
           <Tabs value={profileSub} onValueChange={setProfileSub}>
@@ -80,7 +83,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
         <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-end">
-          <NotificationBell onNavigateToCommunity={() => setActiveTab("community")} />
+          <NotificationBell
+            onNavigateToCommunity={() => setActiveTab("community")}
+            onViewAll={() => setActiveTab("notifications")}
+          />
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">

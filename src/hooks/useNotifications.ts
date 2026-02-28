@@ -27,7 +27,7 @@ export function useNotifications() {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(100);
     if (!data) return;
 
     const actorIds = [...new Set(data.map((n) => n.actor_id))];
