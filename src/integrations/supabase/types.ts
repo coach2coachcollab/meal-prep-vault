@@ -737,6 +737,41 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_photos: {
+        Row: {
+          angle: string
+          created_at: string
+          id: string
+          photo_url: string
+          progress_log_id: string
+          user_id: string
+        }
+        Insert: {
+          angle: string
+          created_at?: string
+          id?: string
+          photo_url: string
+          progress_log_id: string
+          user_id: string
+        }
+        Update: {
+          angle?: string
+          created_at?: string
+          id?: string
+          photo_url?: string
+          progress_log_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_photos_progress_log_id_fkey"
+            columns: ["progress_log_id"]
+            isOneToOne: false
+            referencedRelation: "progress_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shopping_lists: {
         Row: {
           created_at: string
