@@ -89,6 +89,14 @@ export function CommunityHub() {
     setPosts(enriched);
   };
 
+  const notify = async (targetUserId: string, type: string, postId?: string, commentId?: string) => {
+    if (!user || targetUserId === user.id) return; // Don't self-notify
+    const insert: any = { user_id: targetUserId, actor_id: user.id, type };
+    if (postId) insert.post_id = postId;
+    if (commentId) insert.comment_id = commentId;
+    await supabase.from("notifications").insert(insert);
+  };
+
   const toggleReaction = async (postId: string, type: string) => {
     if (!user) return;
     const post = posts.find((p) => p.id === postId);
@@ -96,6 +104,7 @@ export function CommunityHub() {
       await supabase.from("post_reactions").delete().eq("post_id", postId).eq("user_id", user.id).eq("reaction_type", type);
     } else {
       await supabase.from("post_reactions").insert({ post_id: postId, user_id: user.id, reaction_type: type });
+      if (post) notify(post.user_id, "reaction", postId);
     }
     loadPosts();
   };
@@ -155,8 +164,18 @@ export function CommunityHub() {
     if (!user) return;
     const insert: any = { post_id: postId, user_id: user.id, text };
     if (parentId) insert.parent_id = parentId;
-    await supabase.from("post_comments").insert(insert);
+    const { data: inserted } = await supabase.from("post_comments").insert(insert).select("id").single();
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
+
+    if (parentId) {
+      // Notify the parent comment author (reply)
+      const { data: parentComment } = await supabase.from("post_comments").select("user_id").eq("id", parentId).single();
+      if (parentComment) notify(parentComment.user_id, "reply", postId, inserted?.id);
+    } else {
+      // Notify the post author (new comment)
+      const post = posts.find((p) => p.id === postId);
+      if (post) notify(post.user_id, "comment", postId, inserted?.id);
+    }
   };
 
   const editComment = async (commentId: string, newText: string) => {
@@ -177,6 +196,9 @@ export function CommunityHub() {
       await supabase.from("comment_likes").delete().eq("id", existing.id);
     } else {
       await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id });
+      // Notify comment author
+      const { data: comment } = await supabase.from("post_comments").select("user_id").eq("id", commentId).single();
+      if (comment) notify(comment.user_id, "comment_like", postId, commentId);
     }
   };
 
