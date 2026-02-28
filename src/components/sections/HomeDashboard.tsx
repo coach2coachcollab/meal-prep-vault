@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, Circle } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -24,10 +24,19 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const [habitsToday, setHabitsToday] = useState({ done: 0, total: 0 });
   const [waterToday, setWaterToday] = useState({ glasses: 0, goal: 8 });
   const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
+  const [progressSummary, setProgressSummary] = useState<{
+    period: "week" | "month";
+    weightChange: number | null;
+    waistChange: number | null;
+    currentWeight: number | null;
+    entries: number;
+    useMetric: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
       loadData();
+      loadProgressSummary();
     }
   }, [user]);
 
@@ -72,6 +81,67 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     // Today's water
     const { data: water } = await supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle();
     if (water) setWaterToday({ glasses: water.glasses, goal: water.goal });
+  };
+
+  const loadProgressSummary = async () => {
+    if (!user) return;
+    const { data: profile } = await supabase.from("profiles").select("preferred_units").eq("user_id", user.id).single();
+    const isMetric = profile?.preferred_units !== "imperial";
+
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthAgo = new Date(now);
+    monthAgo.setDate(monthAgo.getDate() - 30);
+
+    const { data: recentLogs } = await supabase
+      .from("progress_logs")
+      .select("date, weight_kg, waist_cm")
+      .eq("user_id", user.id)
+      .gte("date", monthAgo.toISOString().split("T")[0])
+      .order("date", { ascending: true });
+
+    if (!recentLogs || recentLogs.length < 2) return;
+
+    // Determine if we have enough for weekly vs monthly
+    const weekLogs = recentLogs.filter((l) => new Date(l.date) >= weekAgo);
+    const useLogs = weekLogs.length >= 2 ? weekLogs : recentLogs;
+    const period = weekLogs.length >= 2 ? "week" as const : "month" as const;
+
+    const first = useLogs[0];
+    const last = useLogs[useLogs.length - 1];
+
+    const KG_TO_LBS = 2.20462;
+    const CM_TO_IN = 0.393701;
+
+    let weightChange: number | null = null;
+    if (first.weight_kg != null && last.weight_kg != null) {
+      const diff = last.weight_kg - first.weight_kg;
+      weightChange = isMetric
+        ? Math.round(diff * 10) / 10
+        : Math.round(diff * KG_TO_LBS * 10) / 10;
+    }
+
+    let waistChange: number | null = null;
+    if (first.waist_cm != null && last.waist_cm != null) {
+      const diff = last.waist_cm - first.waist_cm;
+      waistChange = isMetric
+        ? Math.round(diff * 10) / 10
+        : Math.round(diff * CM_TO_IN * 10) / 10;
+    }
+
+    const currentWeight = last.weight_kg != null
+      ? (isMetric ? last.weight_kg : Math.round(last.weight_kg * KG_TO_LBS * 10) / 10)
+      : null;
+
+    setProgressSummary({
+      period,
+      weightChange,
+      waistChange,
+      currentWeight,
+      entries: useLogs.length,
+      useMetric: isMetric,
+    });
   };
 
   const greeting = () => {
@@ -184,6 +254,61 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           </CardContent>
         </Card>
       </div>
+
+      {/* Progress Summary */}
+      {progressSummary && (
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20" onClick={() => onNavigate("profile")}>
+          <CardContent className="pt-5 pb-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="h-4 w-4 text-primary" />
+              <p className="text-xs font-semibold text-primary">
+                {progressSummary.period === "week" ? "Weekly" : "Monthly"} Progress
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {progressSummary.weightChange != null && (
+                <div className="flex items-center gap-2">
+                  {progressSummary.weightChange < 0 ? (
+                    <TrendingDown className="h-4 w-4 text-green-500" />
+                  ) : progressSummary.weightChange > 0 ? (
+                    <TrendingUp className="h-4 w-4 text-orange-500" />
+                  ) : (
+                    <Minus className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <div>
+                    <p className="text-sm font-bold">
+                      {progressSummary.weightChange > 0 ? "+" : ""}{progressSummary.weightChange} {progressSummary.useMetric ? "kg" : "lbs"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Weight</p>
+                  </div>
+                </div>
+              )}
+              {progressSummary.waistChange != null && (
+                <div className="flex items-center gap-2">
+                  {progressSummary.waistChange < 0 ? (
+                    <TrendingDown className="h-4 w-4 text-green-500" />
+                  ) : progressSummary.waistChange > 0 ? (
+                    <TrendingUp className="h-4 w-4 text-orange-500" />
+                  ) : (
+                    <Minus className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <div>
+                    <p className="text-sm font-bold">
+                      {progressSummary.waistChange > 0 ? "+" : ""}{progressSummary.waistChange} {progressSummary.useMetric ? "cm" : "in"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Waist</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            {progressSummary.currentWeight != null && (
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Current: {progressSummary.currentWeight} {progressSummary.useMetric ? "kg" : "lbs"} · {progressSummary.entries} entries
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Daily Tip */}
       <Card className="bg-primary/5 border-primary/20">
