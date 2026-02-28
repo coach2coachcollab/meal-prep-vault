@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Save, LogOut, Moon, Sun } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Save, LogOut, Moon, Sun, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -13,6 +13,9 @@ import { toast } from "sonner";
 export function UserProfile() {
   const { user, signOut } = useAuth();
   const [name, setName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [useMetric, setUseMetric] = useState(true);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") return document.documentElement.classList.contains("dark");
@@ -29,7 +32,6 @@ export function UserProfile() {
   }>({});
   const [loading, setLoading] = useState(false);
 
-  // Editable body stats
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [heightFt, setHeightFt] = useState("");
@@ -41,7 +43,6 @@ export function UserProfile() {
   }, [user]);
 
   useEffect(() => {
-    // When toggling units, convert displayed values
     if (profileData.height_cm != null) {
       if (useMetric) {
         setHeight(String(profileData.height_cm));
@@ -60,17 +61,47 @@ export function UserProfile() {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("name, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
+      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
       .eq("user_id", user.id)
       .single();
     if (data) {
       if (data.name) setName(data.name);
+      if (data.avatar_url) setAvatarUrl(data.avatar_url);
       if (data.age) setAge(String(data.age));
-      // Load preferred units from localStorage (faster) or could be from DB
       const savedUnits = localStorage.getItem(`preferred_units_${user.id}`);
       if (savedUnits) setUseMetric(savedUnits === "metric");
       setProfileData(data);
     }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop();
+    const path = `avatars/${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("recipe-images")
+      .upload(path, file, { contentType: file.type, upsert: true });
+
+    if (uploadError) {
+      toast.error("Failed to upload avatar");
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(path);
+    const newUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    await supabase.from("profiles").update({ avatar_url: newUrl }).eq("user_id", user.id);
+    setAvatarUrl(newUrl);
+    setUploadingAvatar(false);
+    toast.success("Avatar updated!");
   };
 
   const saveProfile = async () => {
@@ -98,7 +129,6 @@ export function UserProfile() {
         preferred_units: useMetric ? "metric" : "imperial",
       } as any)
       .eq("user_id", user.id);
-    // Also persist locally for instant load
     if (user) localStorage.setItem(`preferred_units_${user.id}`, useMetric ? "metric" : "imperial");
     setLoading(false);
     if (error) toast.error("Failed to save");
@@ -117,14 +147,38 @@ export function UserProfile() {
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <Avatar className="h-16 w-16">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <Camera className="h-5 w-5 text-white" />
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            </div>
             <div>
               <p className="font-medium">{name || "Set your name"}</p>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="text-xs text-primary hover:underline mt-0.5"
+                disabled={uploadingAvatar}
+              >
+                {uploadingAvatar ? "Uploading..." : "Change photo"}
+              </button>
             </div>
           </div>
 
@@ -133,7 +187,6 @@ export function UserProfile() {
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
           </div>
 
-          {/* Unit toggle */}
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">Units</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
@@ -142,7 +195,6 @@ export function UserProfile() {
             </div>
           </div>
 
-          {/* Dark mode toggle */}
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">Theme</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
@@ -187,7 +239,6 @@ export function UserProfile() {
         </CardContent>
       </Card>
 
-      {/* Profile summary */}
       {profileData.goal && (
         <Card>
           <CardHeader className="pb-3">
