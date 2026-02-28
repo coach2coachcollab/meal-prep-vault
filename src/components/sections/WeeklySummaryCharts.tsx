@@ -33,6 +33,7 @@ export function WeeklySummaryCharts() {
   const [range, setRange] = useState<Range>("week");
   const [chartData, setChartData] = useState<DayData[]>([]);
   const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
 
   useEffect(() => {
     if (user) loadData();
@@ -107,12 +108,15 @@ export function WeeklySummaryCharts() {
     startDate.setDate(startDate.getDate() - 90);
     const { data } = await supabase
       .from("water_logs")
-      .select("date, glasses, goal")
+      .select("date, glasses, goal, best_streak")
       .eq("user_id", user.id)
       .gte("date", startDate.toISOString().split("T")[0])
       .order("date", { ascending: false });
 
-    if (!data || data.length === 0) { setStreak(0); return; }
+    if (!data || data.length === 0) { setStreak(0); setBestStreak(0); return; }
+
+    // Get stored best streak from the most recent entry
+    const storedBest = Math.max(...data.map((w) => w.best_streak || 0));
 
     // Build a map of date -> met goal
     const metMap: Record<string, boolean> = {};
@@ -133,6 +137,19 @@ export function WeeklySummaryCharts() {
       d.setDate(d.getDate() - 1);
     }
     setStreak(count);
+
+    // Update best streak if current exceeds stored
+    const newBest = Math.max(count, storedBest);
+    setBestStreak(newBest);
+    if (count > storedBest && count > 0) {
+      // Persist new best streak on today's water log
+      const today = new Date().toISOString().split("T")[0];
+      await supabase
+        .from("water_logs")
+        .update({ best_streak: count })
+        .eq("user_id", user.id)
+        .eq("date", today);
+    }
 
     // Celebrate milestone if exact match
     if (MILESTONES.includes(count)) {
@@ -180,7 +197,10 @@ export function WeeklySummaryCharts() {
           <CardContent className="pt-3 pb-3 text-center">
             <Flame className={cn("h-4 w-4 mx-auto mb-1", streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
             <p className="text-lg font-bold">{streak}</p>
-            <p className="text-[10px] text-muted-foreground">day streak 🔥</p>
+            <p className="text-[10px] text-muted-foreground">streak 🔥</p>
+            {bestStreak > 0 && (
+              <p className="text-[9px] text-muted-foreground mt-0.5">best: {bestStreak}</p>
+            )}
           </CardContent>
         </Card>
         <Card>

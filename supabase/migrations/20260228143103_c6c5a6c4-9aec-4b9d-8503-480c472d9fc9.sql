@@ -1,0 +1,1 @@
+ALTER TABLE public.water_logs ADD COLUMN IF NOT EXISTS best_streak integer NOT NULL DEFAULT 0;

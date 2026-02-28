@@ -944,6 +944,7 @@ export type Database = {
       }
       water_logs: {
         Row: {
+          best_streak: number
           created_at: string
           date: string
           glasses: number
@@ -952,6 +953,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          best_streak?: number
           created_at?: string
           date?: string
           glasses?: number
@@ -960,6 +962,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          best_streak?: number
           created_at?: string
           date?: string
           glasses?: number
