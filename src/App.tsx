@@ -13,6 +13,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ImportRecipesPage from "./pages/ImportRecipesPage";
+import { AdminRoute } from "./components/layout/AdminRoute";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -83,7 +84,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/admin/import-recipes" element={<ProtectedRoute><ImportRecipesPage /></ProtectedRoute>} />
+            <Route path="/admin/import-recipes" element={<AdminRoute><ImportRecipesPage /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
