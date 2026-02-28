@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Save, LogOut } from "lucide-react";
+import { User, Save, LogOut, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -14,6 +14,10 @@ export function UserProfile() {
   const { user, signOut } = useAuth();
   const [name, setName] = useState("");
   const [useMetric, setUseMetric] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== "undefined") return document.documentElement.classList.contains("dark");
+    return false;
+  });
   const [profileData, setProfileData] = useState<{
     goal?: string;
     activity_level?: string;
@@ -130,11 +134,24 @@ export function UserProfile() {
           </div>
 
           {/* Unit toggle */}
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">Units:</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Units</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
               <button onClick={() => setUseMetric(true)} className={`px-3 py-1 rounded-md transition-colors ${useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>kg / cm</button>
               <button onClick={() => setUseMetric(false)} className={`px-3 py-1 rounded-md transition-colors ${!useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>lbs / ft</button>
+            </div>
+          </div>
+
+          {/* Dark mode toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Theme</Label>
+            <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
+              <button onClick={() => { setDarkMode(false); document.documentElement.classList.remove("dark"); localStorage.setItem("theme", "light"); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${!darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
+                <Sun className="h-3 w-3" /> Light
+              </button>
+              <button onClick={() => { setDarkMode(true); document.documentElement.classList.add("dark"); localStorage.setItem("theme", "dark"); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
+                <Moon className="h-3 w-3" /> Dark
+              </button>
             </div>
           </div>
 
