@@ -22,6 +22,12 @@ export default function Dashboard() {
   const [nutritionSub, setNutritionSub] = useState("journal");
   const [planSub, setPlanSub] = useState("plans");
   const [profileSub, setProfileSub] = useState("profile");
+  const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
+
+  const navigateToPost = (postId: string) => {
+    setHighlightPostId(postId);
+    setActiveTab("community");
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -58,9 +64,9 @@ export default function Dashboard() {
           </Tabs>
         );
       case "community":
-        return <CommunityHub />;
+        return <CommunityHub highlightPostId={highlightPostId} onHighlightHandled={() => setHighlightPostId(null)} />;
       case "notifications":
-        return <NotificationsPage />;
+        return <NotificationsPage onNavigateToPost={navigateToPost} />;
       case "profile":
         return (
           <Tabs value={profileSub} onValueChange={setProfileSub}>
@@ -86,6 +92,7 @@ export default function Dashboard() {
           <NotificationBell
             onNavigateToCommunity={() => setActiveTab("community")}
             onViewAll={() => setActiveTab("notifications")}
+            onNavigateToPost={navigateToPost}
           />
         </div>
       </header>

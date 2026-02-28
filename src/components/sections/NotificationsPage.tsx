@@ -56,7 +56,11 @@ function groupByDate(notifications: Notification[]): { label: string; items: Not
     .map(([label, items]) => ({ label, items }));
 }
 
-export function NotificationsPage() {
+interface NotificationsPageProps {
+  onNavigateToPost?: (postId: string) => void;
+}
+
+export function NotificationsPage({ onNavigateToPost }: NotificationsPageProps) {
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -128,7 +132,10 @@ export function NotificationsPage() {
                   return (
                     <button
                       key={n.id}
-                      onClick={() => !n.is_read && markOneRead(n.id)}
+                      onClick={() => {
+                        if (!n.is_read) markOneRead(n.id);
+                        if (n.post_id && onNavigateToPost) onNavigateToPost(n.post_id);
+                      }}
                       className={cn(
                         "w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl transition-colors",
                         n.is_read ? "opacity-60 hover:opacity-80" : "bg-primary/5 hover:bg-primary/10"

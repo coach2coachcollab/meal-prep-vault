@@ -24,13 +24,13 @@ function timeAgo(dateStr: string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function NotificationItem({ n, onRead }: { n: Notification; onRead: (id: string) => void }) {
+function NotificationItem({ n, onClick }: { n: Notification; onClick: (n: Notification) => void }) {
   const config = typeConfig[n.type] || { icon: Bell, label: "sent you a notification" };
   const Icon = config.icon;
 
   return (
     <button
-      onClick={() => !n.is_read && onRead(n.id)}
+      onClick={() => onClick(n)}
       className={cn(
         "w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors",
         n.is_read ? "opacity-60" : "bg-primary/5 hover:bg-primary/10"
@@ -60,11 +60,17 @@ function NotificationItem({ n, onRead }: { n: Notification; onRead: (id: string)
 interface NotificationBellProps {
   onNavigateToCommunity?: () => void;
   onViewAll?: () => void;
+  onNavigateToPost?: (postId: string) => void;
 }
 
-export function NotificationBell({ onNavigateToCommunity, onViewAll }: NotificationBellProps) {
+export function NotificationBell({ onNavigateToCommunity, onViewAll, onNavigateToPost }: NotificationBellProps) {
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
   const preview = notifications.slice(0, 8);
+
+  const handleClick = (n: Notification) => {
+    if (!n.is_read) markOneRead(n.id);
+    if (n.post_id && onNavigateToPost) onNavigateToPost(n.post_id);
+  };
 
   return (
     <Popover>
@@ -96,7 +102,7 @@ export function NotificationBell({ onNavigateToCommunity, onViewAll }: Notificat
           ) : (
             <div className="p-1 space-y-0.5">
               {preview.map((n) => (
-                <NotificationItem key={n.id} n={n} onRead={markOneRead} />
+                <NotificationItem key={n.id} n={n} onClick={handleClick} />
               ))}
             </div>
           )}
