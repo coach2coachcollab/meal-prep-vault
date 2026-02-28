@@ -101,12 +101,14 @@ export function MealJournal() {
     else setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
   };
 
-  const totals = entries.reduce((s, e) => ({
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const rawTotals = entries.reduce((s, e) => ({
     calories: s.calories + Number(e.calories),
     protein: s.protein + Number(e.protein_g),
     carbs: s.carbs + Number(e.carbs_g),
     fat: s.fat + Number(e.fat_g),
   }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const totals = { calories: r2(rawTotals.calories), protein: r2(rawTotals.protein), carbs: r2(rawTotals.carbs), fat: r2(rawTotals.fat) };
 
   const shiftDate = (dir: number) => {
     const d = new Date(date);
