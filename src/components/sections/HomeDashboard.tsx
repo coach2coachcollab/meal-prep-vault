@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Zap, Trophy, Award, Star } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const [habitsToday, setHabitsToday] = useState({ done: 0, total: 0 });
   const [waterToday, setWaterToday] = useState({ glasses: 0, goal: 8 });
   const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
-  const [streak, setStreak] = useState(0);
+  const [streak] = useState(0); // streak now displayed in global header
   const [isLoading, setIsLoading] = useState(true);
   const [progressSummary, setProgressSummary] = useState<{
     period: "week" | "month";
@@ -40,7 +40,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   useEffect(() => {
     if (user) {
       setIsLoading(true);
-      Promise.all([loadData(), loadProgressSummary(), loadStreak().then(() => checkMilestones())])
+      Promise.all([loadData(), loadProgressSummary()])
         .finally(() => setIsLoading(false));
     }
   }, [user]);
@@ -130,49 +130,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     if (water) setWaterToday({ glasses: water.glasses, goal: water.goal });
   };
 
-  const loadStreak = async () => {
-    if (!user) return;
-    // Get distinct dates with journal entries or completed habits, last 90 days
-    const since = new Date();
-    since.setDate(since.getDate() - 90);
-    const sinceStr = since.toISOString().split("T")[0];
-
-    const [{ data: journalDates }, { data: habitDates }] = await Promise.all([
-      supabase
-        .from("journal_entries")
-        .select("date")
-        .eq("user_id", user.id)
-        .gte("date", sinceStr),
-      supabase
-        .from("habit_logs")
-        .select("date")
-        .eq("user_id", user.id)
-        .eq("completed", true)
-        .gte("date", sinceStr),
-    ]);
-
-    const activeDays = new Set<string>();
-    journalDates?.forEach((j) => activeDays.add(j.date));
-    habitDates?.forEach((h) => activeDays.add(h.date));
-
-    // Count consecutive days ending today or yesterday
-    let count = 0;
-    const d = new Date();
-    // Check if today counts
-    if (!activeDays.has(d.toISOString().split("T")[0])) {
-      d.setDate(d.getDate() - 1); // allow streak from yesterday
-    }
-    while (activeDays.has(d.toISOString().split("T")[0])) {
-      count++;
-      d.setDate(d.getDate() - 1);
-    }
-    setStreak(count);
-
-    // Streak milestones
-    if (count >= 30) showMilestone("streak_30", "👑", "30-Day Streak!", "A full month of consistency — you're unstoppable!");
-    else if (count >= 14) showMilestone("streak_14", "🔥", "14-Day Streak!", "Two weeks strong — your discipline is inspiring!");
-    else if (count >= 7) showMilestone("streak_7", "💪", "7-Day Streak!", "A full week of logging — amazing commitment!");
-  };
+  // Streak logic moved to useStreak hook in global header
 
 
   const loadProgressSummary = async () => {
@@ -250,17 +208,9 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{greeting()}, {profileName || "there"} 👋</h2>
-          <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
-        </div>
-        {streak > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-            <Zap className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-bold text-foreground">{streak}🔥</span>
-          </div>
-        )}
+      <div>
+        <h2 className="text-2xl font-bold">{greeting()}, {profileName || "there"} 👋</h2>
+        <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
       </div>
 
       {/* Macro Ring */}
