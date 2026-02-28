@@ -641,6 +641,7 @@ export type Database = {
           created_at: string
           diet_prefs: string[] | null
           goal: string | null
+          goal_weight_kg: number | null
           height_cm: number | null
           id: string
           name: string | null
@@ -658,6 +659,7 @@ export type Database = {
           created_at?: string
           diet_prefs?: string[] | null
           goal?: string | null
+          goal_weight_kg?: number | null
           height_cm?: number | null
           id?: string
           name?: string | null
@@ -675,6 +677,7 @@ export type Database = {
           created_at?: string
           diet_prefs?: string[] | null
           goal?: string | null
+          goal_weight_kg?: number | null
           height_cm?: number | null
           id?: string
           name?: string | null
