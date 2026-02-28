@@ -109,11 +109,12 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       .eq("user_id", user.id)
       .eq("date", today);
     if (journal) {
+      const r = (n: number) => Math.round(n * 100) / 100;
       setTodayJournal({
-        calories: journal.reduce((s, j) => s + (Number(j.calories) || 0), 0),
-        protein: journal.reduce((s, j) => s + (Number(j.protein_g) || 0), 0),
-        carbs: journal.reduce((s, j) => s + (Number(j.carbs_g) || 0), 0),
-        fat: journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0),
+        calories: r(journal.reduce((s, j) => s + (Number(j.calories) || 0), 0)),
+        protein: r(journal.reduce((s, j) => s + (Number(j.protein_g) || 0), 0)),
+        carbs: r(journal.reduce((s, j) => s + (Number(j.carbs_g) || 0), 0)),
+        fat: r(journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0)),
       });
     }
 
