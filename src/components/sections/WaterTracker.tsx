@@ -273,28 +273,6 @@ export function WaterTracker() {
         </CardContent>
       </Card>
 
-      {/* Quick-tap glasses */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <p className="text-xs text-muted-foreground mb-3">Quick set water</p>
-          <div className="flex gap-2 flex-wrap">
-            {Array.from({ length: goal }, (_, i) => i + 1).slice(0, 12).map((n) => (
-              <button
-                key={n}
-                onClick={() => updateGlasses(n)}
-                className={cn(
-                  "h-9 w-9 rounded-full text-xs font-medium transition-all",
-                  n <= glasses
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-primary/20"
-                )}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Weekly Summary */}
       <WeeklySummaryCharts />
