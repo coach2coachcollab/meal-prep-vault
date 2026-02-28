@@ -12,6 +12,7 @@ import { UserProfile } from "@/components/sections/UserProfile";
 import { HabitTracker } from "@/components/sections/HabitTracker";
 import { PartnerHub } from "@/components/sections/PartnerHub";
 import { WaterTracker } from "@/components/sections/WaterTracker";
+import { ProgressTracker } from "@/components/sections/ProgressTracker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
@@ -59,11 +60,13 @@ export default function Dashboard() {
       case "profile":
         return (
           <Tabs value={profileSub} onValueChange={setProfileSub}>
-            <TabsList className="w-full grid grid-cols-2 mb-4">
+            <TabsList className="w-full grid grid-cols-3 mb-4">
               <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="progress">Progress</TabsTrigger>
               <TabsTrigger value="partners">Deals</TabsTrigger>
             </TabsList>
             <TabsContent value="profile"><UserProfile /></TabsContent>
+            <TabsContent value="progress"><ProgressTracker /></TabsContent>
             <TabsContent value="partners"><PartnerHub /></TabsContent>
           </Tabs>
         );
