@@ -238,6 +238,7 @@ export type Database = {
           fat_g: number | null
           food_name: string
           id: string
+          image_url: string | null
           logged_at: string
           meal_type: string
           protein_g: number | null
@@ -252,6 +253,7 @@ export type Database = {
           fat_g?: number | null
           food_name: string
           id?: string
+          image_url?: string | null
           logged_at?: string
           meal_type: string
           protein_g?: number | null
@@ -266,6 +268,7 @@ export type Database = {
           fat_g?: number | null
           food_name?: string
           id?: string
+          image_url?: string | null
           logged_at?: string
           meal_type?: string
           protein_g?: number | null

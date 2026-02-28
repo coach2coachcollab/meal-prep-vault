@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Trash2, Search, UtensilsCrossed } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Trash2, Search, UtensilsCrossed, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ interface JournalEntry {
   carbs_g: number;
   fat_g: number;
   recipe_id: string | null;
+  image_url: string | null;
 }
 
 interface DbMeal {
@@ -55,6 +56,8 @@ export function MealJournal() {
   const [foodProtein, setFoodProtein] = useState("");
   const [foodCarbs, setFoodCarbs] = useState("");
   const [foodFat, setFoodFat] = useState("");
+  const [mealPhoto, setMealPhoto] = useState<File | null>(null);
+  const [mealPhotoPreview, setMealPhotoPreview] = useState<string | null>(null);
 
   // Recipe picker
   const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
@@ -126,13 +129,29 @@ export function MealJournal() {
 
   const addFood = async () => {
     if (!user || !foodName.trim()) return;
+
+    let image_url: string | null = null;
+    if (mealPhoto) {
+      const ext = mealPhoto.name.split(".").pop();
+      const fileName = `journal/${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("recipe-images").upload(fileName, mealPhoto);
+      if (uploadErr) {
+        toast.error("Photo upload failed");
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(fileName);
+      image_url = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from("journal_entries").insert({
       user_id: user.id, date, meal_type: addMealType, food_name: foodName,
       calories: parseFloat(foodCals) || 0, protein_g: parseFloat(foodProtein) || 0,
       carbs_g: parseFloat(foodCarbs) || 0, fat_g: parseFloat(foodFat) || 0,
+      image_url,
     });
     if (!error) {
       setFoodName(""); setFoodCals(""); setFoodProtein(""); setFoodCarbs(""); setFoodFat("");
+      setMealPhoto(null); setMealPhotoPreview(null);
       setDialogOpen(false);
       loadData();
       toast.success("Food logged!");
@@ -217,11 +236,9 @@ export function MealJournal() {
                     <CardContent className="py-3 px-4 flex items-center gap-3">
                       {/* Meal photo */}
                       {e.recipe_id && mealImages[e.recipe_id] ? (
-                        <img
-                          src={mealImages[e.recipe_id]}
-                          alt={e.food_name}
-                          className="h-12 w-12 rounded-lg object-cover shrink-0"
-                        />
+                        <img src={mealImages[e.recipe_id]} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" />
+                      ) : (e as any).image_url ? (
+                        <img src={(e as any).image_url} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" />
                       ) : (
                         <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
                           <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
@@ -342,6 +359,24 @@ export function MealJournal() {
           ) : (
             <div className="space-y-3 pt-1">
               <div className="space-y-1"><Label>Food Name</Label><Input placeholder="e.g., Chicken breast" value={foodName} onChange={(e) => setFoodName(e.target.value)} /></div>
+              {/* Photo upload */}
+              <div className="space-y-1">
+                <Label>Meal Photo (optional)</Label>
+                <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
+                  {mealPhotoPreview ? (
+                    <img src={mealPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center text-muted-foreground">
+                      <ImagePlus className="h-7 w-7 mb-1" />
+                      <span className="text-xs">Snap or upload a photo</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) { setMealPhoto(file); setMealPhotoPreview(URL.createObjectURL(file)); }
+                  }} />
+                </label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label>Calories</Label><Input type="number" placeholder="0" value={foodCals} onChange={(e) => setFoodCals(e.target.value)} /></div>
                 <div className="space-y-1"><Label>Protein (g)</Label><Input type="number" placeholder="0" value={foodProtein} onChange={(e) => setFoodProtein(e.target.value)} /></div>
