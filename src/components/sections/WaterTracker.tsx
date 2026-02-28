@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Droplets, Plus, Minus, Settings2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Droplets, Plus, Minus, Settings2, Star, Smile, Zap, StickyNote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+const moods = ["😊", "😐", "😴", "😤", "😢"];
 
 export function WaterTracker() {
   const { user } = useAuth();
@@ -17,8 +20,15 @@ export function WaterTracker() {
   const [editGoal, setEditGoal] = useState("8");
   const today = new Date().toISOString().split("T")[0];
 
+  // Mood / Energy / Notes
+  const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
+  const [noteSaved, setNoteSaved] = useState(false);
+
   useEffect(() => {
-    if (user) loadWater();
+    if (user) {
+      loadWater();
+      loadDailyNote();
+    }
   }, [user]);
 
   const loadWater = async () => {
@@ -33,6 +43,25 @@ export function WaterTracker() {
       setGlasses(data.glasses);
       setGoal(data.goal);
       setEditGoal(String(data.goal));
+    }
+  };
+
+  const loadDailyNote = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("journal_daily_notes")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle();
+    if (data) {
+      setDailyNote({
+        energy_level: data.energy_level || 0,
+        mood_emoji: data.mood_emoji || "",
+        notes: data.notes || "",
+      });
+    } else {
+      setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
     }
   };
 
@@ -62,107 +91,170 @@ export function WaterTracker() {
     toast.success("Goal updated!");
   };
 
+  const saveDailyNote = async () => {
+    if (!user) return;
+    const { error } = await supabase.from("journal_daily_notes").upsert({
+      user_id: user.id, date: today, ...dailyNote,
+    }, { onConflict: "user_id,date" });
+    if (!error) {
+      setNoteSaved(true);
+      toast.success("Daily notes saved!");
+      setTimeout(() => setNoteSaved(false), 2000);
+    }
+  };
+
   const pct = goal > 0 ? Math.min((glasses / goal) * 100, 100) : 0;
-  const radius = 58;
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Droplets className="h-5 w-5 text-primary" />
-            Water Tracker
-          </h2>
-          <p className="text-sm text-muted-foreground">Stay hydrated today</p>
-        </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon"><Settings2 className="h-4 w-4" /></Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48">
-            <div className="space-y-2">
-              <Label className="text-xs">Daily Goal (glasses)</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  value={editGoal}
-                  onChange={(e) => setEditGoal(e.target.value)}
-                  className="h-8"
-                />
-                <Button size="sm" onClick={saveGoal}>Set</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+      {/* Header */}
+      <div>
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Smile className="h-5 w-5 text-primary" />
+          Daily Wellness
+        </h2>
+        <p className="text-sm text-muted-foreground">Track your water, mood & energy</p>
       </div>
 
-      {/* Progress Ring */}
-      <Card>
-        <CardContent className="pt-6 pb-6 flex flex-col items-center">
-          <div className="relative w-40 h-40 mb-4">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
-              <circle
-                cx="64" cy="64" r={radius}
-                fill="none"
-                stroke="hsl(var(--muted))"
-                strokeWidth="8"
-              />
-              <circle
-                cx="64" cy="64" r={radius}
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-500 ease-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <Droplets className={cn("h-6 w-6 mb-1 transition-colors", pct >= 100 ? "text-primary" : "text-muted-foreground")} />
-              <span className="text-2xl font-bold">{glasses}</span>
-              <span className="text-xs text-muted-foreground">of {goal} glasses</span>
+      {/* Water + Mood side by side */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Water Ring */}
+        <Card>
+          <CardContent className="pt-4 pb-4 flex flex-col items-center">
+            <div className="flex items-center justify-between w-full mb-2">
+              <p className="text-xs font-medium flex items-center gap-1">
+                <Droplets className="h-3.5 w-3.5 text-primary" /> Water
+              </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Settings2 className="h-3 w-3" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Daily Goal (glasses)</Label>
+                    <div className="flex gap-2">
+                      <Input type="number" value={editGoal} onChange={(e) => setEditGoal(e.target.value)} className="h-8" />
+                      <Button size="sm" onClick={saveGoal}>Set</Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-12 w-12 rounded-full"
-              onClick={() => updateGlasses(glasses - 1)}
-              disabled={glasses <= 0}
-            >
-              <Minus className="h-5 w-5" />
-            </Button>
-            <Button
-              size="icon"
-              className="h-14 w-14 rounded-full"
-              onClick={() => updateGlasses(glasses + 1)}
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-12 w-12 rounded-full opacity-0 pointer-events-none"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-          </div>
+            <div className="relative w-28 h-28 mb-2">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 112 112">
+                <circle cx="56" cy="56" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="7" />
+                <circle
+                  cx="56" cy="56" r={radius} fill="none"
+                  stroke="hsl(var(--primary))" strokeWidth="7"
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  className="transition-all duration-500 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-bold">{glasses}</span>
+                <span className="text-[10px] text-muted-foreground">of {goal}</span>
+              </div>
+            </div>
 
-          {pct >= 100 && (
-            <p className="text-sm text-primary font-medium mt-3">🎉 Goal reached! Great job staying hydrated!</p>
-          )}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => updateGlasses(glasses - 1)} disabled={glasses <= 0}>
+                <Minus className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="icon" className="h-10 w-10 rounded-full" onClick={() => updateGlasses(glasses + 1)}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {pct >= 100 && (
+              <p className="text-[10px] text-primary font-medium mt-2 text-center">🎉 Goal reached!</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Mood & Energy */}
+        <Card>
+          <CardContent className="pt-4 pb-4 space-y-3">
+            {/* Energy */}
+            <div>
+              <p className="text-xs font-medium flex items-center gap-1 mb-1.5">
+                <Zap className="h-3.5 w-3.5 text-primary" /> Energy
+              </p>
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button key={n} onClick={() => setDailyNote({ ...dailyNote, energy_level: n })}>
+                    <Star className={cn("h-5 w-5 transition-colors", n <= dailyNote.energy_level ? "fill-primary text-primary" : "text-muted")} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mood */}
+            <div>
+              <p className="text-xs font-medium flex items-center gap-1 mb-1.5">
+                <Smile className="h-3.5 w-3.5 text-primary" /> Mood
+              </p>
+              <div className="flex gap-1">
+                {moods.map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setDailyNote({ ...dailyNote, mood_emoji: m })}
+                    className={cn(
+                      "text-xl p-0.5 rounded transition-all",
+                      dailyNote.mood_emoji === m && "bg-primary/10 ring-2 ring-primary/30 scale-110"
+                    )}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick status */}
+            <div className="pt-1 border-t">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {dailyNote.energy_level > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <Zap className="h-3 w-3" /> {dailyNote.energy_level}/5
+                  </span>
+                )}
+                {dailyNote.mood_emoji && <span>{dailyNote.mood_emoji}</span>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Notes */}
+      <Card>
+        <CardContent className="pt-4 pb-4 space-y-2">
+          <p className="text-xs font-medium flex items-center gap-1">
+            <StickyNote className="h-3.5 w-3.5 text-primary" /> Daily Notes
+          </p>
+          <Textarea
+            placeholder="How are you feeling today? Any wins or struggles?"
+            rows={3}
+            value={dailyNote.notes}
+            onChange={(e) => setDailyNote({ ...dailyNote, notes: e.target.value })}
+            className="text-sm"
+          />
+          <Button size="sm" variant="outline" className="w-full" onClick={saveDailyNote}>
+            {noteSaved ? "✓ Saved" : "Save Notes"}
+          </Button>
         </CardContent>
       </Card>
 
       {/* Quick-tap glasses */}
       <Card>
         <CardContent className="pt-4 pb-4">
-          <p className="text-xs text-muted-foreground mb-3">Quick set</p>
+          <p className="text-xs text-muted-foreground mb-3">Quick set water</p>
           <div className="flex gap-2 flex-wrap">
             {Array.from({ length: goal }, (_, i) => i + 1).slice(0, 12).map((n) => (
               <button

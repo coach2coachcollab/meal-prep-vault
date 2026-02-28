@@ -30,7 +30,7 @@ export default function Dashboard() {
           <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
             <TabsList className="w-full grid grid-cols-4 mb-4">
               <TabsTrigger value="journal">Journal</TabsTrigger>
-              <TabsTrigger value="water">Water</TabsTrigger>
+              <TabsTrigger value="water">Wellness</TabsTrigger>
               <TabsTrigger value="habits">Habits</TabsTrigger>
               <TabsTrigger value="vault">Vault</TabsTrigger>
             </TabsList>
