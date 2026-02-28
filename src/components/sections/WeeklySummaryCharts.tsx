@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, L
 import { Droplets, Zap, Smile, TrendingUp, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 const MILESTONES = [3, 7, 14, 30];
 const milestoneMessages: Record<number, string> = {
@@ -149,6 +150,19 @@ export function WeeklySummaryCharts() {
         .update({ best_streak: count })
         .eq("user_id", user.id)
         .eq("date", today);
+
+      // 🎉 Confetti for new personal best!
+      toast.success(`🏆 New personal best streak: ${count} days!`, { duration: 5000 });
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ["hsl(142,71%,45%)", "hsl(48,96%,53%)", "hsl(217,91%,60%)", "hsl(339,90%,51%)"],
+      });
+      setTimeout(() => {
+        confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0 } });
+        confetti({ particleCount: 60, angle: 120, spread: 55, origin: { x: 1 } });
+      }, 300);
     }
 
     // Celebrate milestone if exact match
