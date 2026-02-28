@@ -114,40 +114,67 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-right-5 duration-300">
+    <div className="space-y-4 animate-in slide-in-from-right-5 duration-300">
       {/* Back button */}
       <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
         <ArrowLeft className="h-4 w-4" /> Back to Meals
       </Button>
 
-      {/* Title + Favorite */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold">{meal.title}</h2>
-          {meal.description && (
-            <p className="text-muted-foreground mt-1">{meal.description}</p>
-          )}
-        </div>
-        <Button variant="outline" size="icon" className="shrink-0 ml-3" onClick={onToggleFavorite}>
-          <Heart className={`h-5 w-5 ${isFavorite ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
-        </Button>
-      </div>
+      {/* Hero: Image + Nutrition side by side */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="flex">
+            {/* Image */}
+            <div className="w-2/5 shrink-0">
+              {meal.image_url ? (
+                <img
+                  src={meal.image_url}
+                  alt={meal.title}
+                  className="h-full w-full object-cover rounded-l-lg min-h-[180px]"
+                />
+              ) : (
+                <div className="h-full w-full min-h-[180px] bg-muted rounded-l-lg flex items-center justify-center">
+                  <span className="text-muted-foreground text-xs">No image</span>
+                </div>
+              )}
+            </div>
 
-      {/* Image */}
-      <div className="grid grid-cols-1 gap-4">
-        {meal.image_url && (
-          <div className="rounded-xl overflow-hidden aspect-video">
-            <img src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
-          </div>
-        )}
+            {/* Right: title + macros */}
+            <div className="flex-1 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="text-lg font-bold leading-tight">{meal.title}</h2>
+                  <Button variant="ghost" size="icon" className="shrink-0 -mt-1 -mr-2 h-8 w-8" onClick={onToggleFavorite}>
+                    <Heart className={`h-4 w-4 ${isFavorite ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                  </Button>
+                </div>
+                {meal.description && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{meal.description}</p>
+                )}
+              </div>
 
-        {/* Nutrition Info Card */}
-        <Card>
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-sm">Nutrition Information</h3>
-              {/* Interactive Star Rating */}
-              <div className="flex items-center gap-1.5">
+              {/* Macro grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-3">
+                <div>
+                  <p className="text-base font-bold">{meal.calories || 0}</p>
+                  <p className="text-[10px] text-muted-foreground">Calories</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold">{meal.protein || 0}g</p>
+                  <p className="text-[10px] text-muted-foreground">Protein</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold">{meal.carbs || 0}g</p>
+                  <p className="text-[10px] text-muted-foreground">Carbs</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold">{meal.fats || 0}g</p>
+                  <p className="text-[10px] text-muted-foreground">Fats</p>
+                </div>
+              </div>
+
+              {/* Star rating */}
+              <div className="flex items-center gap-1 mt-3">
                 <div className="flex gap-0.5" onMouseLeave={() => setHoveredStar(0)}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <button
@@ -157,9 +184,9 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                       className="transition-transform hover:scale-110"
                     >
                       <Star
-                        className={`h-5 w-5 transition-colors ${
+                        className={`h-4 w-4 transition-colors ${
                           s <= (hoveredStar || userRating)
-                            ? "fill-yellow-400 text-yellow-400"
+                            ? "fill-primary text-primary"
                             : "text-muted-foreground/30"
                         }`}
                       />
@@ -167,33 +194,44 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                   ))}
                 </div>
                 {ratingCount > 0 && (
-                  <span className="text-xs text-muted-foreground ml-1">
+                  <span className="text-[10px] text-muted-foreground ml-1">
                     {avgRating} ({ratingCount})
                   </span>
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-center">
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recipe Details: Prep Time, Servings, Tags */}
+      <Card>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xl font-bold">{meal.calories || 0}</p>
-                <p className="text-xs text-muted-foreground">Calories</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-green-600">{meal.protein || 0}g</p>
-                <p className="text-xs text-muted-foreground">Protein</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-orange-500">{meal.carbs || 0}g</p>
-                <p className="text-xs text-muted-foreground">Carbs</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-blue-600">{meal.fats || 0}g</p>
-                <p className="text-xs text-muted-foreground">Fats</p>
+                <p className="text-sm font-semibold">{totalTime > 0 ? `${totalTime} min` : "—"}</p>
+                <p className="text-[10px] text-muted-foreground">Total Time</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-semibold">{meal.servings || 1}</p>
+                <p className="text-[10px] text-muted-foreground">Servings</p>
+              </div>
+            </div>
+          </div>
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {allTags.map((tag, i) => (
+                <Badge key={i} variant="secondary" className="text-[10px]">{tag}</Badge>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tabs: Ingredients / Instructions / Grocery List */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -258,32 +296,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Recipe Details Card */}
-      <Card>
-        <CardContent className="pt-5">
-          <h3 className="font-semibold mb-4">Recipe Details</h3>
-          <div className="flex items-center justify-around text-center mb-4">
-            <div>
-              <Clock className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Prep Time</p>
-              <p className="font-semibold text-sm">{totalTime > 0 ? `${totalTime} min` : "—"}</p>
-            </div>
-            <div>
-              <Users className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Servings</p>
-              <p className="font-semibold text-sm">{meal.servings || 1}</p>
-            </div>
-          </div>
-          {allTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {allTags.map((tag, i) => (
-                <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {meal.coach_notes && (
         <Card>
