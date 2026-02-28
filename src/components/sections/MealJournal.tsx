@@ -234,7 +234,7 @@ export function MealJournal() {
       <Card>
         <CardContent className="pt-5 pb-5">
           <div className="grid grid-cols-4 gap-3 text-center text-xs">
-            <div><Flame className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold text-lg">{totals.calories}</p><p className="text-muted-foreground">/ {macroTargets?.calories || "—"}</p></div>
+            <div><Flame className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold text-lg">{totals.calories}</p><p className="text-muted-foreground">kcal</p></div>
             <div><Beef className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold">{totals.protein}g</p><p className="text-muted-foreground">protein</p></div>
             <div><Wheat className="h-4 w-4 mx-auto mb-1 text-accent-foreground" /><p className="font-bold">{totals.carbs}g</p><p className="text-muted-foreground">carbs</p></div>
             <div><Droplets className="h-4 w-4 mx-auto mb-1 text-secondary-foreground" /><p className="font-bold">{totals.fat}g</p><p className="text-muted-foreground">fat</p></div>
