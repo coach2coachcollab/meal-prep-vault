@@ -645,6 +645,7 @@ export type Database = {
           id: string
           name: string | null
           onboarding_completed: boolean | null
+          preferred_units: string | null
           updated_at: string
           user_id: string
           weight_kg: number | null
@@ -661,6 +662,7 @@ export type Database = {
           id?: string
           name?: string | null
           onboarding_completed?: boolean | null
+          preferred_units?: string | null
           updated_at?: string
           user_id: string
           weight_kg?: number | null
@@ -677,6 +679,7 @@ export type Database = {
           id?: string
           name?: string | null
           onboarding_completed?: boolean | null
+          preferred_units?: string | null
           updated_at?: string
           user_id?: string
           weight_kg?: number | null

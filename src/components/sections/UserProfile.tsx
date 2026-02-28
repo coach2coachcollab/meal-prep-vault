@@ -62,6 +62,9 @@ export function UserProfile() {
     if (data) {
       if (data.name) setName(data.name);
       if (data.age) setAge(String(data.age));
+      // Load preferred units from localStorage (faster) or could be from DB
+      const savedUnits = localStorage.getItem(`preferred_units_${user.id}`);
+      if (savedUnits) setUseMetric(savedUnits === "metric");
       setProfileData(data);
     }
   };
@@ -83,8 +86,16 @@ export function UserProfile() {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ name, age: parseInt(age) || null, height_cm: height_cm || null, weight_kg: weight_kg || null })
+      .update({
+        name,
+        age: parseInt(age) || null,
+        height_cm: height_cm || null,
+        weight_kg: weight_kg || null,
+        preferred_units: useMetric ? "metric" : "imperial",
+      } as any)
       .eq("user_id", user.id);
+    // Also persist locally for instant load
+    if (user) localStorage.setItem(`preferred_units_${user.id}`, useMetric ? "metric" : "imperial");
     setLoading(false);
     if (error) toast.error("Failed to save");
     else {
