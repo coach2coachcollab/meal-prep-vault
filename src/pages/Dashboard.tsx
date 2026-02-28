@@ -11,6 +11,7 @@ import { CommunityHub } from "@/components/sections/CommunityHub";
 import { UserProfile } from "@/components/sections/UserProfile";
 import { HabitTracker } from "@/components/sections/HabitTracker";
 import { PartnerHub } from "@/components/sections/PartnerHub";
+import { WaterTracker } from "@/components/sections/WaterTracker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
@@ -26,12 +27,14 @@ export default function Dashboard() {
       case "nutrition":
         return (
           <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
-            <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsList className="w-full grid grid-cols-4 mb-4">
               <TabsTrigger value="journal">Journal</TabsTrigger>
+              <TabsTrigger value="water">Water</TabsTrigger>
               <TabsTrigger value="habits">Habits</TabsTrigger>
-              <TabsTrigger value="vault">Meal Vault</TabsTrigger>
+              <TabsTrigger value="vault">Vault</TabsTrigger>
             </TabsList>
             <TabsContent value="journal"><MealJournal /></TabsContent>
+            <TabsContent value="water"><WaterTracker /></TabsContent>
             <TabsContent value="habits"><HabitTracker /></TabsContent>
             <TabsContent value="vault"><MealVault /></TabsContent>
           </Tabs>
