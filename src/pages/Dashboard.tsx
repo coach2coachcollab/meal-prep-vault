@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("home");
-  const [nutritionSub, setNutritionSub] = useState("vault");
+  const [nutritionSub, setNutritionSub] = useState("journal");
   const [planSub, setPlanSub] = useState("plans");
   const [profileSub, setProfileSub] = useState("profile");
 
@@ -27,13 +27,13 @@ export default function Dashboard() {
         return (
           <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
             <TabsList className="w-full grid grid-cols-3 mb-4">
-              <TabsTrigger value="vault">Meal Vault</TabsTrigger>
               <TabsTrigger value="journal">Journal</TabsTrigger>
-              <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
+              <TabsTrigger value="habits">Habits</TabsTrigger>
+              <TabsTrigger value="vault">Meal Vault</TabsTrigger>
             </TabsList>
-            <TabsContent value="vault"><MealVault /></TabsContent>
             <TabsContent value="journal"><MealJournal /></TabsContent>
-            <TabsContent value="recipe"><RecipePlanner /></TabsContent>
+            <TabsContent value="habits"><HabitTracker /></TabsContent>
+            <TabsContent value="vault"><MealVault /></TabsContent>
           </Tabs>
         );
       case "plan":
@@ -41,12 +41,12 @@ export default function Dashboard() {
           <Tabs value={planSub} onValueChange={setPlanSub}>
             <TabsList className="w-full grid grid-cols-4 mb-4">
               <TabsTrigger value="plans">Meal Plans</TabsTrigger>
-              <TabsTrigger value="habits">Habits</TabsTrigger>
+              <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
               <TabsTrigger value="grocery">Shopping</TabsTrigger>
               <TabsTrigger value="macros">Macros</TabsTrigger>
             </TabsList>
             <TabsContent value="plans"><MealPlans /></TabsContent>
-            <TabsContent value="habits"><HabitTracker /></TabsContent>
+            <TabsContent value="recipe"><RecipePlanner /></TabsContent>
             <TabsContent value="grocery"><GroceryList /></TabsContent>
             <TabsContent value="macros"><MacroCalculator /></TabsContent>
           </Tabs>
