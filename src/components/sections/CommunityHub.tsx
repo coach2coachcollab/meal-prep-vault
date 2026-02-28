@@ -15,7 +15,7 @@ const channels = [
   { id: "wins", label: "🏆 Wins & Progress" },
   { id: "meals", label: "🥗 Meal Sharing" },
   { id: "questions", label: "❓ Questions" },
-  { id: "saved", label: "🔖 Saved" },
+  { id: "saved", label: "⭐ Favourites" },
 ];
 
 export function CommunityHub() {
@@ -106,11 +106,11 @@ export function CommunityHub() {
     if (isSaved) {
       await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", user.id);
       setSavedPostIds((prev) => { const n = new Set(prev); n.delete(postId); return n; });
-      toast.success("Post removed from saved");
+      toast.success("Removed from favourites");
     } else {
       await supabase.from("saved_posts").insert({ post_id: postId, user_id: user.id });
       setSavedPostIds((prev) => new Set(prev).add(postId));
-      toast.success("Post saved!");
+      toast.success("Added to favourites!");
     }
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, is_saved: !isSaved } : p));
     if (activeChannel === "saved" && isSaved) loadPosts();
@@ -161,7 +161,7 @@ export function CommunityHub() {
         <div>
           <h2 className="text-xl font-bold">Community</h2>
           <p className="text-xs text-muted-foreground">
-            {activeChannel === "saved" ? `${posts.length} saved posts` : `${posts.length} posts in this channel`}
+            {activeChannel === "saved" ? `${posts.length} favourites` : `${posts.length} posts in this channel`}
           </p>
         </div>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
@@ -190,11 +190,11 @@ export function CommunityHub() {
           <Card>
             <CardContent className="py-12 text-center">
               {activeChannel === "saved" ? (
-                <>
-                  <Bookmark className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground font-medium">No saved posts yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">Bookmark posts to find them here later</p>
-                </>
+                 <>
+                   <Bookmark className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                   <p className="text-muted-foreground font-medium">No favourites yet</p>
+                   <p className="text-sm text-muted-foreground mt-1">Tap the bookmark icon on posts to add them here</p>
+                 </>
               ) : (
                 <>
                   <p className="text-3xl mb-2">💬</p>
