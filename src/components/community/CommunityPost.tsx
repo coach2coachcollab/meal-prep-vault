@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send, ChevronDown, ChevronUp, Heart } from "lucide-react";
+import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send, ChevronDown, ChevronUp, Heart, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const reactions = ["💪", "❤️", "🎉", "🔥", "👏"];
@@ -33,6 +33,8 @@ export interface InlineComment {
   user_name?: string;
   like_count: number;
   is_liked: boolean;
+  parent_id: string | null;
+  replies?: InlineComment[];
 }
 
 interface CommunityPostProps {
@@ -43,10 +45,179 @@ interface CommunityPostProps {
   onEditPost: (postId: string, newText: string) => void;
   onToggleSave: (postId: string) => void;
   onLoadComments: (postId: string) => Promise<InlineComment[]>;
-  onAddComment: (postId: string, text: string) => Promise<void>;
+  onAddComment: (postId: string, text: string, parentId?: string) => Promise<void>;
   onEditComment: (commentId: string, newText: string) => Promise<void>;
   onDeleteComment: (commentId: string, postId: string) => Promise<void>;
   onToggleCommentLike: (commentId: string, postId: string) => Promise<void>;
+}
+
+const timeAgo = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString();
+};
+
+const initials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+function buildCommentTree(comments: InlineComment[]): InlineComment[] {
+  const map = new Map<string, InlineComment>();
+  const roots: InlineComment[] = [];
+  comments.forEach((c) => map.set(c.id, { ...c, replies: [] }));
+  comments.forEach((c) => {
+    const node = map.get(c.id)!;
+    if (c.parent_id && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.replies!.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+}
+
+interface CommentItemProps {
+  comment: InlineComment;
+  currentUserId: string;
+  postId: string;
+  depth: number;
+  editingCommentId: string | null;
+  editCommentText: string;
+  replyingToId: string | null;
+  replyText: string;
+  onSetEditing: (id: string | null, text?: string) => void;
+  onSaveEdit: () => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onToggleLike: (commentId: string) => void;
+  onSetReplying: (id: string | null) => void;
+  onReplyTextChange: (text: string) => void;
+  onSubmitReply: () => Promise<void>;
+  setEditCommentText: (text: string) => void;
+}
+
+function CommentItem({
+  comment: c, currentUserId, postId, depth,
+  editingCommentId, editCommentText, replyingToId, replyText,
+  onSetEditing, onSaveEdit, onDelete, onToggleLike,
+  onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
+}: CommentItemProps) {
+  return (
+    <div className={cn("flex gap-2 group", depth > 0 && "ml-6 border-l-2 border-muted pl-2")}>
+      <Avatar className="h-6 w-6 mt-0.5 shrink-0">
+        <AvatarFallback className="text-[9px] bg-muted font-medium">
+          {initials(c.user_name || "U")}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        {editingCommentId === c.id ? (
+          <div className="flex gap-1">
+            <Input
+              value={editCommentText}
+              onChange={(e) => setEditCommentText(e.target.value)}
+              className="h-7 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && onSaveEdit()}
+            />
+            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onSetEditing(null)}>
+              <X className="h-3 w-3" />
+            </Button>
+            <Button size="icon" className="h-7 w-7 shrink-0" onClick={onSaveEdit}>
+              <Check className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-muted/50 rounded-xl px-3 py-1.5">
+            <span className="text-xs font-semibold">{c.user_name}</span>
+            <p className="text-sm">{c.text}</p>
+          </div>
+        )}
+        <div className="flex items-center gap-3 mt-0.5 px-1">
+          <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+          <button
+            className={cn("text-[10px] font-medium flex items-center gap-0.5", c.is_liked ? "text-destructive" : "text-muted-foreground hover:text-destructive")}
+            onClick={() => onToggleLike(c.id)}
+          >
+            <Heart className={cn("h-3 w-3", c.is_liked && "fill-current")} />
+            {c.like_count > 0 && <span>{c.like_count}</span>}
+          </button>
+          {depth < 2 && (
+            <button
+              className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-0.5"
+              onClick={() => onSetReplying(replyingToId === c.id ? null : c.id)}
+            >
+              <Reply className="h-3 w-3" /> Reply
+            </button>
+          )}
+          {c.user_id === currentUserId && editingCommentId !== c.id && (
+            <>
+              <button
+                className="text-[10px] text-muted-foreground hover:text-foreground font-medium"
+                onClick={() => onSetEditing(c.id, c.text)}
+              >
+                Edit
+              </button>
+              <button
+                className="text-[10px] text-muted-foreground hover:text-destructive font-medium"
+                onClick={() => onDelete(c.id)}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Reply input */}
+        {replyingToId === c.id && (
+          <div className="flex gap-2 mt-2">
+            <Input
+              placeholder={`Reply to ${c.user_name}...`}
+              value={replyText}
+              onChange={(e) => onReplyTextChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onSubmitReply()}
+              className="flex-1 h-7 text-sm"
+              autoFocus
+            />
+            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onSetReplying(null)}>
+              <X className="h-3 w-3" />
+            </Button>
+            <Button size="icon" className="h-7 w-7 shrink-0" onClick={onSubmitReply} disabled={!replyText.trim()}>
+              <Send className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+
+        {/* Nested replies */}
+        {c.replies && c.replies.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {c.replies.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                currentUserId={currentUserId}
+                postId={postId}
+                depth={depth + 1}
+                editingCommentId={editingCommentId}
+                editCommentText={editCommentText}
+                replyingToId={replyingToId}
+                replyText={replyText}
+                onSetEditing={onSetEditing}
+                onSaveEdit={onSaveEdit}
+                onDelete={onDelete}
+                onToggleLike={onToggleLike}
+                onSetReplying={onSetReplying}
+                onReplyTextChange={onReplyTextChange}
+                onSubmitReply={onSubmitReply}
+                setEditCommentText={setEditCommentText}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function CommunityPost({
@@ -61,21 +232,13 @@ export function CommunityPost({
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   const isOwner = post.user_id === currentUserId;
 
-  const initials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-
-  const handleSaveEdit = () => {
-    if (editText.trim() && editText !== post.text) onEditPost(post.id, editText.trim());
-    setEditing(false);
-  };
-
   const toggleComments = async () => {
-    if (commentsOpen) {
-      setCommentsOpen(false);
-      return;
-    }
+    if (commentsOpen) { setCommentsOpen(false); return; }
     setLoadingComments(true);
     const data = await onLoadComments(post.id);
     setComments(data);
@@ -83,40 +246,45 @@ export function CommunityPost({
     setLoadingComments(false);
   };
 
+  const refreshComments = async () => {
+    const data = await onLoadComments(post.id);
+    setComments(data);
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     await onAddComment(post.id, newComment.trim());
     setNewComment("");
-    const data = await onLoadComments(post.id);
-    setComments(data);
+    await refreshComments();
+  };
+
+  const handleSubmitReply = async () => {
+    if (!replyText.trim() || !replyingToId) return;
+    await onAddComment(post.id, replyText.trim(), replyingToId);
+    setReplyText("");
+    setReplyingToId(null);
+    await refreshComments();
   };
 
   const handleSaveCommentEdit = async () => {
     if (editingCommentId && editCommentText.trim()) {
       await onEditComment(editingCommentId, editCommentText.trim());
-      const data = await onLoadComments(post.id);
-      setComments(data);
+      await refreshComments();
     }
     setEditingCommentId(null);
   };
 
   const handleDeleteComment = async (commentId: string) => {
     await onDeleteComment(commentId, post.id);
-    const data = await onLoadComments(post.id);
-    setComments(data);
+    await refreshComments();
   };
 
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d`;
-    return new Date(dateStr).toLocaleDateString();
+  const handleSaveEdit = () => {
+    if (editText.trim() && editText !== post.text) onEditPost(post.id, editText.trim());
+    setEditing(false);
   };
+
+  const commentTree = buildCommentTree(comments);
 
   return (
     <Card className="overflow-hidden">
@@ -129,27 +297,20 @@ export function CommunityPost({
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            {/* Header with name, time, bookmark, menu */}
+            {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">{post.user_name || "User"}</span>
                 <span className="text-[11px] text-muted-foreground">{timeAgo(post.created_at)}</span>
               </div>
               <div className="flex items-center gap-0.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => onToggleSave(post.id)}
-                >
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onToggleSave(post.id)}>
                   <Bookmark className={cn("h-4 w-4", post.is_saved ? "text-primary fill-primary" : "text-muted-foreground")} />
                 </Button>
                 {isOwner && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => { setEditText(post.text); setEditing(true); }}>
@@ -187,104 +348,60 @@ export function CommunityPost({
               </div>
             )}
 
-            {/* Reactions row */}
+            {/* Reactions */}
             <div className="flex items-center gap-1.5 mt-3 flex-wrap">
               {reactions.map((r) => {
                 const count = post.reaction_counts[r] || 0;
                 const active = post.user_reactions.includes(r);
                 return (
-                  <button
-                    key={r}
-                    onClick={() => onToggleReaction(post.id, r)}
-                    className={cn(
-                      "flex items-center gap-1 text-xs px-2 py-1 rounded-full border transition-colors",
-                      active ? "bg-primary/10 border-primary/30" : "border-transparent hover:bg-muted"
-                    )}
-                  >
+                  <button key={r} onClick={() => onToggleReaction(post.id, r)} className={cn(
+                    "flex items-center gap-1 text-xs px-2 py-1 rounded-full border transition-colors",
+                    active ? "bg-primary/10 border-primary/30" : "border-transparent hover:bg-muted"
+                  )}>
                     {r} {count > 0 && <span className="font-medium">{count}</span>}
                   </button>
                 );
               })}
-              <button
-                onClick={toggleComments}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-auto px-2 py-1"
-              >
+              <button onClick={toggleComments} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-auto px-2 py-1">
                 <MessageCircle className="h-3.5 w-3.5" />
                 <span>{post.comment_count}</span>
                 {commentsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
             </div>
 
-            {/* Inline comments section (FB-style) */}
+            {/* Comments */}
             {commentsOpen && (
               <div className="mt-3 border-t pt-3 space-y-3">
                 {loadingComments ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Loading...</p>
                 ) : (
                   <>
-                    {comments.length === 0 && (
+                    {commentTree.length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-1">No comments yet</p>
                     )}
-                    {comments.map((c) => (
-                      <div key={c.id} className="flex gap-2 group">
-                        <Avatar className="h-6 w-6 mt-0.5">
-                          <AvatarFallback className="text-[9px] bg-muted font-medium">
-                            {initials(c.user_name || "U")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          {editingCommentId === c.id ? (
-                            <div className="flex gap-1">
-                              <Input
-                                value={editCommentText}
-                                onChange={(e) => setEditCommentText(e.target.value)}
-                                className="h-7 text-sm"
-                                onKeyDown={(e) => e.key === "Enter" && handleSaveCommentEdit()}
-                              />
-                              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => setEditingCommentId(null)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                              <Button size="icon" className="h-7 w-7 shrink-0" onClick={handleSaveCommentEdit}>
-                                <Check className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="bg-muted/50 rounded-xl px-3 py-1.5">
-                              <span className="text-xs font-semibold">{c.user_name}</span>
-                              <p className="text-sm">{c.text}</p>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-3 mt-0.5 px-1">
-                            <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
-                            <button
-                              className={cn("text-[10px] font-medium flex items-center gap-0.5", c.is_liked ? "text-destructive" : "text-muted-foreground hover:text-destructive")}
-                              onClick={() => onToggleCommentLike(c.id, post.id)}
-                            >
-                              <Heart className={cn("h-3 w-3", c.is_liked && "fill-current")} />
-                              {c.like_count > 0 && <span>{c.like_count}</span>}
-                            </button>
-                            {c.user_id === currentUserId && editingCommentId !== c.id && (
-                              <>
-                                <button
-                                  className="text-[10px] text-muted-foreground hover:text-foreground font-medium"
-                                  onClick={() => { setEditingCommentId(c.id); setEditCommentText(c.text); }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="text-[10px] text-muted-foreground hover:text-destructive font-medium"
-                                  onClick={() => handleDeleteComment(c.id)}
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                    {commentTree.map((c) => (
+                      <CommentItem
+                        key={c.id}
+                        comment={c}
+                        currentUserId={currentUserId}
+                        postId={post.id}
+                        depth={0}
+                        editingCommentId={editingCommentId}
+                        editCommentText={editCommentText}
+                        replyingToId={replyingToId}
+                        replyText={replyText}
+                        onSetEditing={(id, text) => { setEditingCommentId(id); if (text) setEditCommentText(text); }}
+                        onSaveEdit={handleSaveCommentEdit}
+                        onDelete={handleDeleteComment}
+                        onToggleLike={(commentId) => onToggleCommentLike(commentId, post.id)}
+                        onSetReplying={setReplyingToId}
+                        onReplyTextChange={setReplyText}
+                        onSubmitReply={handleSubmitReply}
+                        setEditCommentText={setEditCommentText}
+                      />
                     ))}
 
-                    {/* Add comment input */}
+                    {/* Top-level comment input */}
                     <div className="flex gap-2 pt-1">
                       <Input
                         placeholder="Write a comment..."
