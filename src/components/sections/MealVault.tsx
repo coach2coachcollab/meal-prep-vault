@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Flame, Loader2, ChefHat, ImagePlus } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { MealDetailView } from "./MealDetailView";
 
 interface Meal {
   id: string;
@@ -28,6 +29,11 @@ interface Meal {
   ingredients: any;
   instructions: any;
   image_url: string | null;
+  category?: string | null;
+  cuisine?: string | null;
+  diet_tags?: string[] | null;
+  health_tags?: string[] | null;
+  coach_notes?: string | null;
 }
 
 export function MealVault() {
@@ -41,8 +47,8 @@ export function MealVault() {
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
 
-  // Create form state
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
     prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "",
@@ -57,7 +63,7 @@ export function MealVault() {
     setLoading(true);
     const { data, error } = await supabase
       .from("meals")
-      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url")
+      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
       .order("created_at", { ascending: false });
     if (data) setMeals(data);
     if (error) console.error("Failed to load meals", error);
@@ -111,22 +117,13 @@ export function MealVault() {
     }
 
     const { error } = await supabase.from("meals").insert({
-      user_id: user.id,
-      title: form.title,
-      description: form.description || null,
-      calories: parseFloat(form.calories) || 0,
-      protein: parseFloat(form.protein) || 0,
-      carbs: parseFloat(form.carbs) || 0,
-      fats: parseFloat(form.fats) || 0,
-      prep_time: parseInt(form.prep_time) || null,
-      cook_time: parseInt(form.cook_time) || null,
-      servings: parseInt(form.servings) || 1,
-      tags: tagList,
-      ingredients: ingredientList,
-      instructions: instructionList,
-      is_public: false,
-      image_url,
-      image_filename,
+      user_id: user.id, title: form.title, description: form.description || null,
+      calories: parseFloat(form.calories) || 0, protein: parseFloat(form.protein) || 0,
+      carbs: parseFloat(form.carbs) || 0, fats: parseFloat(form.fats) || 0,
+      prep_time: parseInt(form.prep_time) || null, cook_time: parseInt(form.cook_time) || null,
+      servings: parseInt(form.servings) || 1, tags: tagList,
+      ingredients: ingredientList, instructions: instructionList,
+      is_public: false, image_url, image_filename,
     });
 
     if (error) {
@@ -149,21 +146,35 @@ export function MealVault() {
     return matchesSearch && matchesFavorite;
   });
 
+  // Detail view
+  if (selectedMeal) {
+    return (
+      <MealDetailView
+        meal={selectedMeal}
+        isFavorite={favorites.includes(selectedMeal.id)}
+        onToggleFavorite={() => toggleFavorite(selectedMeal.id)}
+        onBack={() => setSelectedMeal(null)}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Heart className="h-6 w-6 text-primary" />
             Meal Vault
           </h2>
-          <p className="text-muted-foreground">Browse recipes and save your favorites</p>
+          <p className="text-muted-foreground text-sm">Browse recipes and save your favorites</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1" /> Add Meal
         </Button>
       </div>
 
+      {/* Search + Filter */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -174,6 +185,7 @@ export function MealVault() {
         </Button>
       </div>
 
+      {/* Results */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -186,55 +198,85 @@ export function MealVault() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {filtered.map((meal) => (
-            <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className="flex">
-                <div className="flex-1 min-w-0 p-4">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-semibold text-sm leading-tight truncate pr-2">{meal.title}</h3>
-                    <button onClick={() => toggleFavorite(meal.id)} className="shrink-0">
-                      <Heart className={`h-4 w-4 transition-colors ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-destructive"}`} />
+        <div className="grid gap-4">
+          {filtered.map((meal) => {
+            const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
+            const allTags = [...(meal.tags || []), ...(meal.diet_tags || []), ...(meal.health_tags || [])];
+
+            return (
+              <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                {/* Image banner */}
+                {meal.image_url && (
+                  <div className="relative h-40 overflow-hidden">
+                    <img src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(meal.id); }}
+                      className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
+                    >
+                      <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                     </button>
                   </div>
-                  {meal.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{meal.description}</p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] mb-2">
-                    <span className="font-medium text-primary">{meal.calories || 0}<span className="text-muted-foreground font-normal">cal</span></span>
-                    <span>{meal.protein || 0}g<span className="text-muted-foreground"> protein</span></span>
-                    <span>{meal.carbs || 0}g<span className="text-muted-foreground"> carbs</span></span>
-                    <span>{meal.fats || 0}g<span className="text-muted-foreground"> fats</span></span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    {(meal.prep_time || meal.cook_time) && (
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {(meal.prep_time || 0) + (meal.cook_time || 0)}min</span>
+                )}
+
+                <CardContent className={`${meal.image_url ? 'pt-3' : 'pt-4'} pb-3 px-4 space-y-2.5`}>
+                  {/* Title + desc */}
+                  <div>
+                    <h3 className="font-semibold text-sm truncate">{meal.title}</h3>
+                    {meal.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{meal.description}</p>
                     )}
-                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
                   </div>
-                  {meal.tags && meal.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {meal.tags.slice(0, 3).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+
+                  {/* Macro badges */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold">{meal.calories || 0}</span>
+                    <span className="text-[10px] text-muted-foreground">cal</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 border-0 font-semibold">
+                      {meal.protein || 0}g <span className="font-normal ml-0.5">protein</span>
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-600 border-0 font-semibold">
+                      {meal.carbs || 0}g <span className="font-normal ml-0.5">carbs</span>
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-700 border-0 font-semibold">
+                      {meal.fats || 0}g <span className="font-normal ml-0.5">fat</span>
+                    </Badge>
+                  </div>
+
+                  {/* Time + servings */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3">
+                      {totalTime > 0 && (
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {totalTime} min</span>
+                      )}
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  {allTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {allTags.slice(0, 3).map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">{tag}</Badge>
                       ))}
-                      {meal.tags.length > 3 && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{meal.tags.length - 3}</Badge>
+                      {allTags.length > 3 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{allTags.length - 3} more</Badge>
                       )}
                     </div>
                   )}
-                </div>
-                {meal.image_url && (
-                  <div className="w-24 shrink-0">
-                    <img
-                      src={meal.image_url}
-                      alt={meal.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-            </Card>
-          ))}
+
+                  {/* View button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs"
+                    onClick={() => setSelectedMeal(meal)}
+                  >
+                    <Eye className="h-3.5 w-3.5" /> View
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -266,57 +308,24 @@ export function MealVault() {
                 )}
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) {
-                    setImageFile(file);
-                    setImagePreview(URL.createObjectURL(file));
-                  }
+                  if (file) { setImageFile(file); setImagePreview(URL.createObjectURL(file)); }
                 }} />
               </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Calories</Label>
-                <Input type="number" placeholder="0" value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Protein (g)</Label>
-                <Input type="number" placeholder="0" value={form.protein} onChange={(e) => setForm({ ...form, protein: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Carbs (g)</Label>
-                <Input type="number" placeholder="0" value={form.carbs} onChange={(e) => setForm({ ...form, carbs: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Fats (g)</Label>
-                <Input type="number" placeholder="0" value={form.fats} onChange={(e) => setForm({ ...form, fats: e.target.value })} />
-              </div>
+              <div className="space-y-2"><Label>Calories</Label><Input type="number" placeholder="0" value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Protein (g)</Label><Input type="number" placeholder="0" value={form.protein} onChange={(e) => setForm({ ...form, protein: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Carbs (g)</Label><Input type="number" placeholder="0" value={form.carbs} onChange={(e) => setForm({ ...form, carbs: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Fats (g)</Label><Input type="number" placeholder="0" value={form.fats} onChange={(e) => setForm({ ...form, fats: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label>Prep (min)</Label>
-                <Input type="number" placeholder="0" value={form.prep_time} onChange={(e) => setForm({ ...form, prep_time: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Cook (min)</Label>
-                <Input type="number" placeholder="0" value={form.cook_time} onChange={(e) => setForm({ ...form, cook_time: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Servings</Label>
-                <Input type="number" placeholder="1" value={form.servings} onChange={(e) => setForm({ ...form, servings: e.target.value })} />
-              </div>
+              <div className="space-y-2"><Label>Prep (min)</Label><Input type="number" placeholder="0" value={form.prep_time} onChange={(e) => setForm({ ...form, prep_time: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Cook (min)</Label><Input type="number" placeholder="0" value={form.cook_time} onChange={(e) => setForm({ ...form, cook_time: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Servings</Label><Input type="number" placeholder="1" value={form.servings} onChange={(e) => setForm({ ...form, servings: e.target.value })} /></div>
             </div>
-            <div className="space-y-2">
-              <Label>Tags (comma-separated)</Label>
-              <Input placeholder="high-protein, meal-prep, quick" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Ingredients (one per line)</Label>
-              <Textarea placeholder={"2 cups oats\n1 scoop whey protein\n1 banana"} rows={4} value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Instructions (one per line)</Label>
-              <Textarea placeholder={"Mix dry ingredients\nAdd wet ingredients\nCook on medium heat"} rows={4} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
-            </div>
+            <div className="space-y-2"><Label>Tags (comma-separated)</Label><Input placeholder="high-protein, meal-prep, quick" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Ingredients (one per line)</Label><Textarea placeholder={"2 cups oats\n1 scoop whey protein\n1 banana"} rows={4} value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Instructions (one per line)</Label><Textarea placeholder={"Mix dry ingredients\nAdd wet ingredients\nCook on medium heat"} rows={4} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></div>
             <Button className="w-full" onClick={createRecipe} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
               Save Recipe
