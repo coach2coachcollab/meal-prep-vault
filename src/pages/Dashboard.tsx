@@ -37,12 +37,7 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "home":
-        return <HomeDashboard onNavigate={setActiveTab} onNavigateToLog={() => {
-          setAutoOpenLog(false);
-          setActiveTab("nutrition");
-          setNutritionSub("journal");
-          setTimeout(() => setAutoOpenLog(true), 50);
-        }} />;
+        return <HomeDashboard onNavigate={setActiveTab} />;
       case "nutrition":
         return (
           <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
@@ -91,12 +86,7 @@ export default function Dashboard() {
           </Tabs>
         );
       default:
-        return <HomeDashboard onNavigate={setActiveTab} onNavigateToLog={() => {
-          setAutoOpenLog(false);
-          setActiveTab("nutrition");
-          setNutritionSub("journal");
-          setTimeout(() => setAutoOpenLog(true), 50);
-        }} />;
+        return <HomeDashboard onNavigate={setActiveTab} />;
     }
   };
 

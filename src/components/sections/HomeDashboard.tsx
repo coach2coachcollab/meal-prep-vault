@@ -18,7 +18,7 @@ const tips = [
   "Eating colorful vegetables provides diverse micronutrients your body needs.",
 ];
 
-export function HomeDashboard({ onNavigate, onNavigateToLog }: { onNavigate: (tab: string) => void; onNavigateToLog?: () => void }) {
+export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
   const [profileName, setProfileName] = useState("");
   const [macros, setMacros] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
@@ -214,7 +214,7 @@ export function HomeDashboard({ onNavigate, onNavigateToLog }: { onNavigate: (ta
       </div>
 
       {/* Macro Ring */}
-      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigateToLog ? onNavigateToLog() : onNavigate("nutrition")}>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
             <div className="relative h-24 w-24 shrink-0">
