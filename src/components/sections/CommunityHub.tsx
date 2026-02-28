@@ -129,12 +129,25 @@ export function CommunityHub() {
   };
 
   const loadComments = async (postId: string): Promise<InlineComment[]> => {
+    if (!user) return [];
     const { data } = await supabase.from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
     if (!data) return [];
     const uids = [...new Set(data.map((c) => c.user_id))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, name").in("user_id", uids);
     const nm = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
-    return data.map((c) => ({ ...c, user_name: nm[c.user_id] }));
+    const commentIds = data.map((c) => c.id);
+    const { data: allLikes } = commentIds.length > 0
+      ? await supabase.from("comment_likes").select("comment_id, user_id").in("comment_id", commentIds)
+      : { data: [] };
+    return data.map((c) => {
+      const likes = (allLikes || []).filter((l) => l.comment_id === c.id);
+      return {
+        ...c,
+        user_name: nm[c.user_id],
+        like_count: likes.length,
+        is_liked: likes.some((l) => l.user_id === user!.id),
+      };
+    });
   };
 
   const addComment = async (postId: string, text: string) => {
@@ -153,6 +166,16 @@ export function CommunityHub() {
     await supabase.from("post_comments").delete().eq("id", commentId);
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p));
     toast.success("Comment deleted");
+  };
+
+  const toggleCommentLike = async (commentId: string, postId: string) => {
+    if (!user) return;
+    const { data: existing } = await supabase.from("comment_likes").select("id").eq("comment_id", commentId).eq("user_id", user.id).maybeSingle();
+    if (existing) {
+      await supabase.from("comment_likes").delete().eq("id", existing.id);
+    } else {
+      await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id });
+    }
   };
 
   return (
@@ -221,6 +244,7 @@ export function CommunityHub() {
             onAddComment={addComment}
             onEditComment={editComment}
             onDeleteComment={deleteComment}
+            onToggleCommentLike={toggleCommentLike}
           />
         ))}
       </div>

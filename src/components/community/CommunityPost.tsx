@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send, ChevronDown, ChevronUp, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const reactions = ["💪", "❤️", "🎉", "🔥", "👏"];
@@ -31,6 +31,8 @@ export interface InlineComment {
   text: string;
   created_at: string;
   user_name?: string;
+  like_count: number;
+  is_liked: boolean;
 }
 
 interface CommunityPostProps {
@@ -44,11 +46,12 @@ interface CommunityPostProps {
   onAddComment: (postId: string, text: string) => Promise<void>;
   onEditComment: (commentId: string, newText: string) => Promise<void>;
   onDeleteComment: (commentId: string, postId: string) => Promise<void>;
+  onToggleCommentLike: (commentId: string, postId: string) => Promise<void>;
 }
 
 export function CommunityPost({
   post, currentUserId, onToggleReaction, onDeletePost, onEditPost,
-  onToggleSave, onLoadComments, onAddComment, onEditComment, onDeleteComment,
+  onToggleSave, onLoadComments, onAddComment, onEditComment, onDeleteComment, onToggleCommentLike,
 }: CommunityPostProps) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
@@ -253,6 +256,13 @@ export function CommunityPost({
                           )}
                           <div className="flex items-center gap-3 mt-0.5 px-1">
                             <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+                            <button
+                              className={cn("text-[10px] font-medium flex items-center gap-0.5", c.is_liked ? "text-destructive" : "text-muted-foreground hover:text-destructive")}
+                              onClick={() => onToggleCommentLike(c.id, post.id)}
+                            >
+                              <Heart className={cn("h-3 w-3", c.is_liked && "fill-current")} />
+                              {c.like_count > 0 && <span>{c.like_count}</span>}
+                            </button>
                             {c.user_id === currentUserId && editingCommentId !== c.id && (
                               <>
                                 <button
