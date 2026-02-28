@@ -368,9 +368,9 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               {progressSummary.weightChange != null && (
                 <div className="flex items-center gap-2">
                   {progressSummary.weightChange < 0 ? (
-                    <TrendingDown className="h-4 w-4 text-green-500" />
+                    <TrendingDown className="h-4 w-4 text-success" />
                   ) : progressSummary.weightChange > 0 ? (
-                    <TrendingUp className="h-4 w-4 text-orange-500" />
+                    <TrendingUp className="h-4 w-4 text-warning" />
                   ) : (
                     <Minus className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -385,9 +385,9 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               {progressSummary.waistChange != null && (
                 <div className="flex items-center gap-2">
                   {progressSummary.waistChange < 0 ? (
-                    <TrendingDown className="h-4 w-4 text-green-500" />
+                    <TrendingDown className="h-4 w-4 text-success" />
                   ) : progressSummary.waistChange > 0 ? (
-                    <TrendingUp className="h-4 w-4 text-orange-500" />
+                    <TrendingUp className="h-4 w-4 text-warning" />
                   ) : (
                     <Minus className="h-4 w-4 text-muted-foreground" />
                   )}

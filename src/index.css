@@ -46,6 +46,14 @@
     --nutricoach-lime: 72 85% 50%;
     --nutricoach-dark: 150 15% 12%;
     --nutricoach-sage: 150 20% 40%;
+
+    --macro-protein: 142 71% 40%;
+    --macro-carbs: 25 95% 55%;
+    --macro-fat: 45 93% 47%;
+    --success: 142 71% 40%;
+    --warning: 25 95% 55%;
+    --star: 45 93% 47%;
+    --streak: 25 95% 55%;
   }
 
   .dark {
@@ -85,6 +93,14 @@
     --sidebar-accent-foreground: 150 5% 90%;
     --sidebar-border: 150 10% 14%;
     --sidebar-ring: 72 85% 50%;
+
+    --macro-protein: 142 71% 50%;
+    --macro-carbs: 25 95% 65%;
+    --macro-fat: 45 93% 58%;
+    --success: 142 71% 50%;
+    --warning: 25 95% 65%;
+    --star: 45 93% 58%;
+    --streak: 25 95% 65%;
   }
 }
 
