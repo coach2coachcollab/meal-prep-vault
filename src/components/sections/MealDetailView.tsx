@@ -47,6 +47,8 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [hoveredStar, setHoveredStar] = useState<number>(0);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [ratingCount, setRatingCount] = useState<number>(0);
+  const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
+  const [addingToList, setAddingToList] = useState(false);
 
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
@@ -110,6 +112,65 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     } else {
       toast.success(`Rated ${rating} star${rating > 1 ? "s" : ""}`);
       loadRatings();
+    }
+  };
+
+  const toggleIngredient = (index: number) => {
+    setSelectedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const selectAllIngredients = () => {
+    if (selectedIngredients.size === ingredientsList.length) {
+      setSelectedIngredients(new Set());
+    } else {
+      setSelectedIngredients(new Set(ingredientsList.map((_, i) => i)));
+    }
+  };
+
+  const addToShoppingList = async () => {
+    if (!user || selectedIngredients.size === 0) return;
+    setAddingToList(true);
+    try {
+      // Get or create the user's grocery list
+      let { data: list } = await supabase
+        .from("grocery_lists")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!list) {
+        const { data: newList, error } = await supabase
+          .from("grocery_lists")
+          .insert({ user_id: user.id, name: "My Grocery List" })
+          .select("id")
+          .single();
+        if (error) throw error;
+        list = newList;
+      }
+
+      // Add selected ingredients
+      const items = Array.from(selectedIngredients).map((i) => ({
+        grocery_list_id: list!.id,
+        ingredient: ingredientsList[i],
+        is_checked: false,
+      }));
+
+      const { error } = await supabase.from("grocery_list_items").insert(items);
+      if (error) throw error;
+
+      toast.success(`Added ${items.length} item${items.length > 1 ? "s" : ""} to shopping list`);
+      setSelectedIngredients(new Set());
+    } catch (e) {
+      toast.error("Failed to add items");
+    } finally {
+      setAddingToList(false);
     }
   };
 
@@ -274,13 +335,23 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         <TabsContent value="grocery">
           <Card>
             <CardContent className="pt-5">
-              <p className="text-sm text-muted-foreground mb-3">
-                Shopping list for {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}:
-              </p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-muted-foreground">
+                  {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""} · {selectedIngredients.size} selected
+                </p>
+                {ingredientsList.length > 0 && (
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={selectAllIngredients}>
+                    {selectedIngredients.size === ingredientsList.length ? "Deselect all" : "Select all"}
+                  </Button>
+                )}
+              </div>
               <div className="grid grid-cols-1 gap-2">
                 {ingredientsList.length > 0 ? ingredientsList.map((item, i) => (
                   <label key={i} className="flex items-center gap-3 cursor-pointer">
-                    <Checkbox />
+                    <Checkbox
+                      checked={selectedIngredients.has(i)}
+                      onCheckedChange={() => toggleIngredient(i)}
+                    />
                     <span className="text-sm">{item}</span>
                   </label>
                 )) : (
@@ -288,8 +359,14 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                 )}
               </div>
               {ingredientsList.length > 0 && (
-                <Button className="w-full mt-4 gap-2" variant="default">
-                  <ShoppingCart className="h-4 w-4" /> Add All to Shopping List
+                <Button
+                  className="w-full mt-4 gap-2"
+                  variant="default"
+                  disabled={selectedIngredients.size === 0 || addingToList}
+                  onClick={addToShoppingList}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {addingToList ? "Adding..." : `Add ${selectedIngredients.size > 0 ? selectedIngredients.size : ""} to Shopping List`}
                 </Button>
               )}
             </CardContent>
