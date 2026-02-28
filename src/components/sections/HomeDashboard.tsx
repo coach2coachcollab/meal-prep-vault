@@ -246,9 +246,17 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">{greeting()}, {profileName || "there"} 👋</h2>
-        <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">{greeting()}, {profileName || "there"} 👋</h2>
+          <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+        </div>
+        {streak > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-bold text-foreground">{streak}🔥</span>
+          </div>
+        )}
       </div>
 
       {/* Macro Ring */}
