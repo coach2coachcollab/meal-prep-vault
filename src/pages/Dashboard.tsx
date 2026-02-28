@@ -119,7 +119,15 @@ export default function Dashboard() {
       <main className="max-w-lg mx-auto px-4 py-6">
         {renderContent()}
       </main>
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onSubTabChange={(tab, sub) => {
+          setActiveTab(tab);
+          if (tab === "nutrition") setNutritionSub(sub);
+          if (tab === "plan") setPlanSub(sub);
+        }}
+      />
     </div>
   );
 }
