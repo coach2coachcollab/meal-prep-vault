@@ -43,7 +43,7 @@ interface DbMeal {
   servings: number | null;
 }
 
-export function MealJournal() {
+export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
   const { user } = useAuth();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -51,6 +51,14 @@ export function MealJournal() {
   const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addMealType, setAddMealType] = useState("Breakfast");
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
+
+  useEffect(() => {
+    if (autoOpenLog && !hasAutoOpened) {
+      setDialogOpen(true);
+      setHasAutoOpened(true);
+    }
+  }, [autoOpenLog, hasAutoOpened]);
 
   // Manual entry
   const [foodName, setFoodName] = useState("");
