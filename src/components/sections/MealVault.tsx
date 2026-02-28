@@ -2,40 +2,68 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Flame } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Flame, Loader2, ChefHat } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-// Sample meals for the vault
-const sampleMeals = [
-  { id: "s1", title: "Grilled Chicken Bowl", description: "High protein chicken with quinoa and veggies", calories: 520, protein: 45, carbs: 48, fats: 14, prep_time: 15, cook_time: 20, servings: 1, tags: ["high-protein", "meal-prep"], is_public: true },
-  { id: "s2", title: "Salmon & Avocado Salad", description: "Omega-3 rich salmon on fresh greens", calories: 480, protein: 35, carbs: 12, fats: 32, prep_time: 10, cook_time: 15, servings: 1, tags: ["keto", "omega-3"], is_public: true },
-  { id: "s3", title: "Turkey Meatballs", description: "Lean turkey meatballs with zucchini noodles", calories: 390, protein: 42, carbs: 18, fats: 16, prep_time: 20, cook_time: 25, servings: 2, tags: ["high-protein", "low-carb"], is_public: true },
-  { id: "s4", title: "Greek Yogurt Parfait", description: "Protein-packed yogurt with berries and granola", calories: 320, protein: 24, carbs: 42, fats: 8, prep_time: 5, cook_time: 0, servings: 1, tags: ["breakfast", "quick"], is_public: true },
-  { id: "s5", title: "Steak & Sweet Potato", description: "Grass-fed steak with roasted sweet potato", calories: 620, protein: 48, carbs: 52, fats: 22, prep_time: 10, cook_time: 30, servings: 1, tags: ["high-protein", "bulking"], is_public: true },
-  { id: "s6", title: "Veggie Stir Fry", description: "Colorful vegetables with tofu in teriyaki sauce", calories: 340, protein: 18, carbs: 38, fats: 14, prep_time: 15, cook_time: 10, servings: 2, tags: ["vegetarian", "quick"], is_public: true },
-  { id: "s7", title: "Overnight Oats", description: "Protein oats with chia, banana and almond butter", calories: 410, protein: 22, carbs: 56, fats: 14, prep_time: 5, cook_time: 0, servings: 1, tags: ["breakfast", "meal-prep"], is_public: true },
-  { id: "s8", title: "Shrimp Tacos", description: "Grilled shrimp with slaw and chipotle sauce", calories: 440, protein: 32, carbs: 36, fats: 18, prep_time: 15, cook_time: 10, servings: 2, tags: ["seafood", "quick"], is_public: true },
-];
+interface Meal {
+  id: string;
+  title: string;
+  description: string | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  prep_time: number | null;
+  cook_time: number | null;
+  servings: number | null;
+  tags: string[] | null;
+  is_public: boolean | null;
+  user_id: string | null;
+  ingredients: any;
+  instructions: any;
+}
 
 export function MealVault() {
   const { user } = useAuth();
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Create form state
+  const [form, setForm] = useState({
+    title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
+    prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "",
+  });
 
   useEffect(() => {
+    loadMeals();
     if (user) loadFavorites();
   }, [user]);
 
+  const loadMeals = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("meals")
+      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions")
+      .order("created_at", { ascending: false });
+    if (data) setMeals(data);
+    if (error) console.error("Failed to load meals", error);
+    setLoading(false);
+  };
+
   const loadFavorites = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("favorite_meals")
-      .select("meal_id")
-      .eq("user_id", user.id);
+    const { data } = await supabase.from("favorite_meals").select("meal_id").eq("user_id", user.id);
     if (data) setFavorites(data.map((f) => f.meal_id));
   };
 
@@ -52,9 +80,47 @@ export function MealVault() {
     }
   };
 
-  const filtered = sampleMeals.filter((meal) => {
+  const createRecipe = async () => {
+    if (!user || !form.title.trim()) {
+      toast.error("Please enter a recipe title");
+      return;
+    }
+    setSaving(true);
+    const ingredientList = form.ingredients.split("\n").filter(Boolean).map((i) => i.trim());
+    const instructionList = form.instructions.split("\n").filter(Boolean).map((i) => i.trim());
+    const tagList = form.tags.split(",").filter(Boolean).map((t) => t.trim().toLowerCase());
+
+    const { error } = await supabase.from("meals").insert({
+      user_id: user.id,
+      title: form.title,
+      description: form.description || null,
+      calories: parseFloat(form.calories) || 0,
+      protein: parseFloat(form.protein) || 0,
+      carbs: parseFloat(form.carbs) || 0,
+      fats: parseFloat(form.fats) || 0,
+      prep_time: parseInt(form.prep_time) || null,
+      cook_time: parseInt(form.cook_time) || null,
+      servings: parseInt(form.servings) || 1,
+      tags: tagList,
+      ingredients: ingredientList,
+      instructions: instructionList,
+      is_public: false,
+    });
+
+    if (error) {
+      toast.error("Failed to save recipe");
+    } else {
+      toast.success("Recipe created! 🎉");
+      setForm({ title: "", description: "", calories: "", protein: "", carbs: "", fats: "", prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "" });
+      setShowCreate(false);
+      loadMeals();
+    }
+    setSaving(false);
+  };
+
+  const filtered = meals.filter((meal) => {
     const matchesSearch = meal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meal.tags.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
+      (meal.tags || []).some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFavorite = !showFavoritesOnly || favorites.includes(meal.id);
     return matchesSearch && matchesFavorite;
   });
@@ -69,7 +135,7 @@ export function MealVault() {
           </h2>
           <p className="text-muted-foreground">Browse recipes and save your favorites</p>
         </div>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1" /> Add Meal
         </Button>
       </div>
@@ -77,75 +143,142 @@ export function MealVault() {
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search meals or tags..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <Input placeholder="Search meals or tags..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
-        <Button
-          variant={showFavoritesOnly ? "default" : "outline"}
-          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-        >
+        <Button variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
           <Heart className="h-4 w-4 mr-1" /> Favorites
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((meal) => (
-          <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-lg leading-tight">{meal.title}</CardTitle>
-                <button
-                  onClick={() => toggleFavorite(meal.id)}
-                  className="shrink-0 ml-2"
-                >
-                  <Heart
-                    className={`h-5 w-5 transition-colors ${
-                      favorites.includes(meal.id)
-                        ? "fill-destructive text-destructive"
-                        : "text-muted-foreground hover:text-destructive"
-                    }`}
-                  />
-                </button>
-              </div>
-              <p className="text-sm text-muted-foreground">{meal.description}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-4 gap-2 mb-3 text-center text-xs">
-                <div className="p-2 rounded bg-primary/10">
-                  <Flame className="h-3 w-3 mx-auto mb-1 text-primary" />
-                  <p className="font-semibold">{meal.calories}</p>
-                  <p className="text-muted-foreground">cal</p>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <ChefHat className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-muted-foreground">
+            {searchTerm ? "No meals match your search" : "No recipes yet. Add your first one!"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((meal) => (
+            <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg leading-tight">{meal.title}</CardTitle>
+                  <button onClick={() => toggleFavorite(meal.id)} className="shrink-0 ml-2">
+                    <Heart className={`h-5 w-5 transition-colors ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-destructive"}`} />
+                  </button>
                 </div>
-                <div className="p-2 rounded bg-destructive/10">
-                  <p className="font-semibold">{meal.protein}g</p>
-                  <p className="text-muted-foreground">protein</p>
+                {meal.description && <p className="text-sm text-muted-foreground">{meal.description}</p>}
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-2 mb-3 text-center text-xs">
+                  <div className="p-2 rounded bg-primary/10">
+                    <Flame className="h-3 w-3 mx-auto mb-1 text-primary" />
+                    <p className="font-semibold">{meal.calories || 0}</p>
+                    <p className="text-muted-foreground">cal</p>
+                  </div>
+                  <div className="p-2 rounded bg-destructive/10">
+                    <p className="font-semibold">{meal.protein || 0}g</p>
+                    <p className="text-muted-foreground">protein</p>
+                  </div>
+                  <div className="p-2 rounded bg-accent">
+                    <p className="font-semibold">{meal.carbs || 0}g</p>
+                    <p className="text-muted-foreground">carbs</p>
+                  </div>
+                  <div className="p-2 rounded bg-secondary">
+                    <p className="font-semibold">{meal.fats || 0}g</p>
+                    <p className="text-muted-foreground">fats</p>
+                  </div>
                 </div>
-                <div className="p-2 rounded bg-accent">
-                  <p className="font-semibold">{meal.carbs}g</p>
-                  <p className="text-muted-foreground">carbs</p>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                  {(meal.prep_time || meal.cook_time) && (
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {(meal.prep_time || 0) + (meal.cook_time || 0)}min</span>
+                  )}
+                  <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
                 </div>
-                <div className="p-2 rounded bg-secondary">
-                  <p className="font-semibold">{meal.fats}g</p>
-                  <p className="text-muted-foreground">fats</p>
-                </div>
+                {meal.tags && meal.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {meal.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create Recipe Dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ChefHat className="h-5 w-5" /> Create Recipe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Recipe Name *</Label>
+              <Input placeholder="e.g., Protein Pancakes" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input placeholder="Brief description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Calories</Label>
+                <Input type="number" placeholder="0" value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} />
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {meal.prep_time + meal.cook_time}min</span>
-                <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings} serving{meal.servings > 1 ? "s" : ""}</span>
+              <div className="space-y-2">
+                <Label>Protein (g)</Label>
+                <Input type="number" placeholder="0" value={form.protein} onChange={(e) => setForm({ ...form, protein: e.target.value })} />
               </div>
-              <div className="flex flex-wrap gap-1">
-                {meal.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-                ))}
+              <div className="space-y-2">
+                <Label>Carbs (g)</Label>
+                <Input type="number" placeholder="0" value={form.carbs} onChange={(e) => setForm({ ...form, carbs: e.target.value })} />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div className="space-y-2">
+                <Label>Fats (g)</Label>
+                <Input type="number" placeholder="0" value={form.fats} onChange={(e) => setForm({ ...form, fats: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>Prep (min)</Label>
+                <Input type="number" placeholder="0" value={form.prep_time} onChange={(e) => setForm({ ...form, prep_time: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Cook (min)</Label>
+                <Input type="number" placeholder="0" value={form.cook_time} onChange={(e) => setForm({ ...form, cook_time: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Servings</Label>
+                <Input type="number" placeholder="1" value={form.servings} onChange={(e) => setForm({ ...form, servings: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Tags (comma-separated)</Label>
+              <Input placeholder="high-protein, meal-prep, quick" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Ingredients (one per line)</Label>
+              <Textarea placeholder={"2 cups oats\n1 scoop whey protein\n1 banana"} rows={4} value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Instructions (one per line)</Label>
+              <Textarea placeholder={"Mix dry ingredients\nAdd wet ingredients\nCook on medium heat"} rows={4} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+            </div>
+            <Button className="w-full" onClick={createRecipe} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+              Save Recipe
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

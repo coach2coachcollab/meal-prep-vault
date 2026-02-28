@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Sparkles, RefreshCw, Save, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
@@ -34,17 +34,15 @@ interface SavedPlan {
   created_at: string;
 }
 
-// Same sample meals as MealVault
-const sampleMeals = [
-  { id: "s1", title: "Grilled Chicken Bowl", calories: 520, protein: 45, carbs: 48, fats: 14, tags: ["high-protein", "meal-prep"] },
-  { id: "s2", title: "Salmon & Avocado Salad", calories: 480, protein: 35, carbs: 12, fats: 32, tags: ["keto", "omega-3"] },
-  { id: "s3", title: "Turkey Meatballs", calories: 390, protein: 42, carbs: 18, fats: 16, tags: ["high-protein", "low-carb"] },
-  { id: "s4", title: "Greek Yogurt Parfait", calories: 320, protein: 24, carbs: 42, fats: 8, tags: ["breakfast", "quick"] },
-  { id: "s5", title: "Steak & Sweet Potato", calories: 620, protein: 48, carbs: 52, fats: 22, tags: ["high-protein", "bulking"] },
-  { id: "s6", title: "Veggie Stir Fry", calories: 340, protein: 18, carbs: 38, fats: 14, tags: ["vegetarian", "quick"] },
-  { id: "s7", title: "Overnight Oats", calories: 410, protein: 22, carbs: 56, fats: 14, tags: ["breakfast", "meal-prep"] },
-  { id: "s8", title: "Shrimp Tacos", calories: 440, protein: 32, carbs: 36, fats: 18, tags: ["seafood", "quick"] },
-];
+interface DbMeal {
+  id: string;
+  title: string;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  tags: string[] | null;
+}
 
 const mealTimes = ["breakfast", "lunch", "dinner", "snack"] as const;
 const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -59,13 +57,23 @@ export function MealPlans() {
   const [macros, setMacros] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
   const [profile, setProfile] = useState<{ diet_prefs: string[]; allergies: string[] }>({ diet_prefs: [], allergies: [] });
   const [saving, setSaving] = useState(false);
+  const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
 
   useEffect(() => {
     if (user) {
       loadUserData();
       loadSavedPlans();
+      loadMeals();
     }
   }, [user]);
+
+  const loadMeals = async () => {
+    const { data } = await supabase
+      .from("meals")
+      .select("id, title, calories, protein, carbs, fats, tags")
+      .order("created_at", { ascending: false });
+    if (data) setDbMeals(data);
+  };
 
   const loadUserData = async () => {
     if (!user) return;
@@ -88,15 +96,17 @@ export function MealPlans() {
       toast.error("Set your macro targets in the Macros calculator first!");
       return;
     }
+    if (dbMeals.length < 4) {
+      toast.error("Add at least 4 meals to your Meal Vault first!");
+      return;
+    }
     setGenerating(true);
     try {
+      const mealsForAI = dbMeals.map((m) => ({
+        id: m.id, title: m.title, calories: m.calories || 0, protein: m.protein || 0, carbs: m.carbs || 0, fats: m.fats || 0, tags: m.tags || [],
+      }));
       const { data, error } = await supabase.functions.invoke("generate-meal-plan", {
-        body: {
-          meals: sampleMeals,
-          macros,
-          dietPrefs: profile.diet_prefs,
-          allergies: profile.allergies,
-        },
+        body: { meals: mealsForAI, macros, dietPrefs: profile.diet_prefs, allergies: profile.allergies },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -115,7 +125,7 @@ export function MealPlans() {
     if (!plan || !swapTarget) return;
     const newPlan = { ...plan, days: plan.days.map((d, i) => {
       if (i !== swapTarget.day) return d;
-      const meal = sampleMeals.find((m) => m.id === mealId);
+      const meal = dbMeals.find((m) => m.id === mealId);
       if (!meal) return d;
       return { ...d, meals: { ...d.meals, [swapTarget.time]: { meal_id: meal.id, title: meal.title } } };
     }) };
@@ -162,13 +172,13 @@ export function MealPlans() {
     loadSavedPlans();
   };
 
-  const getMealMacros = (mealId: string) => sampleMeals.find((m) => m.id === mealId);
+  const getMealMacros = (mealId: string) => dbMeals.find((m) => m.id === mealId);
 
   const getDayTotals = (day: DayPlan) => {
     let cal = 0, p = 0, c = 0, f = 0;
     mealTimes.forEach((t) => {
       const m = getMealMacros(day.meals[t].meal_id);
-      if (m) { cal += m.calories; p += m.protein; c += m.carbs; f += m.fats; }
+      if (m) { cal += m.calories || 0; p += m.protein || 0; c += m.carbs || 0; f += m.fats || 0; }
     });
     return { cal, p, c, f };
   };
@@ -178,28 +188,24 @@ export function MealPlans() {
 
   return (
     <div className="space-y-5">
-      {/* Generate button */}
       {!plan && (
         <div className="space-y-4">
           <div className="text-center py-8">
             <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-bold mb-1">AI Meal Plan Generator</h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
+            <p className="text-sm text-muted-foreground mb-2 max-w-xs mx-auto">
               Generate a personalized 7-day meal plan from your Meal Vault recipes, matched to your macro targets.
             </p>
-            <Button onClick={generatePlan} disabled={generating} size="lg">
-              {generating ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
-              ) : (
-                <><Sparkles className="h-4 w-4 mr-2" /> Generate Plan</>
-              )}
-            </Button>
-            {!macros && (
-              <p className="text-xs text-destructive mt-3">⚠️ Set your macros first in the Macros tab</p>
+            {dbMeals.length > 0 && (
+              <p className="text-xs text-muted-foreground mb-4">{dbMeals.length} recipes available</p>
             )}
+            <Button onClick={generatePlan} disabled={generating} size="lg">
+              {generating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="h-4 w-4 mr-2" /> Generate Plan</>}
+            </Button>
+            {!macros && <p className="text-xs text-destructive mt-3">⚠️ Set your macros first in the Macros tab</p>}
+            {dbMeals.length < 4 && <p className="text-xs text-destructive mt-2">⚠️ Add at least 4 meals to your Meal Vault</p>}
           </div>
 
-          {/* Saved plans */}
           {savedPlans.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Saved Plans</h4>
@@ -221,10 +227,8 @@ export function MealPlans() {
         </div>
       )}
 
-      {/* Generated plan view */}
       {plan && currentDay && (
         <div className="space-y-4">
-          {/* Day selector */}
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="icon" onClick={() => setSelectedDay(Math.max(0, selectedDay - 1))} disabled={selectedDay === 0}>
               <ChevronLeft className="h-5 w-5" />
@@ -238,38 +242,20 @@ export function MealPlans() {
             </Button>
           </div>
 
-          {/* Day dots */}
           <div className="flex justify-center gap-1.5">
             {dayNames.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedDay(i)}
-                className={`h-2 w-2 rounded-full transition-colors ${i === selectedDay ? "bg-primary" : "bg-muted"}`}
-              />
+              <button key={i} onClick={() => setSelectedDay(i)} className={`h-2 w-2 rounded-full transition-colors ${i === selectedDay ? "bg-primary" : "bg-muted"}`} />
             ))}
           </div>
 
-          {/* Daily totals */}
           {totals && (
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="py-3">
                 <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                  <div>
-                    <p className="font-bold text-base">{totals.cal}</p>
-                    <p className="text-muted-foreground">kcal</p>
-                  </div>
-                  <div>
-                    <p className="font-bold text-base">{totals.p}g</p>
-                    <p className="text-muted-foreground">protein</p>
-                  </div>
-                  <div>
-                    <p className="font-bold text-base">{totals.c}g</p>
-                    <p className="text-muted-foreground">carbs</p>
-                  </div>
-                  <div>
-                    <p className="font-bold text-base">{totals.f}g</p>
-                    <p className="text-muted-foreground">fat</p>
-                  </div>
+                  <div><p className="font-bold text-base">{totals.cal}</p><p className="text-muted-foreground">kcal</p></div>
+                  <div><p className="font-bold text-base">{totals.p}g</p><p className="text-muted-foreground">protein</p></div>
+                  <div><p className="font-bold text-base">{totals.c}g</p><p className="text-muted-foreground">carbs</p></div>
+                  <div><p className="font-bold text-base">{totals.f}g</p><p className="text-muted-foreground">fat</p></div>
                 </div>
                 {macros && (
                   <p className="text-[10px] text-center text-muted-foreground mt-1">
@@ -280,7 +266,6 @@ export function MealPlans() {
             </Card>
           )}
 
-          {/* Meals for the day */}
           <div className="space-y-3">
             {mealTimes.map((time) => {
               const meal = currentDay.meals[time];
@@ -290,22 +275,17 @@ export function MealPlans() {
                   <CardContent className="py-3">
                     <div className="flex items-center justify-between mb-1">
                       <Badge variant="outline" className="capitalize text-xs">{time}</Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => setSwapTarget({ day: selectedDay, time })}
-                      >
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSwapTarget({ day: selectedDay, time })}>
                         <RefreshCw className="h-3 w-3 mr-1" /> Swap
                       </Button>
                     </div>
                     <p className="font-medium text-sm">{meal.title}</p>
                     {mealData && (
                       <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                        <span>{mealData.calories} cal</span>
-                        <span>{mealData.protein}g P</span>
-                        <span>{mealData.carbs}g C</span>
-                        <span>{mealData.fats}g F</span>
+                        <span>{mealData.calories || 0} cal</span>
+                        <span>{mealData.protein || 0}g P</span>
+                        <span>{mealData.carbs || 0}g C</span>
+                        <span>{mealData.fats || 0}g F</span>
                       </div>
                     )}
                   </CardContent>
@@ -314,11 +294,8 @@ export function MealPlans() {
             })}
           </div>
 
-          {/* Action buttons */}
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => setPlan(null)}>
-              Discard
-            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => setPlan(null)}>Discard</Button>
             <Button className="flex-1" onClick={savePlan} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
               Save Plan
@@ -330,25 +307,20 @@ export function MealPlans() {
         </div>
       )}
 
-      {/* Swap dialog */}
       <Dialog open={!!swapTarget} onOpenChange={() => setSwapTarget(null)}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Swap {swapTarget?.time}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 pt-2">
-            {sampleMeals.map((meal) => (
-              <button
-                key={meal.id}
-                onClick={() => swapMeal(meal.id)}
-                className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors"
-              >
+            {dbMeals.map((meal) => (
+              <button key={meal.id} onClick={() => swapMeal(meal.id)} className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors">
                 <p className="font-medium text-sm">{meal.title}</p>
                 <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                  <span>{meal.calories} cal</span>
-                  <span>{meal.protein}g P</span>
-                  <span>{meal.carbs}g C</span>
-                  <span>{meal.fats}g F</span>
+                  <span>{meal.calories || 0} cal</span>
+                  <span>{meal.protein || 0}g P</span>
+                  <span>{meal.carbs || 0}g C</span>
+                  <span>{meal.fats || 0}g F</span>
                 </div>
               </button>
             ))}
