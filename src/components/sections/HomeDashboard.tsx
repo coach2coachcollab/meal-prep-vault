@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Zap } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Zap, Trophy, Award, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const tips = [
   "Protein at every meal helps maintain muscle mass and keeps you satisfied longer.",
@@ -38,9 +39,50 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     if (user) {
       loadData();
       loadProgressSummary();
-      loadStreak();
+      loadStreak().then(() => checkMilestones());
     }
   }, [user]);
+
+  const shownMilestones = useRef(new Set<string>());
+
+  const showMilestone = (key: string, icon: string, title: string, description: string) => {
+    const storageKey = `milestone_${user?.id}_${key}`;
+    if (shownMilestones.current.has(key)) return;
+    if (localStorage.getItem(storageKey)) return;
+    shownMilestones.current.add(key);
+    localStorage.setItem(storageKey, new Date().toISOString());
+    setTimeout(() => {
+      toast(title, {
+        description,
+        icon,
+        duration: 6000,
+      });
+    }, 1500);
+  };
+
+  const checkMilestones = async () => {
+    if (!user) return;
+
+    // Fetch latest data for checks
+    const [{ data: profile }, { data: latestLog }, { count: totalEntries }] = await Promise.all([
+      supabase.from("profiles").select("goal_weight_kg").eq("user_id", user.id).single(),
+      supabase.from("progress_logs").select("weight_kg").eq("user_id", user.id).order("date", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    ]);
+
+    // Goal weight reached
+    if (profile?.goal_weight_kg && latestLog?.weight_kg) {
+      if (latestLog.weight_kg <= profile.goal_weight_kg) {
+        showMilestone("goal_weight", "🏆", "Goal Weight Reached!", "You've hit your goal weight — incredible work!");
+      }
+    }
+
+    // Meal logging milestones
+    const mealCount = totalEntries || 0;
+    if (mealCount >= 100) showMilestone("meals_100", "⭐", "100 Meals Logged!", "You've logged 100 meals — dedication pays off!");
+    else if (mealCount >= 50) showMilestone("meals_50", "🌟", "50 Meals Logged!", "Half a century of meals tracked — great consistency!");
+    else if (mealCount >= 10) showMilestone("meals_10", "✨", "10 Meals Logged!", "You're building a strong tracking habit!");
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -122,6 +164,11 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       d.setDate(d.getDate() - 1);
     }
     setStreak(count);
+
+    // Streak milestones
+    if (count >= 30) showMilestone("streak_30", "👑", "30-Day Streak!", "A full month of consistency — you're unstoppable!");
+    else if (count >= 14) showMilestone("streak_14", "🔥", "14-Day Streak!", "Two weeks strong — your discipline is inspiring!");
+    else if (count >= 7) showMilestone("streak_7", "💪", "7-Day Streak!", "A full week of logging — amazing commitment!");
   };
 
 
