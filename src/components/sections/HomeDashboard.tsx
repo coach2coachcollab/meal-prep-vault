@@ -353,22 +353,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </Card>
       </div>
 
-      {/* Streak Counter */}
-      {streak > 0 && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-4 pb-4 flex items-center gap-4">
-            <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
-              <Zap className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{streak} day{streak !== 1 ? "s" : ""}</p>
-              <p className="text-xs text-muted-foreground">
-                🔥 Logging streak — keep it going!
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Progress Summary */}
       {progressSummary && (
