@@ -69,7 +69,7 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
                   key={tab.id}
                   onClick={() => setQuickOpen((o) => !o)}
                   className={cn(
-                    "flex items-center justify-center h-12 w-12 -mt-5 rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95",
+                    "flex items-center justify-center h-12 w-12 -mt-5 rounded-full bg-primary text-primary-foreground shadow-[0_0_14px_hsl(var(--primary)/0.5)] transition-all hover:scale-105 hover:shadow-[0_0_20px_hsl(var(--primary)/0.65)] active:scale-95",
                     quickOpen && "rotate-45"
                   )}
                 >
