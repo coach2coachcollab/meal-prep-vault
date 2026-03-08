@@ -14,6 +14,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
 const moods = ["😊", "😐", "😴", "😤", "😢"];
