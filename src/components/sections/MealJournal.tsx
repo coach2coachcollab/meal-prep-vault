@@ -327,26 +327,26 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       {/* Summary */}
       <Card>
         <CardContent className="pt-5 pb-5">
-          <div className="grid grid-cols-4 gap-3 text-center text-xs">
-            <div className="rounded-xl bg-primary/10 py-3 px-1">
-              <Flame className="h-4 w-4 mx-auto mb-1 text-primary" />
-              <p className="font-bold text-lg text-foreground">{totals.calories}</p>
-              <p className="text-muted-foreground">kcal</p>
+          <div className="grid grid-cols-4 gap-3 text-center">
+            <div className="rounded-xl bg-primary/10 py-4 px-1">
+              <Flame className="h-5 w-5 mx-auto mb-1.5 text-primary" />
+              <p className="font-bold text-xl text-foreground">{totals.calories}</p>
+              <p className="text-xs text-muted-foreground">kcal</p>
             </div>
-            <div className="rounded-xl bg-macro-protein/10 py-3 px-1">
-              <Beef className="h-4 w-4 mx-auto mb-1 text-macro-protein" />
-              <p className="font-bold text-foreground">{totals.protein}g</p>
-              <p className="text-muted-foreground">protein</p>
+            <div className="rounded-xl bg-macro-protein/10 py-4 px-1">
+              <Beef className="h-5 w-5 mx-auto mb-1.5 text-macro-protein" />
+              <p className="font-bold text-lg text-foreground">{totals.protein}g</p>
+              <p className="text-xs text-muted-foreground">protein</p>
             </div>
-            <div className="rounded-xl bg-macro-carbs/10 py-3 px-1">
-              <Wheat className="h-4 w-4 mx-auto mb-1 text-macro-carbs" />
-              <p className="font-bold text-foreground">{totals.carbs}g</p>
-              <p className="text-muted-foreground">carbs</p>
+            <div className="rounded-xl bg-macro-carbs/10 py-4 px-1">
+              <Wheat className="h-5 w-5 mx-auto mb-1.5 text-macro-carbs" />
+              <p className="font-bold text-lg text-foreground">{totals.carbs}g</p>
+              <p className="text-xs text-muted-foreground">carbs</p>
             </div>
-            <div className="rounded-xl bg-macro-fat/10 py-3 px-1">
-              <Droplets className="h-4 w-4 mx-auto mb-1 text-macro-fat" />
-              <p className="font-bold text-foreground">{totals.fat}g</p>
-              <p className="text-muted-foreground">fat</p>
+            <div className="rounded-xl bg-macro-fat/10 py-4 px-1">
+              <Droplets className="h-5 w-5 mx-auto mb-1.5 text-macro-fat" />
+              <p className="font-bold text-lg text-foreground">{totals.fat}g</p>
+              <p className="text-xs text-muted-foreground">fat</p>
             </div>
           </div>
           {statusMessage() && entries.length > 0 &&
