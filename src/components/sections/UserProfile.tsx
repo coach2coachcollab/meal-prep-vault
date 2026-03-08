@@ -240,7 +240,7 @@ export function UserProfile() {
       {profileData.goal && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-section-label font-semibold">Your Profile</CardTitle>
+            <CardTitle className="text-sm text-section-label font-label uppercase">Your Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
