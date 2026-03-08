@@ -68,6 +68,9 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [sharePhoto, setSharePhoto] = useState<File | null>(null);
   const [sharePhotoPreview, setSharePhotoPreview] = useState<string | null>(null);
   const shareFileRef = useRef<HTMLInputElement>(null);
+  const [storyCardBlob, setStoryCardBlob] = useState<Blob | null>(null);
+  const [storyCardUrl, setStoryCardUrl] = useState<string | null>(null);
+  const [generatingCard, setGeneratingCard] = useState(false);
 
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
