@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send
 import { cn } from "@/lib/utils";
 
 const reactions = ["💪", "❤️", "🎉", "🔥", "👏"];
+const commentReactions = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
 export interface PostData {
   id: string;
