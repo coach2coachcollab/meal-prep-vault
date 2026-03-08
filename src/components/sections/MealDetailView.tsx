@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRef } from "react";
+import { generateStoryCard } from "@/lib/story-card-generator";
 
 interface Meal {
   id: string;
