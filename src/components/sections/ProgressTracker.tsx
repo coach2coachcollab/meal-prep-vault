@@ -74,7 +74,7 @@ export function ProgressTracker() {
   });
 
   // Progress logs + photos query
-  const { data: logsData } = useQuery({
+  const { data: logsData, isLoading: logsLoading } = useQuery({
     queryKey: queryKeys.progressLogs(user?.id),
     queryFn: async () => {
       if (!user) return { logs: [] as ProgressLog[], logPhotos: {} as Record<string, ProgressPhoto[]> };
