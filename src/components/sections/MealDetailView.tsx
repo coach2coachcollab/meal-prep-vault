@@ -54,6 +54,15 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
   const [addingToList, setAddingToList] = useState(false);
 
+  // Community state
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [shareText, setShareText] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [showShareForm, setShowShareForm] = useState(false);
+
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
   const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
