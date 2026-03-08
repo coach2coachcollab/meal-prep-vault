@@ -23,12 +23,16 @@ interface CommunityHubProps {
   onHighlightHandled?: () => void;
 }
 
+const PAGE_SIZE = 20;
+
 export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityHubProps) {
   const { user } = useAuth();
   const [activeChannel, setActiveChannel] = useState("wins");
   const [posts, setPosts] = useState<PostData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (user) {
