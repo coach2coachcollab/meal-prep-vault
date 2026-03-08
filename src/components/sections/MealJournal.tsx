@@ -310,6 +310,8 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     setDialogOpen(true);
   };
 
+  if (entriesLoading) return <MealJournalSkeleton />;
+
   return (
     <div className="space-y-5">
       {/* Date nav */}
