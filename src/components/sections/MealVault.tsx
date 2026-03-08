@@ -46,10 +46,8 @@ const MEAL_PAGE_SIZE = 24;
 
 export function MealVault() {
   const { user } = useAuth();
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
@@ -57,54 +55,60 @@ export function MealVault() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
-  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<"meals" | "plans">("meals");
   const [planRefreshKey, setPlanRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cuisineFilter, setCuisineFilter] = useState("all");
-  const [hasMoreMeals, setHasMoreMeals] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
     prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "",
   });
 
-  useEffect(() => {
-    loadMeals();
-    loadRatings();
-    loadCommentCounts();
-    if (user) loadFavorites();
-  }, [user]);
+  // Infinite query for meals
+  const {
+    data: mealsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: loading,
+  } = useInfiniteQuery({
+    queryKey: queryKeys.meals(),
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data, error } = await supabase
+        .from("meals")
+        .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
+        .order("created_at", { ascending: false })
+        .range(pageParam, pageParam + MEAL_PAGE_SIZE - 1);
+      if (error) console.error("Failed to load meals", error);
+      return {
+        meals: (data || []) as Meal[],
+        nextOffset: (data?.length || 0) === MEAL_PAGE_SIZE ? pageParam + MEAL_PAGE_SIZE : null,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
+  });
 
-  const loadMeals = async (append = false) => {
-    if (!append) setLoading(true);
-    else setLoadingMore(true);
-    const offset = append ? meals.length : 0;
-    const { data, error } = await supabase
-      .from("meals")
-      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
-      .order("created_at", { ascending: false })
-      .range(offset, offset + MEAL_PAGE_SIZE - 1);
-    if (data) {
-      setMeals((prev) => append ? [...prev, ...data] : data);
-      setHasMoreMeals((data.length) === MEAL_PAGE_SIZE);
-    }
-    if (error) console.error("Failed to load meals", error);
-    setLoading(false);
-    setLoadingMore(false);
-  };
+  const meals = useMemo(() => mealsData?.pages.flatMap((p) => p.meals) || [], [mealsData]);
 
-  const loadFavorites = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("favorite_meals").select("meal_id").eq("user_id", user.id);
-    if (data) setFavorites(data.map((f) => f.meal_id));
-  };
+  // Favorites query
+  const { data: favorites = [] } = useQuery({
+    queryKey: queryKeys.favorites(user?.id),
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("favorite_meals").select("meal_id").eq("user_id", user.id);
+      return (data || []).map((f) => f.meal_id);
+    },
+    enabled: !!user,
+  });
 
-  const loadRatings = async () => {
-    const { data } = await supabase.from("meal_ratings").select("meal_id, rating");
-    if (data) {
+  // Ratings query
+  const { data: ratings = {} } = useQuery({
+    queryKey: queryKeys.mealRatings(),
+    queryFn: async () => {
+      const { data } = await supabase.from("meal_ratings").select("meal_id, rating");
+      if (!data) return {};
       const map: Record<string, number[]> = {};
       data.forEach((r) => {
         if (!map[r.meal_id]) map[r.meal_id] = [];
@@ -114,30 +118,34 @@ export function MealVault() {
       Object.entries(map).forEach(([id, vals]) => {
         result[id] = { avg: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10, count: vals.length };
       });
-      setRatings(result);
-    }
-  };
+      return result;
+    },
+  });
 
-  const loadCommentCounts = async () => {
-    const { data: posts } = await supabase
-      .from("community_posts")
-      .select("id, recipe_id")
-      .not("recipe_id", "is", null);
-    if (!posts || posts.length === 0) return;
-    const postIds = posts.map((p) => p.id);
-    const { data: comments } = await supabase
-      .from("post_comments")
-      .select("post_id")
-      .in("post_id", postIds);
-    if (!comments) return;
-    const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
-    const counts: Record<string, number> = {};
-    comments.forEach((c) => {
-      const recipeId = postToRecipe.get(c.post_id);
-      if (recipeId) counts[recipeId] = (counts[recipeId] || 0) + 1;
-    });
-    setCommentCounts(counts);
-  };
+  // Comment counts query
+  const { data: commentCounts = {} } = useQuery({
+    queryKey: queryKeys.mealCommentCounts(),
+    queryFn: async () => {
+      const { data: posts } = await supabase
+        .from("community_posts")
+        .select("id, recipe_id")
+        .not("recipe_id", "is", null);
+      if (!posts || posts.length === 0) return {};
+      const postIds = posts.map((p) => p.id);
+      const { data: comments } = await supabase
+        .from("post_comments")
+        .select("post_id")
+        .in("post_id", postIds);
+      if (!comments) return {};
+      const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
+      const counts: Record<string, number> = {};
+      comments.forEach((c) => {
+        const recipeId = postToRecipe.get(c.post_id);
+        if (recipeId) counts[recipeId] = (counts[recipeId] || 0) + 1;
+      });
+      return counts;
+    },
+  });
 
   const toggleFavorite = async (mealId: string) => {
     if (!user) return;
