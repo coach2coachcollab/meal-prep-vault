@@ -258,7 +258,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition:habits")}>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <CheckCircle2 className="h-5 w-5 text-primary mb-1" />
             <p className="text-lg font-bold">{habitsToday.done}/{habitsToday.total}</p>
