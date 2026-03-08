@@ -298,7 +298,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           <CardContent className="pt-5 pb-5">
             <div className="flex items-center gap-2 mb-3">
               <Activity className="h-4 w-4 text-primary" />
-              <p className="text-xs font-semibold text-primary">
+              <p className="text-xs font-label uppercase text-primary">
                 {progressSummary.period === "week" ? "Weekly" : "Monthly"} Progress
               </p>
             </div>
