@@ -212,7 +212,7 @@ export function WaterTracker() {
               <div className="flex gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} onClick={() => setDailyNote({ ...dailyNote, energy_level: n })}>
-                    <Star className={cn("h-5 w-5 transition-colors", n <= dailyNote.energy_level ? "fill-primary text-primary" : "text-muted")} />
+                    <Star className={cn("h-5 w-5 transition-colors", n <= dailyNote.energy_level ? "fill-star-filled text-star-filled" : "text-star-empty")} />
                   </button>
                 ))}
               </div>
