@@ -59,6 +59,7 @@ export function MealVault() {
   useEffect(() => {
     loadMeals();
     loadRatings();
+    loadCommentCounts();
     if (user) loadFavorites();
   }, [user]);
 
