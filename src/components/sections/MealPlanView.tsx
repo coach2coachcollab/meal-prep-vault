@@ -536,21 +536,33 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
           <ArrowLeft className="h-4 w-4" /> Back to Meal Vault
         </Button>
 
-        <div className="flex justify-center">
-          <div className="inline-flex rounded-lg border border-border overflow-hidden">
-            <button
-              className={`px-4 py-2 text-sm flex items-center gap-1.5 ${viewMode === "calendar" ? "bg-card font-semibold" : "text-muted-foreground"}`}
-              onClick={() => setViewMode("calendar")}
-            >
-              <Calendar className="h-4 w-4" /> Calendar View
-            </button>
-            <button
-              className={`px-4 py-2 text-sm flex items-center gap-1.5 ${viewMode === "list" ? "bg-card font-semibold" : "text-muted-foreground"}`}
-              onClick={() => setViewMode("list")}
-            >
-              <List className="h-4 w-4" /> Meals List
-            </button>
+        <div className="flex justify-between items-center">
+          <div className="flex justify-center flex-1">
+            <div className="inline-flex rounded-lg border border-border overflow-hidden">
+              <button
+                className={`px-4 py-2 text-sm flex items-center gap-1.5 ${viewMode === "calendar" ? "bg-card font-semibold" : "text-muted-foreground"}`}
+                onClick={() => setViewMode("calendar")}
+              >
+                <Calendar className="h-4 w-4" /> Calendar View
+              </button>
+              <button
+                className={`px-4 py-2 text-sm flex items-center gap-1.5 ${viewMode === "list" ? "bg-card font-semibold" : "text-muted-foreground"}`}
+                onClick={() => setViewMode("list")}
+              >
+                <List className="h-4 w-4" /> Meals List
+              </button>
+            </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shrink-0"
+            onClick={generateShoppingList}
+            disabled={generatingList || entries.length === 0}
+          >
+            {generatingList ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+            Shopping List
+          </Button>
         </div>
 
         {viewMode === "calendar" ? renderCalendar() : renderList()}
