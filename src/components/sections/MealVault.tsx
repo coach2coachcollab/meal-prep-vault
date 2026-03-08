@@ -96,6 +96,31 @@ export function MealVault() {
     }
   };
 
+  const loadCommentCounts = async () => {
+    // Get all community posts that reference recipes
+    const { data: posts } = await supabase
+      .from("community_posts")
+      .select("id, recipe_id")
+      .not("recipe_id", "is", null);
+    if (!posts || posts.length === 0) return;
+
+    const postIds = posts.map((p) => p.id);
+    const { data: comments } = await supabase
+      .from("post_comments")
+      .select("post_id")
+      .in("post_id", postIds);
+    if (!comments) return;
+
+    // Map post_id back to recipe_id and count
+    const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
+    const counts: Record<string, number> = {};
+    comments.forEach((c) => {
+      const recipeId = postToRecipe.get(c.post_id);
+      if (recipeId) counts[recipeId] = (counts[recipeId] || 0) + 1;
+    });
+    setCommentCounts(counts);
+  };
+
   const toggleFavorite = async (mealId: string) => {
     if (!user) return;
     if (favorites.includes(mealId)) {
