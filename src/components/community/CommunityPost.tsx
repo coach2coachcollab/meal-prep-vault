@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PinchZoomImage } from "@/components/community/PinchZoomImage";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send, ChevronDown, ChevronUp, Heart, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
