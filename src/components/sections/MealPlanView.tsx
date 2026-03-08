@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ChevronLeft, ChevronRight, Calendar, List, Trash2, Eye, Pencil, Heart,
-  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw, ShoppingCart, Copy,
+  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw, ShoppingCart, Copy, Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -293,6 +293,81 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
     } finally {
       setGeneratingList(false);
     }
+  };
+
+  const exportPlanAsPdf = async () => {
+    if (!viewingPlan || entries.length === 0) return;
+    const { default: jsPDF } = await import("jspdf");
+    const doc = new jsPDF();
+    const dayNames_ = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const mealOrder = ["breakfast", "lunch", "dinner", "snack"];
+
+    // Title
+    doc.setFontSize(18);
+    doc.text(viewingPlan.name, 14, 20);
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    if (viewingPlan.description) doc.text(viewingPlan.description, 14, 28);
+    doc.text(`Exported ${new Date().toLocaleDateString()}`, 14, viewingPlan.description ? 34 : 28);
+
+    let y = viewingPlan.description ? 42 : 36;
+
+    // Target macros line
+    if (targetMacros) {
+      doc.setTextColor(80);
+      doc.setFontSize(9);
+      doc.text(`Targets: ${targetMacros.calories} cal | ${targetMacros.protein_g}g protein | ${targetMacros.carbs_g}g carbs | ${targetMacros.fat_g}g fat`, 14, y);
+      y += 8;
+    }
+
+    // Group entries by day
+    const byDay: Record<string, typeof entries> = {};
+    entries.forEach((e) => {
+      if (!byDay[e.day_of_week]) byDay[e.day_of_week] = [];
+      byDay[e.day_of_week].push(e);
+    });
+
+    dayNames_.filter((d) => byDay[d]).forEach((dayName) => {
+      if (y > 260) { doc.addPage(); y = 20; }
+
+      // Day header
+      doc.setFontSize(12);
+      doc.setTextColor(40);
+      doc.text(dayName, 14, y);
+
+      // Day totals
+      const dayEntries = byDay[dayName];
+      let tCal = 0, tP = 0, tC = 0, tF = 0;
+      dayEntries.forEach((e) => {
+        if (e.meal) { tCal += e.meal.calories || 0; tP += e.meal.protein || 0; tC += e.meal.carbs || 0; tF += e.meal.fats || 0; }
+      });
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(`${r2(tCal)} cal | P: ${r2(tP)}g | C: ${r2(tC)}g | F: ${r2(tF)}g`, 50, y);
+      y += 6;
+
+      // Meals sorted by time
+      dayEntries
+        .sort((a, b) => mealOrder.indexOf(a.meal_time) - mealOrder.indexOf(b.meal_time))
+        .forEach((e) => {
+          if (y > 275) { doc.addPage(); y = 20; }
+          doc.setFontSize(9);
+          doc.setTextColor(80);
+          const timeLabel = e.meal_time.charAt(0).toUpperCase() + e.meal_time.slice(1);
+          doc.text(`${timeLabel}:`, 18, y);
+          doc.setTextColor(30);
+          doc.text(e.meal?.title || "Unknown", 45, y);
+          doc.setTextColor(120);
+          doc.setFontSize(8);
+          doc.text(`${r2(e.meal?.calories || 0)} cal  P:${r2(e.meal?.protein || 0)}g  C:${r2(e.meal?.carbs || 0)}g  F:${r2(e.meal?.fats || 0)}g`, 120, y);
+          y += 5;
+        });
+
+      y += 4;
+    });
+
+    doc.save(`${viewingPlan.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+    toast.success("PDF exported! 📄");
   };
 
   const duplicatePlan = async (plan: SavedPlan) => {
@@ -610,16 +685,28 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
               </button>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 shrink-0"
-            onClick={generateShoppingList}
-            disabled={generatingList || entries.length === 0}
-          >
-            {generatingList ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-            Shopping List
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={exportPlanAsPdf}
+              disabled={entries.length === 0}
+            >
+              <Download className="h-3.5 w-3.5" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={generateShoppingList}
+              disabled={generatingList || entries.length === 0}
+            >
+              {generatingList ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+              Shopping List
+            </Button>
+          </div>
         </div>
 
         {/* Weekly Nutrition Summary */}
