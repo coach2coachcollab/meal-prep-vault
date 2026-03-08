@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   ChevronLeft, ChevronRight, Calendar, List, Trash2, Eye, Pencil, Heart,
-  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp,
+  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
