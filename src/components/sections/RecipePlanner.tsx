@@ -109,12 +109,12 @@ export function RecipePlanner() {
           </div>
 
           {/* Ingredients & Instructions */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Ingredients (one per line)</Label>
               <Textarea
                 placeholder={"2 cups oats\n1 scoop whey protein\n1 banana\n2 eggs"}
-                rows={6}
+                rows={5}
                 value={ingredients}
                 onChange={(e) => setIngredients(e.target.value)}
               />
@@ -123,7 +123,7 @@ export function RecipePlanner() {
               <Label>Instructions (one per line)</Label>
               <Textarea
                 placeholder={"Mix dry ingredients\nAdd wet ingredients\nCook on medium heat\nServe with toppings"}
-                rows={6}
+                rows={5}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
               />
