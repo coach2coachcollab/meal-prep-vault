@@ -640,7 +640,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
