@@ -82,14 +82,24 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
                 key={tab.id}
                 onClick={() => { setQuickOpen(false); onTabChange(tab.id); }}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[60px]",
+                  "relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 min-w-[60px]",
                   activeTab === tab.id
-                    ? "bg-primary/20 text-primary-foreground"
+                    ? "text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <tab.icon className={cn("h-5 w-5", activeTab === tab.id ? "stroke-[2.5] text-primary-foreground" : "")} />
-                <span className={cn("text-[10px]", activeTab === tab.id ? "font-semibold text-primary-foreground" : "font-medium")}>{tab.label}</span>
+                {/* Active indicator dot */}
+                {activeTab === tab.id && (
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-1 w-6 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)] animate-scale-in" />
+                )}
+                <tab.icon className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  activeTab === tab.id ? "stroke-[2.5] text-primary-foreground scale-110" : ""
+                )} />
+                <span className={cn(
+                  "text-[10px] transition-all duration-200",
+                  activeTab === tab.id ? "font-bold text-primary-foreground" : "font-medium"
+                )}>{tab.label}</span>
               </button>
             );
           })}
