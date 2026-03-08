@@ -209,7 +209,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">{greeting()}, {profileName || "there"} 👋</h2>
+        <h2 className="text-2xl font-heading">{greeting()}, {profileName || "there"} 👋</h2>
         <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
       </div>
 
