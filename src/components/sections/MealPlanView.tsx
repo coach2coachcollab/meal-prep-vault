@@ -398,7 +398,7 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
           f += e.meal.fats || 0;
         }
       });
-      return { cal, p, c, f };
+      return { cal: r2(cal), p: r2(p), c: r2(c), f: r2(f) };
     };
 
     // Calendar rendering
