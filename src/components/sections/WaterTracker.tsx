@@ -181,7 +181,7 @@ export function WaterTracker() {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold">{glasses}</span>
+                <span className="text-xl font-bold text-foreground">{glasses}</span>
                 <span className="text-[10px] text-muted-foreground">of {goal}</span>
               </div>
             </div>
