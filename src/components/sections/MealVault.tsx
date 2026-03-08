@@ -235,10 +235,10 @@ export function MealVault() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Create New Meal
+            <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Create New Meal</span>
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => setShowGenerateDialog(true)}>
-            <Sparkles className="h-4 w-4" /> Generate Nutrition Plan
+            <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Generate Nutrition Plan</span>
           </Button>
         </div>
       </div>
