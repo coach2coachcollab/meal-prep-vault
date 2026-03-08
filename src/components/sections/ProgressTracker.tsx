@@ -465,11 +465,11 @@ export function ProgressTracker() {
           </Card>
           <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Start</p>
-              <p className="text-sm font-bold">{displayWeight(firstLog?.weight_kg)}</p>
+              <p className="text-[10px] text-section-label font-semibold">Start</p>
+              <p className="text-sm font-bold text-foreground">{displayWeight(firstLog?.weight_kg)}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
               <p className="text-[10px] text-muted-foreground">Change</p>
               {weightChange != null ? (
