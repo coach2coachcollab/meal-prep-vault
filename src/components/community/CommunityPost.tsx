@@ -371,7 +371,7 @@ export function CommunityPost({
 
             {/* Comments */}
             {commentsOpen && (
-              <div className="mt-3 border-t pt-3 space-y-3">
+              <div className="mt-2 border-t pt-2 space-y-1.5">
                 {loadingComments ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Loading...</p>
                 ) : (
