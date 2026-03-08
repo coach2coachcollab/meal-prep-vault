@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { useTheme } from "@/hooks/useTheme";
 import { HomeDashboard } from "@/components/sections/HomeDashboard";
 import { MacroCalculator } from "@/components/sections/MacroCalculator";
 import { MealVault } from "@/components/sections/MealVault";
@@ -18,10 +19,11 @@ import { StreakDetails } from "@/components/sections/StreakDetails";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { User, Zap } from "lucide-react";
+import { User, Zap, Moon, Sun } from "lucide-react";
 import { useStreak } from "@/hooks/useStreak";
 
 export default function Dashboard() {
+  const { isDark, toggle: toggleTheme } = useTheme();
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("journal");
@@ -120,12 +122,20 @@ export default function Dashboard() {
             <Zap className={`h-3.5 w-3.5 text-primary transition-transform duration-300 ${justIncreased ? "scale-125" : ""}`} />
             <span className="text-xs font-bold text-foreground">{streak}🔥</span>
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <NotificationBell
               onNavigateToCommunity={() => setActiveTab("community")}
               onViewAll={() => setActiveTab("notifications")}
               onNavigateToPost={navigateToPost}
             />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={toggleTheme}
+            >
+              {isDark ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+            </Button>
             <Button
               variant="ghost"
               size="icon"
