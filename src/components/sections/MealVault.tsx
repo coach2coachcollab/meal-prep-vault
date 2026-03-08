@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +49,7 @@ export function MealVault() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
@@ -58,6 +59,7 @@ export function MealVault() {
   useEffect(() => {
     loadMeals();
     loadRatings();
+    loadCommentCounts();
     if (user) loadFavorites();
   }, [user]);
 
@@ -92,6 +94,31 @@ export function MealVault() {
       });
       setRatings(result);
     }
+  };
+
+  const loadCommentCounts = async () => {
+    // Get all community posts that reference recipes
+    const { data: posts } = await supabase
+      .from("community_posts")
+      .select("id, recipe_id")
+      .not("recipe_id", "is", null);
+    if (!posts || posts.length === 0) return;
+
+    const postIds = posts.map((p) => p.id);
+    const { data: comments } = await supabase
+      .from("post_comments")
+      .select("post_id")
+      .in("post_id", postIds);
+    if (!comments) return;
+
+    // Map post_id back to recipe_id and count
+    const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
+    const counts: Record<string, number> = {};
+    comments.forEach((c) => {
+      const recipeId = postToRecipe.get(c.post_id);
+      if (recipeId) counts[recipeId] = (counts[recipeId] || 0) + 1;
+    });
+    setCommentCounts(counts);
   };
 
   const toggleFavorite = async (mealId: string) => {
@@ -269,13 +296,21 @@ export function MealVault() {
                       )}
                       <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
                     </div>
-                    {mealRating && (
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-star text-star" />
-                        <span className="font-medium">{mealRating.avg}</span>
-                        <span>({mealRating.count})</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {mealRating && (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-star text-star" />
+                          <span className="font-medium">{mealRating.avg}</span>
+                          <span>({mealRating.count})</span>
+                        </div>
+                      )}
+                      {(commentCounts[meal.id] || 0) > 0 && (
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" />
+                          <span>{commentCounts[meal.id]}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Tags */}
