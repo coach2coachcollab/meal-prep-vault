@@ -238,32 +238,40 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <Card>
+        <Card className="border border-border">
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <Trophy className="h-5 w-5 text-primary mb-1" />
-            <p className="text-lg font-bold">{stats.longestStreak}</p>
-            <p className="text-[10px] text-muted-foreground">Best Streak</p>
+            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
+              <Trophy className="h-4 w-4 text-foreground" />
+            </div>
+            <p className="text-lg font-bold text-foreground">{stats.longestStreak}</p>
+            <p className="text-[10px] text-section-label font-semibold">Best Streak</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border border-border">
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <TrendingUp className="h-5 w-5 text-primary mb-1" />
-            <p className="text-lg font-bold">{stats.totalActiveDays}</p>
-            <p className="text-[10px] text-muted-foreground">Total Active Days</p>
+            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
+              <TrendingUp className="h-4 w-4 text-foreground" />
+            </div>
+            <p className="text-lg font-bold text-foreground">{stats.totalActiveDays}</p>
+            <p className="text-[10px] text-section-label font-semibold">Total Active Days</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border border-border">
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <Calendar className="h-5 w-5 text-primary mb-1" />
-            <p className="text-lg font-bold">{stats.thisWeekDays}/7</p>
-            <p className="text-[10px] text-muted-foreground">This Week</p>
+            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
+              <Calendar className="h-4 w-4 text-foreground" />
+            </div>
+            <p className="text-lg font-bold text-foreground">{stats.thisWeekDays}/7</p>
+            <p className="text-[10px] text-section-label font-semibold">This Week</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border border-border">
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <Target className="h-5 w-5 text-primary mb-1" />
-            <p className="text-lg font-bold">{stats.thisMonthDays}</p>
-            <p className="text-[10px] text-muted-foreground">This Month</p>
+            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
+              <Target className="h-4 w-4 text-foreground" />
+            </div>
+            <p className="text-lg font-bold text-foreground">{stats.thisMonthDays}</p>
+            <p className="text-[10px] text-section-label font-semibold">This Month</p>
           </CardContent>
         </Card>
       </div>
