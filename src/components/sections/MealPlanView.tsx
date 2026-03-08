@@ -622,6 +622,82 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
           </Button>
         </div>
 
+        {/* Weekly Nutrition Summary */}
+        {sortedDays.length > 0 && (() => {
+          const weekTotals = sortedDays.reduce(
+            (acc, day) => {
+              const t = getDayTotals(day);
+              return { cal: acc.cal + t.cal, p: acc.p + t.p, c: acc.c + t.c, f: acc.f + t.f };
+            },
+            { cal: 0, p: 0, c: 0, f: 0 }
+          );
+          const numDays = sortedDays.length;
+          const avg = { cal: r2(weekTotals.cal / numDays), p: r2(weekTotals.p / numDays), c: r2(weekTotals.c / numDays), f: r2(weekTotals.f / numDays) };
+          const tCal = targetMacros?.calories || 2000;
+          const tP = targetMacros?.protein_g || 150;
+          const tC = targetMacros?.carbs_g || 200;
+          const tF = targetMacros?.fat_g || 65;
+
+          const MacroBar = ({ label, value, target, color }: { label: string; value: number; target: number; color: string }) => {
+            const pct = Math.min(100, (value / target) * 100);
+            const isOver = value > target;
+            return (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium">{label}</span>
+                  <span className={`font-semibold ${isOver ? "text-destructive" : ""}`}>
+                    {value} <span className="text-muted-foreground font-normal">/ {target}</span>
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <Card className="border-primary/20">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-sm">Weekly Nutrition Summary</p>
+                    <p className="text-[10px] text-muted-foreground">Daily average across {numDays} day{numDays > 1 ? "s" : ""}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold">{avg.cal}</p>
+                    <p className="text-[10px] text-muted-foreground">avg kcal/day</p>
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  <MacroBar label="Calories" value={avg.cal} target={tCal} color="bg-primary" />
+                  <MacroBar label="Protein" value={avg.p} target={tP} color="bg-macro-protein" />
+                  <MacroBar label="Carbs" value={avg.c} target={tC} color="bg-macro-carbs" />
+                  <MacroBar label="Fat" value={avg.f} target={tF} color="bg-macro-fat" />
+                </div>
+                <div className="grid grid-cols-4 gap-2 pt-1">
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="font-bold text-sm">{r2(weekTotals.cal)}</p>
+                    <p className="text-[10px] text-muted-foreground">total cal</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-macro-protein/10">
+                    <p className="font-bold text-sm text-macro-protein">{r2(weekTotals.p)}g</p>
+                    <p className="text-[10px] text-muted-foreground">protein</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-macro-carbs/10">
+                    <p className="font-bold text-sm text-macro-carbs">{r2(weekTotals.c)}g</p>
+                    <p className="text-[10px] text-muted-foreground">carbs</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-macro-fat/10">
+                    <p className="font-bold text-sm text-macro-fat">{r2(weekTotals.f)}g</p>
+                    <p className="text-[10px] text-muted-foreground">fat</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {viewMode === "calendar" ? renderCalendar() : renderList()}
 
         {/* Swap Meal Dialog */}
