@@ -61,9 +61,10 @@ interface MealPlanViewProps {
   searchTerm: string;
   showFavoritesOnly: boolean;
   refreshKey: number;
+  onViewMeal?: (mealId: string) => void;
 }
 
-export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: MealPlanViewProps) {
+export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey, onViewMeal }: MealPlanViewProps) {
   const { user } = useAuth();
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -628,7 +629,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                         )}
                         <div className="flex-1 min-w-0">
                           <Badge variant="outline" className="text-[10px] capitalize mb-0.5">{e.meal_time}</Badge>
-                          <p className="text-sm font-medium truncate">{e.meal?.title || "Unknown"}</p>
+                          <p
+                            className={`text-sm font-medium truncate ${onViewMeal ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+                            onClick={() => onViewMeal && e.meal?.id && onViewMeal(e.meal.id)}
+                          >{e.meal?.title || "Unknown"}</p>
                         </div>
                         <div className="text-right text-xs text-muted-foreground shrink-0 flex items-center gap-2">
                           <Flame className="h-3 w-3" />
@@ -638,6 +642,15 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                           <span className="text-macro-fat">F:{r2(e.meal?.fats || 0)}</span>
                         </div>
                         <div className="flex gap-1 shrink-0">
+                          {onViewMeal && e.meal?.id && (
+                            <button
+                              onClick={() => onViewMeal(e.meal!.id)}
+                              className="h-7 w-7 rounded-md border border-border flex items-center justify-center hover:bg-primary/10 transition-colors"
+                              title="View recipe"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setSwapEntry(e)}
                             className="h-7 w-7 rounded-md border border-border flex items-center justify-center hover:bg-muted transition-colors"
