@@ -316,11 +316,11 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => {
                             setAddMealType(e.meal_type);
-                            setManualName(e.food_name);
-                            setManualCalories(String(e.calories || ""));
-                            setManualProtein(String(e.protein_g || ""));
-                            setManualCarbs(String(e.carbs_g || ""));
-                            setManualFat(String(e.fat_g || ""));
+                            setFoodName(e.food_name);
+                            setFoodCals(String(e.calories || ""));
+                            setFoodProtein(String(e.protein_g || ""));
+                            setFoodCarbs(String(e.carbs_g || ""));
+                            setFoodFat(String(e.fat_g || ""));
                             setMode("manual");
                             setDialogOpen(true);
                             deleteEntry(e.id);
