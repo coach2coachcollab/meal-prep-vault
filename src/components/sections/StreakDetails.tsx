@@ -237,6 +237,9 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
         </CardContent>
       </Card>
 
+      {/* Reminder Settings */}
+      <ReminderSettings />
+
       {/* Milestones */}
       <Card>
         <CardHeader className="pb-2">
