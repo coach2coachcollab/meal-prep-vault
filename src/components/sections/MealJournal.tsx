@@ -241,10 +241,26 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       <Card>
         <CardContent className="pt-5 pb-5">
           <div className="grid grid-cols-4 gap-3 text-center text-xs">
-            <div className="bg-primary"><Flame className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold text-lg">{totals.calories}</p><p className="text-muted-foreground">kcal</p></div>
-            <div><Beef className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold">{totals.protein}g</p><p className="text-muted-foreground">protein</p></div>
-            <div><Wheat className="h-4 w-4 mx-auto mb-1 text-accent-foreground" /><p className="font-bold">{totals.carbs}g</p><p className="text-muted-foreground">carbs</p></div>
-            <div><Droplets className="h-4 w-4 mx-auto mb-1 text-secondary-foreground" /><p className="font-bold">{totals.fat}g</p><p className="text-muted-foreground">fat</p></div>
+            <div className="rounded-xl bg-primary/10 py-3 px-1">
+              <Flame className="h-4 w-4 mx-auto mb-1 text-primary" />
+              <p className="font-bold text-lg text-foreground">{totals.calories}</p>
+              <p className="text-muted-foreground">kcal</p>
+            </div>
+            <div className="rounded-xl bg-macro-protein/10 py-3 px-1">
+              <Beef className="h-4 w-4 mx-auto mb-1 text-macro-protein" />
+              <p className="font-bold text-foreground">{totals.protein}g</p>
+              <p className="text-muted-foreground">protein</p>
+            </div>
+            <div className="rounded-xl bg-macro-carbs/10 py-3 px-1">
+              <Wheat className="h-4 w-4 mx-auto mb-1 text-macro-carbs" />
+              <p className="font-bold text-foreground">{totals.carbs}g</p>
+              <p className="text-muted-foreground">carbs</p>
+            </div>
+            <div className="rounded-xl bg-macro-fat/10 py-3 px-1">
+              <Droplets className="h-4 w-4 mx-auto mb-1 text-macro-fat" />
+              <p className="font-bold text-foreground">{totals.fat}g</p>
+              <p className="text-muted-foreground">fat</p>
+            </div>
           </div>
           {statusMessage() && entries.length > 0 &&
           <p className={cn("text-xs text-center mt-3", statusMessage()!.color)}>{statusMessage()!.text}</p>
