@@ -629,7 +629,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey, onView
                         )}
                         <div className="flex-1 min-w-0">
                           <Badge variant="outline" className="text-[10px] capitalize mb-0.5">{e.meal_time}</Badge>
-                          <p className="text-sm font-medium truncate">{e.meal?.title || "Unknown"}</p>
+                          <p
+                            className={`text-sm font-medium truncate ${onViewMeal ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+                            onClick={() => onViewMeal && e.meal?.id && onViewMeal(e.meal.id)}
+                          >{e.meal?.title || "Unknown"}</p>
                         </div>
                         <div className="text-right text-xs text-muted-foreground shrink-0 flex items-center gap-2">
                           <Flame className="h-3 w-3" />
