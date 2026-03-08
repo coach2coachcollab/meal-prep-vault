@@ -471,7 +471,7 @@ export function CommunityPost({
                         onSetEditing={(id, text) => { setEditingCommentId(id); if (text) setEditCommentText(text); }}
                         onSaveEdit={handleSaveCommentEdit}
                         onDelete={handleDeleteComment}
-                        onToggleLike={(commentId, reactionType) => onToggleCommentLike(commentId, post.id, reactionType)}
+                        onToggleLike={async (commentId, reactionType) => { await onToggleCommentLike(commentId, post.id, reactionType); await refreshComments(); }}
                         onSetReplying={(id) => {
                           setReplyingToId(id);
                           if (id) {
