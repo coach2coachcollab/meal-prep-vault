@@ -6,6 +6,7 @@ import { Calendar, Sparkles, RefreshCw, Save, Trash2, ChevronLeft, ChevronRight,
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { r2 } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface MealSlot {
@@ -180,7 +181,7 @@ export function MealPlans() {
       const m = getMealMacros(day.meals[t].meal_id);
       if (m) { cal += m.calories || 0; p += m.protein || 0; c += m.carbs || 0; f += m.fats || 0; }
     });
-    return { cal, p, c, f };
+    return { cal: r2(cal), p: r2(p), c: r2(c), f: r2(f) };
   };
 
   const currentDay = plan?.days[selectedDay];
@@ -282,10 +283,10 @@ export function MealPlans() {
                     <p className="font-medium text-sm">{meal.title}</p>
                     {mealData && (
                       <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                        <span>{mealData.calories || 0} cal</span>
-                        <span>{mealData.protein || 0}g P</span>
-                        <span>{mealData.carbs || 0}g C</span>
-                        <span>{mealData.fats || 0}g F</span>
+                        <span>{r2(mealData.calories || 0)} cal</span>
+                        <span>{r2(mealData.protein || 0)}g P</span>
+                        <span>{r2(mealData.carbs || 0)}g C</span>
+                        <span>{r2(mealData.fats || 0)}g F</span>
                       </div>
                     )}
                   </CardContent>
@@ -317,10 +318,10 @@ export function MealPlans() {
               <button key={meal.id} onClick={() => swapMeal(meal.id)} className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors">
                 <p className="font-medium text-sm">{meal.title}</p>
                 <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                  <span>{meal.calories || 0} cal</span>
-                  <span>{meal.protein || 0}g P</span>
-                  <span>{meal.carbs || 0}g C</span>
-                  <span>{meal.fats || 0}g F</span>
+                  <span>{r2(meal.calories || 0)} cal</span>
+                  <span>{r2(meal.protein || 0)}g P</span>
+                  <span>{r2(meal.carbs || 0)}g C</span>
+                  <span>{r2(meal.fats || 0)}g F</span>
                 </div>
               </button>
             ))}

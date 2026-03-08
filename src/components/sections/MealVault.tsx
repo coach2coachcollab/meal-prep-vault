@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { r2 } from "@/lib/utils";
 import { MealDetailView } from "./MealDetailView";
 import { MealPlanView } from "./MealPlanView";
 import { GeneratePlanDialog } from "./GeneratePlanDialog";
@@ -324,10 +325,10 @@ export function MealVault() {
                 const allTags = [...(meal.tags || []), ...(meal.diet_tags || []), ...(meal.health_tags || [])];
                 const mealRating = ratings[meal.id];
                 const s = meal.servings || 1;
-                const cal = Math.round((meal.calories || 0) / s);
-                const p = Math.round(((meal.protein || 0) / s) * 10) / 10;
-                const c = Math.round(((meal.carbs || 0) / s) * 10) / 10;
-                const f = Math.round(((meal.fats || 0) / s) * 10) / 10;
+                const cal = r2((meal.calories || 0) / s);
+                const p = r2((meal.protein || 0) / s);
+                const c = r2((meal.carbs || 0) / s);
+                const f = r2((meal.fats || 0) / s);
 
                 return (
                   <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">

@@ -131,10 +131,10 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     const factor = servingCount / totalServings;
     const { error } = await supabase.from("journal_entries").insert({
       user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
-      calories: Math.round((meal.calories || 0) * factor),
-      protein_g: Math.round((meal.protein || 0) * factor * 10) / 10,
-      carbs_g: Math.round((meal.carbs || 0) * factor * 10) / 10,
-      fat_g: Math.round((meal.fats || 0) * factor * 10) / 10,
+      calories: r2((meal.calories || 0) * factor),
+      protein_g: r2((meal.protein || 0) * factor),
+      carbs_g: r2((meal.carbs || 0) * factor),
+      fat_g: r2((meal.fats || 0) * factor),
       recipe_id: meal.id, servings: servingCount
     });
     if (!error) {
@@ -390,19 +390,19 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                     return (
                       <div className="grid grid-cols-4 gap-2 p-3 rounded-lg bg-muted/50">
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.calories || 0) * factor)}</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.calories || 0) * factor)}</p>
                           <p className="text-[10px] text-muted-foreground">Cal</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.protein || 0) * factor * 10) / 10}g</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.protein || 0) * factor)}g</p>
                           <p className="text-[10px] text-muted-foreground">Protein</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.carbs || 0) * factor * 10) / 10}g</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.carbs || 0) * factor)}g</p>
                           <p className="text-[10px] text-muted-foreground">Carbs</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.fats || 0) * factor * 10) / 10}g</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.fats || 0) * factor)}g</p>
                           <p className="text-[10px] text-muted-foreground">Fat</p>
                         </div>
                       </div>

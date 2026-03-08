@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { r2 } from "@/lib/utils";
 
 interface SavedPlan {
   id: string;
@@ -397,7 +398,7 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
           f += e.meal.fats || 0;
         }
       });
-      return { cal, p, c, f };
+      return { cal: r2(cal), p: r2(p), c: r2(c), f: r2(f) };
     };
 
     // Calendar rendering
@@ -438,7 +439,7 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                 className={`w-full text-left text-[9px] px-1 py-0.5 rounded mb-0.5 truncate cursor-pointer hover:ring-1 hover:ring-primary transition-all ${mealTimeColors[e.meal_time] || "bg-muted"}`}
               >
                 {e.meal?.title || "Unknown"}
-                <span className="ml-1 opacity-70">{e.meal?.calories || 0} cal</span>
+                <span className="ml-1 opacity-70">{r2(e.meal?.calories || 0)} cal</span>
               </button>
             ))}
             {mapped && mapped.entries.length > 3 && (
@@ -554,10 +555,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                         </div>
                         <div className="text-right text-xs text-muted-foreground shrink-0 flex items-center gap-2">
                           <Flame className="h-3 w-3" />
-                          <span>{e.meal?.calories || 0}</span>
-                          <span className="text-macro-protein">P:{e.meal?.protein || 0}</span>
-                          <span className="text-macro-carbs">C:{e.meal?.carbs || 0}</span>
-                          <span className="text-macro-fat">F:{e.meal?.fats || 0}</span>
+                          <span>{r2(e.meal?.calories || 0)}</span>
+                          <span className="text-macro-protein">P:{r2(e.meal?.protein || 0)}</span>
+                          <span className="text-macro-carbs">C:{r2(e.meal?.carbs || 0)}</span>
+                          <span className="text-macro-fat">F:{r2(e.meal?.fats || 0)}</span>
                         </div>
                         <div className="flex gap-1 shrink-0">
                           <button
@@ -643,7 +644,7 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                   <div>
                     <p className="text-sm font-medium">{swapEntry.meal.title}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {swapEntry.meal.calories || 0} cal · P:{swapEntry.meal.protein || 0}g · C:{swapEntry.meal.carbs || 0}g · F:{swapEntry.meal.fats || 0}g
+                      {r2(swapEntry.meal.calories || 0)} cal · P:{r2(swapEntry.meal.protein || 0)}g · C:{r2(swapEntry.meal.carbs || 0)}g · F:{r2(swapEntry.meal.fats || 0)}g
                     </p>
                   </div>
                 </div>
@@ -678,10 +679,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{meal.title}</p>
                     <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>{meal.calories || 0} cal</span>
-                      <span className="text-macro-protein">P:{meal.protein || 0}g</span>
-                      <span className="text-macro-carbs">C:{meal.carbs || 0}g</span>
-                      <span className="text-macro-fat">F:{meal.fats || 0}g</span>
+                      <span>{r2(meal.calories || 0)} cal</span>
+                      <span className="text-macro-protein">P:{r2(meal.protein || 0)}g</span>
+                      <span className="text-macro-carbs">C:{r2(meal.carbs || 0)}g</span>
+                      <span className="text-macro-fat">F:{r2(meal.fats || 0)}g</span>
                     </div>
                   </div>
                   {meal.id === swapEntry?.meal_id && (
