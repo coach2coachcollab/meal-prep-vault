@@ -63,6 +63,10 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [shareText, setShareText] = useState("");
   const [sharing, setSharing] = useState(false);
   const [showShareForm, setShowShareForm] = useState(false);
+  const [shareMode, setShareMode] = useState<"community" | "social">("community");
+  const [sharePhoto, setSharePhoto] = useState<File | null>(null);
+  const [sharePhotoPreview, setSharePhotoPreview] = useState<string | null>(null);
+  const shareFileRef = useRef<HTMLInputElement>(null);
 
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
