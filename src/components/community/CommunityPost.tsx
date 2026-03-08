@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send
 import { cn } from "@/lib/utils";
 
 const reactions = ["💪", "❤️", "🎉", "🔥", "👏"];
+const commentReactions = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
 export interface PostData {
   id: string;
@@ -33,6 +34,8 @@ export interface InlineComment {
   user_name?: string;
   like_count: number;
   is_liked: boolean;
+  user_reaction: string | null;
+  reaction_counts: Record<string, number>;
   parent_id: string | null;
   replies?: InlineComment[];
 }
@@ -48,7 +51,7 @@ interface CommunityPostProps {
   onAddComment: (postId: string, text: string, parentId?: string) => Promise<void>;
   onEditComment: (commentId: string, newText: string) => Promise<void>;
   onDeleteComment: (commentId: string, postId: string) => Promise<void>;
-  onToggleCommentLike: (commentId: string, postId: string) => Promise<void>;
+  onToggleCommentLike: (commentId: string, postId: string, reactionType: string) => Promise<void>;
 }
 
 const timeAgo = (dateStr: string) => {
@@ -92,7 +95,7 @@ interface CommentItemProps {
   onSetEditing: (id: string | null, text?: string) => void;
   onSaveEdit: () => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onToggleLike: (commentId: string) => void;
+  onToggleLike: (commentId: string, reactionType: string) => void;
   onSetReplying: (id: string | null) => void;
   onReplyTextChange: (text: string) => void;
   onSubmitReply: () => Promise<void>;
@@ -155,15 +158,47 @@ function CommentItem({
         {editingCommentId !== c.id && (
           <div className="flex items-center gap-3 px-1 text-[11px] leading-none mt-0.5">
             <span className="text-muted-foreground">{timeAgo(c.created_at)}</span>
-            <button
-              className={cn(
-                "font-semibold",
-                c.is_liked ? "text-destructive" : "text-muted-foreground hover:text-foreground"
-              )}
-              onClick={() => onToggleLike(c.id)}
-            >
-              Like{c.like_count > 0 && ` · ${c.like_count}`}
-            </button>
+            
+            {/* Facebook-style emoji reaction on Like */}
+            <div className="relative group">
+              <button
+                className={cn(
+                  "font-semibold",
+                  c.user_reaction ? "text-destructive" : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => onToggleLike(c.id, c.user_reaction || "👍")}
+              >
+                {c.user_reaction ? `${c.user_reaction} Like` : "Like"}
+              </button>
+              {/* Emoji picker popover on hover */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:flex items-center gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg z-50">
+                {commentReactions.map((emoji) => (
+                  <button
+                    key={emoji}
+                    className={cn(
+                      "text-base hover:scale-125 transition-transform px-0.5",
+                      c.user_reaction === emoji && "scale-125"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleLike(c.id, emoji);
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Show aggregated reaction emojis */}
+            {Object.keys(c.reaction_counts).length > 0 && (
+              <span className="flex items-center gap-0.5">
+                {Object.entries(c.reaction_counts).map(([emoji, count]) => (
+                  <span key={emoji} className="text-[11px]">{emoji}{count > 1 && count}</span>
+                ))}
+              </span>
+            )}
+
             {depth < 2 && (
               <button
                 className="font-semibold text-muted-foreground hover:text-foreground"
@@ -436,7 +471,7 @@ export function CommunityPost({
                         onSetEditing={(id, text) => { setEditingCommentId(id); if (text) setEditCommentText(text); }}
                         onSaveEdit={handleSaveCommentEdit}
                         onDelete={handleDeleteComment}
-                        onToggleLike={(commentId) => onToggleCommentLike(commentId, post.id)}
+                        onToggleLike={(commentId, reactionType) => onToggleCommentLike(commentId, post.id, reactionType)}
                         onSetReplying={(id) => {
                           setReplyingToId(id);
                           if (id) {
