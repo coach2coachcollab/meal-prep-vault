@@ -9,15 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { toast } from "sonner";
-
-interface MacroResult {
-  bmr: number;
-  tdee: number;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fats: number;
-}
+import { calculateMacros, type MacroResult } from "@/lib/calculations";
 
 const GOAL_MAP: Record<string, string> = {
   "Lose fat": "lose",
