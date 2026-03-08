@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +19,24 @@ interface MacroResult {
   fats: number;
 }
 
+const GOAL_MAP: Record<string, string> = {
+  "Lose fat": "lose",
+  "Build muscle": "gain",
+  "Maintain weight": "maintain",
+  "Improve energy": "maintain",
+};
+
+const ACTIVITY_MAP: Record<string, string> = {
+  sedentary: "sedentary",
+  light: "light",
+  moderate: "moderate",
+  active: "active",
+  very_active: "very_active",
+};
+
 export function MacroCalculator() {
   const { user } = useAuth();
-  const { isImperial, weightUnit, heightUnit, toKg, toCm } = usePreferredUnits();
+  const { isImperial, weightUnit, heightUnit, toKg, toCm, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
@@ -29,6 +44,35 @@ export function MacroCalculator() {
   const [activityLevel, setActivityLevel] = useState("moderate");
   const [goal, setGoal] = useState("maintain");
   const [result, setResult] = useState<MacroResult | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("age, weight_kg, height_cm, activity_level, goal")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        if (data.age) setAge(String(data.age));
+        if (data.weight_kg) {
+          setWeight(isImperial
+            ? String(Math.round(data.weight_kg * KG_TO_LBS))
+            : String(data.weight_kg));
+        }
+        if (data.height_cm) {
+          setHeight(isImperial
+            ? String(Math.round(data.height_cm * CM_TO_IN))
+            : String(data.height_cm));
+        }
+        if (data.activity_level && ACTIVITY_MAP[data.activity_level]) {
+          setActivityLevel(data.activity_level);
+        }
+        if (data.goal && GOAL_MAP[data.goal]) {
+          setGoal(GOAL_MAP[data.goal]);
+        }
+      });
+  }, [user, isImperial]);
 
   const activityMultipliers: Record<string, number> = {
     sedentary: 1.2,
