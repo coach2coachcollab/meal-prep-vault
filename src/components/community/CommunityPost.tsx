@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,6 +121,8 @@ function CommentItem({
   onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
 }: CommentItemProps) {
   const [repliesExpanded, setRepliesExpanded] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const replyCount = c.replies?.length || 0;
   const shouldCollapse = depth === 0 && replyCount > 1;
 
@@ -163,31 +165,51 @@ function CommentItem({
             <div className="relative group">
               <button
                 className={cn(
-                  "font-semibold",
+                  "font-semibold select-none",
                   c.user_reaction ? "text-destructive" : "text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => onToggleLike(c.id, c.user_reaction || "👍")}
+                onClick={() => {
+                  if (!emojiPickerOpen) onToggleLike(c.id, c.user_reaction || "👍");
+                  setEmojiPickerOpen(false);
+                }}
+                onTouchStart={() => {
+                  longPressTimer.current = setTimeout(() => setEmojiPickerOpen(true), 400);
+                }}
+                onTouchEnd={() => {
+                  if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                }}
+                onTouchMove={() => {
+                  if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                }}
               >
                 {c.user_reaction ? `${c.user_reaction} Like` : "Like"}
               </button>
-              {/* Emoji picker popover on hover */}
-              <div className="absolute bottom-full left-0 mb-1 hidden group-hover:flex items-center gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg z-50 whitespace-nowrap">
+              {/* Emoji picker - hover on desktop, long-press on mobile */}
+              <div className={cn(
+                "absolute bottom-full left-0 mb-1 items-center gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg z-50 whitespace-nowrap",
+                emojiPickerOpen ? "flex" : "hidden group-hover:flex"
+              )}>
                 {commentReactions.map((emoji) => (
                   <button
                     key={emoji}
                     className={cn(
-                      "text-base hover:scale-125 transition-transform px-0.5",
+                      "text-base hover:scale-125 active:scale-125 transition-transform px-0.5",
                       c.user_reaction === emoji && "scale-125"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggleLike(c.id, emoji);
+                      setEmojiPickerOpen(false);
                     }}
                   >
                     {emoji}
                   </button>
                 ))}
               </div>
+              {/* Backdrop to close picker on mobile */}
+              {emojiPickerOpen && (
+                <div className="fixed inset-0 z-40" onClick={() => setEmojiPickerOpen(false)} />
+              )}
             </div>
 
             {/* Show aggregated reaction emojis */}
