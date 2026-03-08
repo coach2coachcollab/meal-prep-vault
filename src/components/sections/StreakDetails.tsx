@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Flame, Zap, Trophy, Target, Calendar, TrendingUp, Bell } from "lucide-react";
@@ -216,11 +217,22 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
           </div>
           <p className="text-4xl font-bold text-foreground">{streak}</p>
           <p className="text-sm text-muted-foreground">Day Streak</p>
-          {nextMilestone && (
-            <p className="text-sm font-semibold text-foreground mt-2">
-              {nextMilestone.days - streak} days to {nextMilestone.icon} {nextMilestone.title}
-            </p>
-          )}
+          {nextMilestone && (() => {
+            const prevDays = (milestones.find((_, i) => milestones[i + 1]?.days === nextMilestone.days) || { days: 0 }).days;
+            const progress = ((streak - prevDays) / (nextMilestone.days - prevDays)) * 100;
+            return (
+              <div className="w-full mt-3 space-y-1.5 px-2">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{streak} days</span>
+                  <span>{nextMilestone.icon} {nextMilestone.days} days</span>
+                </div>
+                <Progress value={progress} className="h-2.5 bg-muted" />
+                <p className="text-xs text-center font-medium text-foreground">
+                  {nextMilestone.days - streak} more {nextMilestone.days - streak === 1 ? "day" : "days"} to <span className="font-semibold">{nextMilestone.title}</span>
+                </p>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
