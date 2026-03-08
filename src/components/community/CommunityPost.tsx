@@ -171,7 +171,7 @@ function CommentItem({
                 {c.user_reaction ? `${c.user_reaction} Like` : "Like"}
               </button>
               {/* Emoji picker popover on hover */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:flex items-center gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg z-50">
+              <div className="absolute bottom-full left-0 mb-1 hidden group-hover:flex items-center gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg z-50 whitespace-nowrap">
                 {commentReactions.map((emoji) => (
                   <button
                     key={emoji}
