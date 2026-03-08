@@ -76,7 +76,9 @@ export function HabitTracker() {
 
   const loadWeek = async (habitIds: string[]) => {
     const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
+    const day = weekStart.getDay();
+    const diff = day === 0 ? 6 : day - 1; // Handle Sunday (getDay()===0) correctly
+    weekStart.setDate(weekStart.getDate() - diff); // Monday
     const dates: string[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
