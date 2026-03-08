@@ -99,6 +99,18 @@ interface CommentItemProps {
   setEditCommentText: (text: string) => void;
 }
 
+// Renders comment text with @mentions bolded
+function renderCommentText(text: string) {
+  const parts = text.split(/(@\w[\w\s]*?\b)(?=\s|$)/g);
+  return parts.map((part, i) =>
+    part.startsWith("@") ? (
+      <span key={i} className="font-bold text-primary">{part}</span>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 function CommentItem({
   comment: c, currentUserId, postId, depth,
   editingCommentId, editCommentText, replyingToId, replyText,
@@ -106,8 +118,8 @@ function CommentItem({
   onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
 }: CommentItemProps) {
   return (
-    <div className={cn("flex gap-2", depth > 0 && "ml-8 mt-1")}>
-      <Avatar className="h-8 w-8 mt-0.5 shrink-0">
+    <div className={cn("flex gap-2", depth > 0 && "ml-6 mt-0.5")}>
+      <Avatar className={cn("shrink-0 mt-0.5", depth > 0 ? "h-6 w-6" : "h-8 w-8")}>
         <AvatarFallback className="text-[10px] bg-muted font-semibold">
           {initials(c.user_name || "U")}
         </AvatarFallback>
@@ -118,26 +130,26 @@ function CommentItem({
             <Input
               value={editCommentText}
               onChange={(e) => setEditCommentText(e.target.value)}
-              className="h-8 text-sm"
+              className="h-7 text-sm"
               onKeyDown={(e) => e.key === "Enter" && onSaveEdit()}
             />
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => onSetEditing(null)}>
+            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onSetEditing(null)}>
               <X className="h-3 w-3" />
             </Button>
-            <Button size="icon" className="h-8 w-8 shrink-0" onClick={onSaveEdit}>
+            <Button size="icon" className="h-7 w-7 shrink-0" onClick={onSaveEdit}>
               <Check className="h-3 w-3" />
             </Button>
           </div>
         ) : (
-          <div className="bg-muted/60 rounded-2xl px-3 py-2 inline-block max-w-full">
-            <span className="text-[13px] font-bold block">{c.user_name}</span>
-            <p className="text-sm">{c.text}</p>
+          <div className="bg-muted/60 rounded-2xl px-3 py-1.5 inline-block max-w-full">
+            <span className="text-[13px] font-bold block leading-tight">{c.user_name}</span>
+            <p className="text-sm leading-snug">{renderCommentText(c.text)}</p>
           </div>
         )}
 
-        {/* Action row: time · Like · Reply · Edit · Delete */}
+        {/* Action row */}
         {editingCommentId !== c.id && (
-          <div className="flex items-center gap-3 mt-0.5 px-1 text-[12px]">
+          <div className="flex items-center gap-3 px-1 text-[11px] leading-none mt-0.5">
             <span className="text-muted-foreground">{timeAgo(c.created_at)}</span>
             <button
               className={cn(
@@ -177,27 +189,27 @@ function CommentItem({
 
         {/* Reply input */}
         {replyingToId === c.id && (
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-1.5 mt-1">
             <Input
               placeholder={`Reply to ${c.user_name}...`}
               value={replyText}
               onChange={(e) => onReplyTextChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSubmitReply()}
-              className="flex-1 h-8 text-sm rounded-full"
+              className="flex-1 h-7 text-sm rounded-full"
               autoFocus
             />
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => onSetReplying(null)}>
+            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onSetReplying(null)}>
               <X className="h-3 w-3" />
             </Button>
-            <Button size="icon" className="h-8 w-8 shrink-0" onClick={onSubmitReply} disabled={!replyText.trim()}>
+            <Button size="icon" className="h-7 w-7 shrink-0" onClick={onSubmitReply} disabled={!replyText.trim()}>
               <Send className="h-3 w-3" />
             </Button>
           </div>
         )}
 
-        {/* Nested replies */}
+        {/* Nested replies — tight spacing */}
         {c.replies && c.replies.length > 0 && (
-          <div className="mt-1">
+          <div className="mt-0.5">
             {c.replies.map((reply) => (
               <CommentItem
                 key={reply.id}
@@ -400,7 +412,14 @@ export function CommunityPost({
                         onSaveEdit={handleSaveCommentEdit}
                         onDelete={handleDeleteComment}
                         onToggleLike={(commentId) => onToggleCommentLike(commentId, post.id)}
-                        onSetReplying={setReplyingToId}
+                        onSetReplying={(id) => {
+                          setReplyingToId(id);
+                          if (id) {
+                            const target = comments.find((cm) => cm.id === id);
+                            if (target?.user_name) setReplyText(`@${target.user_name} `);
+                            else setReplyText("");
+                          }
+                        }}
                         onReplyTextChange={setReplyText}
                         onSubmitReply={handleSubmitReply}
                         setEditCommentText={setEditCommentText}
