@@ -217,7 +217,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     if (!macroTargets) return null;
     const diff = totals.calories - macroTargets.calories;
     if (Math.abs(diff) <= 150) return { text: "Great day! You hit your targets. 🎉", color: "text-primary" };
-    if (diff < -150) return { text: "You might want to add a snack — your body needs fuel. 💪", color: "text-accent-foreground" };
+    if (diff < -150) return { text: "You might want to add a snack — your body needs fuel. 💪", color: "text-muted-foreground" };
     return { text: "No worries — one day doesn't define your progress. ❤️", color: "text-muted-foreground" };
   };
 
