@@ -239,7 +239,24 @@ export function ProgressTracker() {
   };
 
   const deleteLog = async (id: string) => {
-    await supabase.from("progress_logs").delete().eq("id", id);
+    if (!user) return;
+    // Optimistic delete
+    const qk = queryKeys.progressLogs(user.id);
+    type LogsData = { logs: ProgressLog[]; logPhotos: Record<string, ProgressPhoto[]> };
+    const prev = queryClient.getQueryData<LogsData>(qk);
+    if (prev) {
+      queryClient.setQueryData(qk, {
+        logs: prev.logs.filter((l) => l.id !== id),
+        logPhotos: { ...prev.logPhotos, [id]: undefined },
+      });
+    }
+
+    const { error } = await supabase.from("progress_logs").delete().eq("id", id);
+    if (error) {
+      if (prev) queryClient.setQueryData(qk, prev);
+      toast.error("Failed to delete entry");
+      return;
+    }
     invalidateLogs();
     toast.success("Entry removed");
   };
