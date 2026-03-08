@@ -110,6 +110,15 @@
     --warning: 25 90% 62%;
     --star: 45 90% 58%;
     --streak: 25 90% 62%;
+
+    --nav-active: 72 80% 48%;
+    --nav-inactive: 150 5% 65%;
+    --section-label: 150 5% 65%;
+    --icon-bg: 150 8% 18%;
+    --water-ring: 142 65% 55%;
+    --water-ring-bg: 150 8% 14%;
+    --star-empty: 150 8% 30%;
+    --star-filled: 45 90% 58%;
   }
 }
 
