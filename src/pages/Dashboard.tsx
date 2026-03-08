@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { useTheme } from "@/hooks/useTheme";
 import { HomeDashboard } from "@/components/sections/HomeDashboard";
 import { MacroCalculator } from "@/components/sections/MacroCalculator";
 import { MealVault } from "@/components/sections/MealVault";
