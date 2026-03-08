@@ -21,7 +21,7 @@ import { User, Zap } from "lucide-react";
 import { useStreak } from "@/hooks/useStreak";
 
 export default function Dashboard() {
-  const streak = useStreak();
+  const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("journal");
   const [planSub, setPlanSub] = useState("plans");
