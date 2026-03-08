@@ -294,6 +294,60 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
     }
   };
 
+  const duplicatePlan = async (plan: SavedPlan) => {
+    if (!user) return;
+    setDuplicating(plan.id);
+    try {
+      // Create new plan
+      const { data: newPlan, error: planErr } = await supabase
+        .from("meal_plans")
+        .insert({
+          user_id: user.id,
+          name: `${plan.name} (Copy)`,
+          description: plan.description,
+        })
+        .select("id")
+        .single();
+      if (planErr || !newPlan) throw planErr;
+
+      // Copy all entries
+      const { data: sourceEntries } = await supabase
+        .from("meal_plan_entries")
+        .select("meal_id, day_of_week, meal_time")
+        .eq("meal_plan_id", plan.id);
+
+      if (sourceEntries && sourceEntries.length > 0) {
+        const newEntries = sourceEntries.map((e) => ({
+          meal_plan_id: newPlan.id,
+          meal_id: e.meal_id,
+          day_of_week: e.day_of_week,
+          meal_time: e.meal_time,
+        }));
+        const { error: entryErr } = await supabase.from("meal_plan_entries").insert(newEntries);
+        if (entryErr) throw entryErr;
+      }
+
+      toast.success("Plan duplicated! Opening copy for editing...");
+      await loadPlans();
+
+      // Open the duplicated plan for viewing/editing
+      const dupPlan: SavedPlan = {
+        id: newPlan.id,
+        name: `${plan.name} (Copy)`,
+        description: plan.description,
+        created_at: new Date().toISOString(),
+        start_date: null,
+        end_date: null,
+      };
+      viewPlan(dupPlan);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Failed to duplicate plan");
+    } finally {
+      setDuplicating(null);
+    }
+  };
+
   const setAsActive = (planId: string) => {
     setActivePlanId(planId);
     toast.success("Meal plan set as active");
