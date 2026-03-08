@@ -14,6 +14,7 @@ import { PartnerHub } from "@/components/sections/PartnerHub";
 import { WaterTracker } from "@/components/sections/WaterTracker";
 import { ProgressTracker } from "@/components/sections/ProgressTracker";
 import { NotificationsPage } from "@/components/sections/NotificationsPage";
+import { StreakDetails } from "@/components/sections/StreakDetails";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
