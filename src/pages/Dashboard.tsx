@@ -107,8 +107,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+    <div className="h-full flex flex-col bg-background overflow-hidden">
+      <header className="shrink-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b safe-area-top">
         <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
           {streak > 0 ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
@@ -133,8 +133,10 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
-      <main className="max-w-lg mx-auto px-4 py-6">
-        {renderContent()}
+      <main className="flex-1 overflow-y-auto pb-20">
+        <div className="max-w-lg mx-auto px-4 py-6">
+          {renderContent()}
+        </div>
       </main>
       <BottomNav
         activeTab={activeTab}
