@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PinchZoomImage } from "@/components/community/PinchZoomImage";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MessageCircle, MoreHorizontal, Pencil, Trash2, X, Check, Bookmark, Send, ChevronDown, ChevronUp, Heart, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -454,7 +455,7 @@ export function CommunityPost({
                 </div>
                 <Dialog open={imageOpen} onOpenChange={setImageOpen}>
                   <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
-                    <img src={post.image_url} alt="Post full" className="w-full h-full object-contain max-h-[90vh] rounded-lg" />
+                    <PinchZoomImage src={post.image_url} alt="Post full" />
                   </DialogContent>
                 </Dialog>
               </>
