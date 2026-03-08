@@ -12,6 +12,21 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Cron-style auth: verify shared secret header
+    // Accepts either the service role key or the anon key in the Authorization header
+    // (pg_cron sends the anon key). This prevents random external callers.
+    const authHeader = req.headers.get("Authorization");
+    const expectedAnon = Deno.env.get("SUPABASE_ANON_KEY");
+    const expectedService = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const token = authHeader?.replace("Bearer ", "");
+
+    if (!token || (token !== expectedAnon && token !== expectedService)) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
@@ -24,7 +39,6 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Get all users with enabled reminders who haven't been reminded today
     const { data: reminders, error: remindersError } = await supabase
       .from("streak_reminders")
       .select("user_id, reminder_time")
@@ -45,7 +59,6 @@ Deno.serve(async (req) => {
     let sentCount = 0;
 
     for (const reminder of reminders) {
-      // Check if user has logged activity today
       const [{ data: journalToday }, { data: habitsToday }] = await Promise.all([
         supabase
           .from("journal_entries")
@@ -68,14 +81,12 @@ Deno.serve(async (req) => {
 
       if (hasActivity) continue;
 
-      // Get user email and streak info
       const { data: userData } = await supabase.auth.admin.getUserById(
         reminder.user_id
       );
 
       if (!userData?.user?.email) continue;
 
-      // Get user name
       const { data: profile } = await supabase
         .from("profiles")
         .select("name")
@@ -84,7 +95,6 @@ Deno.serve(async (req) => {
 
       const name = profile?.name || "there";
 
-      // Calculate current streak
       const since = new Date();
       since.setDate(since.getDate() - 90);
       const sinceStr = since.toISOString().split("T")[0];
@@ -109,13 +119,12 @@ Deno.serve(async (req) => {
 
       let streak = 0;
       const d = new Date();
-      d.setDate(d.getDate() - 1); // Check from yesterday since today has no activity
+      d.setDate(d.getDate() - 1);
       while (activeDays.has(d.toISOString().split("T")[0])) {
         streak++;
         d.setDate(d.getDate() - 1);
       }
 
-      // Send email via Resend
       const emailRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -157,7 +166,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Update last_reminder_sent
       await supabase
         .from("streak_reminders")
         .update({ last_reminder_sent: today })
