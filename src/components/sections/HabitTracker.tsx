@@ -199,6 +199,18 @@ export function HabitTracker() {
                   ))}
                 </div>
               ))}
+              {/* Daily completion counts */}
+              <div className="grid grid-cols-8 gap-1 items-center pt-1 border-t border-border mt-1">
+                <span className="text-[10px] text-muted-foreground font-medium">Done</span>
+                {Array.from({ length: 7 }, (_, dayIdx) => {
+                  const doneCount = habits.filter((h) => (weekData[h.id] || Array(7).fill(false))[dayIdx]).length;
+                  return (
+                    <span key={dayIdx} className={cn("text-[10px] text-center font-semibold", doneCount === habits.length && habits.length > 0 ? "text-primary" : "text-muted-foreground")}>
+                      {doneCount}/{habits.length}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
