@@ -432,11 +432,11 @@ export function ProgressTracker() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Scale className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+            <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center"><Scale className="h-5 w-5 text-foreground" /></div>
             Progress
           </h2>
-          <p className="text-sm text-muted-foreground">Track your body over time</p>
+          <p className="text-sm text-section-label font-semibold">Track your body over time</p>
         </div>
         <div className="flex gap-2">
           <div className="flex gap-0.5 bg-muted rounded-lg p-0.5 text-[10px]">
