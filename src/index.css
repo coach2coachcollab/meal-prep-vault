@@ -51,9 +51,9 @@
 
     --macro-protein: 142 27% 39%;
     --macro-carbs: 25 95% 42%;
-    --macro-fat: 38 55% 50%;
+    --macro-fat: 16 52% 47%;
     --success: 142 40% 35%;
-    --warning: 25 95% 42%;
+    --warning: 16 52% 47%;
     --star: 38 55% 50%;
     --streak: 142 27% 39%;
 
@@ -110,9 +110,9 @@
 
     --macro-protein: 142 40% 50%;
     --macro-carbs: 25 90% 62%;
-    --macro-fat: 38 50% 55%;
+    --macro-fat: 16 50% 58%;
     --success: 142 40% 50%;
-    --warning: 25 90% 62%;
+    --warning: 16 50% 58%;
     --star: 38 50% 55%;
     --streak: 142 30% 42%;
 
