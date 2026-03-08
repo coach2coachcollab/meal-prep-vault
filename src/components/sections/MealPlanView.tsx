@@ -79,6 +79,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
   const [allMeals, setAllMeals] = useState<DbMeal[]>([]);
   const [swapSearch, setSwapSearch] = useState("");
 
+  // Drag-and-drop state
+  const [dragEntryId, setDragEntryId] = useState<string | null>(null);
+  const [dragOverEntryId, setDragOverEntryId] = useState<string | null>(null);
+
   useEffect(() => {
     if (user) {
       loadPlans();
