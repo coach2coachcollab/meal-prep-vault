@@ -97,7 +97,7 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ["#84cc16", "#eab308", "#f97316"],
+          colors: ["#4A7C59", "#C4973A", "#8B6E4E"],
         });
         
         toast(`${milestone.icon} ${milestone.title}`, {
