@@ -197,7 +197,7 @@ export function MealPlans() {
               Generate a personalized 7-day meal plan from your Meal Vault recipes, matched to your macro targets.
             </p>
             {dbMeals.length > 0 && (
-              <p className="text-xs text-muted-foreground mb-4">{dbMeals.length} recipes available</p>
+              <p className="text-xs text-section-label font-semibold mb-4">{dbMeals.length} recipes available</p>
             )}
             <Button onClick={generatePlan} disabled={generating} size="lg">
               {generating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="h-4 w-4 mr-2" /> Generate Plan</>}
