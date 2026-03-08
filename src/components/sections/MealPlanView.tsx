@@ -61,6 +61,7 @@ interface MealPlanViewProps {
   searchTerm: string;
   showFavoritesOnly: boolean;
   refreshKey: number;
+  onViewMeal?: (mealId: string) => void;
 }
 
 export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: MealPlanViewProps) {
