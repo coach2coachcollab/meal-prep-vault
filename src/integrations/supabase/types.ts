@@ -983,27 +983,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_favorites: {
-        Row: {
-          id: string
-          recipe_id: string
-          saved_at: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          recipe_id: string
-          saved_at?: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          recipe_id?: string
-          saved_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_habits: {
         Row: {
           created_at: string
