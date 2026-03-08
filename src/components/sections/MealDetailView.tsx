@@ -104,6 +104,144 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     }
   };
 
+  // Community functions
+  const loadComments = async () => {
+    const { data } = await supabase
+      .from("post_comments")
+      .select("*, profiles:profiles!post_comments_user_id_fkey1(name)")
+      .eq("post_id", meal.id)
+      .order("created_at", { ascending: true });
+
+    // Fallback: load comments from posts that reference this recipe
+    const { data: recipePosts } = await supabase
+      .from("community_posts")
+      .select("id")
+      .eq("recipe_id", meal.id);
+
+    if (recipePosts && recipePosts.length > 0) {
+      const postIds = recipePosts.map((p) => p.id);
+      const { data: postComments } = await supabase
+        .from("post_comments")
+        .select("*")
+        .in("post_id", postIds)
+        .order("created_at", { ascending: true });
+
+      // Get user names for comments
+      if (postComments && postComments.length > 0) {
+        const userIds = [...new Set(postComments.map((c) => c.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name")
+          .in("user_id", userIds);
+
+        const nameMap = new Map(profiles?.map((p) => [p.user_id, p.name]) || []);
+        setComments(
+          postComments.map((c) => ({
+            ...c,
+            user_name: nameMap.get(c.user_id) || "User",
+          }))
+        );
+        return;
+      }
+    }
+    setComments([]);
+  };
+
+  const handleAddComment = async () => {
+    if (!user || !newComment.trim()) return;
+
+    // Find or create a community post for this recipe
+    let { data: existingPost } = await supabase
+      .from("community_posts")
+      .select("id")
+      .eq("recipe_id", meal.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (!existingPost) {
+      const { data: newPost, error: postErr } = await supabase
+        .from("community_posts")
+        .insert({
+          user_id: user.id,
+          channel: "meals",
+          text: `💬 Discussion on "${meal.title}"`,
+          recipe_id: meal.id,
+          image_url: meal.image_url,
+        })
+        .select("id")
+        .single();
+      if (postErr) {
+        toast.error("Failed to add comment");
+        return;
+      }
+      existingPost = newPost;
+    }
+
+    const { error } = await supabase.from("post_comments").insert({
+      post_id: existingPost!.id,
+      user_id: user.id,
+      text: newComment.trim(),
+    });
+
+    if (error) {
+      toast.error("Failed to add comment");
+    } else {
+      setNewComment("");
+      loadComments();
+    }
+  };
+
+  const handleEditComment = async (commentId: string, text: string) => {
+    const { error } = await supabase
+      .from("post_comments")
+      .update({ text })
+      .eq("id", commentId);
+    if (!error) loadComments();
+    setEditingId(null);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await supabase
+      .from("post_comments")
+      .delete()
+      .eq("id", commentId);
+    if (!error) loadComments();
+  };
+
+  const handleShareToCommunity = async () => {
+    if (!user || !shareText.trim()) return;
+    setSharing(true);
+    const { error } = await supabase.from("community_posts").insert({
+      user_id: user.id,
+      channel: "meals",
+      text: shareText.trim(),
+      recipe_id: meal.id,
+      image_url: meal.image_url,
+    });
+    if (error) {
+      toast.error("Failed to share");
+    } else {
+      toast.success("Shared to community!");
+      setShareText("");
+      setShowShareForm(false);
+      loadComments();
+    }
+    setSharing(false);
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  };
+
+  const initials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
   const handleRate = async (rating: number) => {
     if (!user) {
       toast.error("Please log in to rate recipes");
@@ -150,7 +288,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     if (!user || selectedIngredients.size === 0) return;
     setAddingToList(true);
     try {
-      // Get or create the user's grocery list
       let { data: list } = await supabase
         .from("grocery_lists")
         .select("id")
@@ -169,7 +306,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         list = newList;
       }
 
-      // Add selected ingredients
       const items = Array.from(selectedIngredients).map((i) => ({
         grocery_list_id: list!.id,
         ingredient: ingredientsList[i],
