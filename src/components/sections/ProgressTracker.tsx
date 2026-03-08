@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -39,15 +40,12 @@ type Angle = "front" | "back" | "side";
 const ANGLES: Angle[] = ["front", "back", "side"];
 const ANGLE_LABELS: Record<Angle, string> = { front: "Front", back: "Back", side: "Side" };
 
-const KG_TO_LBS = 2.20462;
-const CM_TO_IN = 0.393701;
-
 export function ProgressTracker() {
   const { user } = useAuth();
+  const { useMetric, setUseMetric, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
   const [logs, setLogs] = useState<ProgressLog[]>([]);
   const [logPhotos, setLogPhotos] = useState<Record<string, ProgressPhoto[]>>({});
   const [showAdd, setShowAdd] = useState(false);
-  const [useMetric, setUseMetric] = useState(true);
   const [chartField, setChartField] = useState<"weight" | "waist" | "hips" | "body_fat">("weight");
   const [showCompare, setShowCompare] = useState(false);
   const [compareAngle, setCompareAngle] = useState<Angle>("front");
@@ -78,15 +76,8 @@ export function ProgressTracker() {
     if (user) {
       loadLogs();
       loadGoalWeight();
-      loadPreferredUnits();
     }
   }, [user]);
-
-  const loadPreferredUnits = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("profiles").select("preferred_units").eq("user_id", user.id).single();
-    if (data?.preferred_units) setUseMetric(data.preferred_units !== "imperial");
-  };
 
   const loadGoalWeight = async () => {
     if (!user) return;

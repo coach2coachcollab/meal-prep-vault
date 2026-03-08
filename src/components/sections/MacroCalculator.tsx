@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calculator, Flame, Beef, Wheat, Droplets } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { toast } from "sonner";
 
 interface MacroResult {
@@ -20,6 +21,7 @@ interface MacroResult {
 
 export function MacroCalculator() {
   const { user } = useAuth();
+  const { isImperial, weightUnit, heightUnit, toKg, toCm } = usePreferredUnits();
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
@@ -27,21 +29,6 @@ export function MacroCalculator() {
   const [activityLevel, setActivityLevel] = useState("moderate");
   const [goal, setGoal] = useState("maintain");
   const [result, setResult] = useState<MacroResult | null>(null);
-  const [units, setUnits] = useState<"metric" | "imperial">("metric");
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("preferred_units")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.preferred_units === "imperial") setUnits("imperial");
-      });
-  }, [user]);
-
-  const isImperial = units === "imperial";
 
   const activityMultipliers: Record<string, number> = {
     sedentary: 1.2,
@@ -67,9 +54,8 @@ export function MacroCalculator() {
       return;
     }
 
-    // Convert to metric for calculation if imperial
-    const wKg = isImperial ? w * 0.453592 : w;
-    const hCm = isImperial ? h * 2.54 : h;
+    const wKg = toKg(w);
+    const hCm = toCm(h);
 
     // Mifflin-St Jeor
     const bmr = gender === "male"

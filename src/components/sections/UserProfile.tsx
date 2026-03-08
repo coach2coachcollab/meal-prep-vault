@@ -8,16 +8,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Save, LogOut, Moon, Sun, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { useTheme } from "@/hooks/useTheme";
 import { toast } from "sonner";
 
 export function UserProfile() {
   const { user, signOut } = useAuth();
+  const { useMetric, setUseMetric } = usePreferredUnits();
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [useMetric, setUseMetric] = useState(true);
   const { isDark: darkMode, toggle: toggleDarkMode } = useTheme();
   const [profileData, setProfileData] = useState<{
     goal?: string;
@@ -59,14 +60,13 @@ export function UserProfile() {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg, preferred_units")
+      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
       .eq("user_id", user.id)
       .single();
     if (data) {
       if (data.name) setName(data.name);
       if (data.avatar_url) setAvatarUrl(data.avatar_url);
       if (data.age) setAge(String(data.age));
-      if (data.preferred_units) setUseMetric(data.preferred_units !== "imperial");
       setProfileData(data);
     }
   };
