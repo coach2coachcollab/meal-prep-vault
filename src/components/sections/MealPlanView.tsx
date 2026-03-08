@@ -70,7 +70,9 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [viewingPlan, setViewingPlan] = useState<SavedPlan | null>(null);
   const [entries, setEntries] = useState<PlanEntry[]>([]);
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "list">(
+    () => (localStorage.getItem("mealPlanPreferredView") as "calendar" | "list") || "calendar"
+  );
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [expandedDay, setExpandedDay] = useState<number | null>(0);
   const [targetMacros, setTargetMacros] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
