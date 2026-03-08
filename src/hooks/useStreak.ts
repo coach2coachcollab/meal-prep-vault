@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { calculateStreak } from "@/lib/calculations";
 
 export function useStreak() {
   const { user } = useAuth();
