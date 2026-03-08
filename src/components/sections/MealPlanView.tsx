@@ -439,7 +439,7 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                 className={`w-full text-left text-[9px] px-1 py-0.5 rounded mb-0.5 truncate cursor-pointer hover:ring-1 hover:ring-primary transition-all ${mealTimeColors[e.meal_time] || "bg-muted"}`}
               >
                 {e.meal?.title || "Unknown"}
-                <span className="ml-1 opacity-70">{e.meal?.calories || 0} cal</span>
+                <span className="ml-1 opacity-70">{r2(e.meal?.calories || 0)} cal</span>
               </button>
             ))}
             {mapped && mapped.entries.length > 3 && (
