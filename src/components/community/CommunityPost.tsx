@@ -455,7 +455,7 @@ export function CommunityPost({
                 </div>
                 <Dialog open={imageOpen} onOpenChange={setImageOpen}>
                   <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
-                    <img src={post.image_url} alt="Post full" className="w-full h-full object-contain max-h-[90vh] rounded-lg" />
+                    <PinchZoomImage src={post.image_url} alt="Post full" />
                   </DialogContent>
                 </Dialog>
               </>
