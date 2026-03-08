@@ -3,7 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,6 +54,15 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
   const [addingToList, setAddingToList] = useState(false);
 
+  // Community state
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [shareText, setShareText] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [showShareForm, setShowShareForm] = useState(false);
+
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
   const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
@@ -62,6 +75,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
   useEffect(() => {
     loadRatings();
+    loadComments();
   }, [meal.id, user]);
 
   const loadRatings = async () => {
@@ -89,6 +103,144 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
       if (myRating) setUserRating(myRating.rating);
     }
   };
+
+  // Community functions
+  const loadComments = async () => {
+    const { data } = await supabase
+      .from("post_comments")
+      .select("*, profiles:profiles!post_comments_user_id_fkey1(name)")
+      .eq("post_id", meal.id)
+      .order("created_at", { ascending: true });
+
+    // Fallback: load comments from posts that reference this recipe
+    const { data: recipePosts } = await supabase
+      .from("community_posts")
+      .select("id")
+      .eq("recipe_id", meal.id);
+
+    if (recipePosts && recipePosts.length > 0) {
+      const postIds = recipePosts.map((p) => p.id);
+      const { data: postComments } = await supabase
+        .from("post_comments")
+        .select("*")
+        .in("post_id", postIds)
+        .order("created_at", { ascending: true });
+
+      // Get user names for comments
+      if (postComments && postComments.length > 0) {
+        const userIds = [...new Set(postComments.map((c) => c.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name")
+          .in("user_id", userIds);
+
+        const nameMap = new Map(profiles?.map((p) => [p.user_id, p.name]) || []);
+        setComments(
+          postComments.map((c) => ({
+            ...c,
+            user_name: nameMap.get(c.user_id) || "User",
+          }))
+        );
+        return;
+      }
+    }
+    setComments([]);
+  };
+
+  const handleAddComment = async () => {
+    if (!user || !newComment.trim()) return;
+
+    // Find or create a community post for this recipe
+    let { data: existingPost } = await supabase
+      .from("community_posts")
+      .select("id")
+      .eq("recipe_id", meal.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (!existingPost) {
+      const { data: newPost, error: postErr } = await supabase
+        .from("community_posts")
+        .insert({
+          user_id: user.id,
+          channel: "meals",
+          text: `💬 Discussion on "${meal.title}"`,
+          recipe_id: meal.id,
+          image_url: meal.image_url,
+        })
+        .select("id")
+        .single();
+      if (postErr) {
+        toast.error("Failed to add comment");
+        return;
+      }
+      existingPost = newPost;
+    }
+
+    const { error } = await supabase.from("post_comments").insert({
+      post_id: existingPost!.id,
+      user_id: user.id,
+      text: newComment.trim(),
+    });
+
+    if (error) {
+      toast.error("Failed to add comment");
+    } else {
+      setNewComment("");
+      loadComments();
+    }
+  };
+
+  const handleEditComment = async (commentId: string, text: string) => {
+    const { error } = await supabase
+      .from("post_comments")
+      .update({ text })
+      .eq("id", commentId);
+    if (!error) loadComments();
+    setEditingId(null);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await supabase
+      .from("post_comments")
+      .delete()
+      .eq("id", commentId);
+    if (!error) loadComments();
+  };
+
+  const handleShareToCommunity = async () => {
+    if (!user || !shareText.trim()) return;
+    setSharing(true);
+    const { error } = await supabase.from("community_posts").insert({
+      user_id: user.id,
+      channel: "meals",
+      text: shareText.trim(),
+      recipe_id: meal.id,
+      image_url: meal.image_url,
+    });
+    if (error) {
+      toast.error("Failed to share");
+    } else {
+      toast.success("Shared to community!");
+      setShareText("");
+      setShowShareForm(false);
+      loadComments();
+    }
+    setSharing(false);
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  };
+
+  const initials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const handleRate = async (rating: number) => {
     if (!user) {
@@ -136,7 +288,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     if (!user || selectedIngredients.size === 0) return;
     setAddingToList(true);
     try {
-      // Get or create the user's grocery list
       let { data: list } = await supabase
         .from("grocery_lists")
         .select("id")
@@ -155,7 +306,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         list = newList;
       }
 
-      // Add selected ingredients
       const items = Array.from(selectedIngredients).map((i) => ({
         grocery_list_id: list!.id,
         ingredient: ingredientsList[i],
@@ -296,10 +446,13 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
       {/* Tabs: Ingredients / Instructions / Grocery List */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-          <TabsTrigger value="instructions">Instructions</TabsTrigger>
-          <TabsTrigger value="grocery">Grocery List</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="ingredients" className="text-xs">Ingredients</TabsTrigger>
+          <TabsTrigger value="instructions" className="text-xs">Steps</TabsTrigger>
+          <TabsTrigger value="grocery" className="text-xs">Grocery</TabsTrigger>
+          <TabsTrigger value="community" className="text-xs gap-1">
+            <MessageCircle className="h-3 w-3" /> Chat
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ingredients">
@@ -369,6 +522,120 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                   {addingToList ? "Adding..." : `Add ${selectedIngredients.size > 0 ? selectedIngredients.size : ""} to Shopping List`}
                 </Button>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Community Tab */}
+        <TabsContent value="community">
+          <Card>
+            <CardContent className="pt-5 space-y-4">
+              {/* Share to Community */}
+              {!showShareForm ? (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setShowShareForm(true);
+                    setShareText(`Check out this recipe: "${meal.title}" 🍽️`);
+                  }}
+                >
+                  <Share2 className="h-4 w-4" /> Share to Community
+                </Button>
+              ) : (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-semibold text-section-label">Share this recipe</p>
+                  <Textarea
+                    value={shareText}
+                    onChange={(e) => setShareText(e.target.value)}
+                    rows={2}
+                    placeholder="Say something about this recipe..."
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowShareForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" className="gap-1" onClick={handleShareToCommunity} disabled={sharing || !shareText.trim()}>
+                      <Share2 className="h-3 w-3" /> {sharing ? "Sharing..." : "Share"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Comments Section */}
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                  Comments ({comments.length})
+                </p>
+
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                  {comments.map((c) => (
+                    <div key={c.id} className="flex gap-2 group">
+                      <Avatar className="h-7 w-7 mt-0.5 shrink-0">
+                        <AvatarFallback className="text-[10px] bg-icon-bg font-medium">
+                          {initials(c.user_name || "U")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-muted/50 rounded-xl px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold">{c.user_name}</span>
+                            <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+                            {c.user_id === user?.id && editingId !== c.id && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <MoreHorizontal className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => { setEditingId(c.id); setEditText(c.text); }}>
+                                    <Pencil className="h-3 w-3 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteComment(c.id)}>
+                                    <Trash2 className="h-3 w-3 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
+                          {editingId === c.id ? (
+                            <div className="flex gap-1 mt-1">
+                              <Input value={editText} onChange={(e) => setEditText(e.target.value)} className="h-7 text-sm" onKeyDown={(e) => e.key === "Enter" && handleEditComment(c.id, editText)} />
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-3 w-3" /></Button>
+                              <Button size="icon" className="h-7 w-7" onClick={() => handleEditComment(c.id, editText)}><Check className="h-3 w-3" /></Button>
+                            </div>
+                          ) : (
+                            <p className="text-sm">{c.text}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {comments.length === 0 && (
+                    <div className="text-center py-6">
+                      <MessageCircle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No comments yet. Be the first!</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Add Comment Input */}
+                <div className="flex gap-2 mt-3">
+                  <Input
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                    className="flex-1"
+                  />
+                  <Button size="icon" onClick={handleAddComment} disabled={!newComment.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
