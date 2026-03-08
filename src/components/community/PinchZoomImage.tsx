@@ -16,7 +16,7 @@ export function PinchZoomImage({ src, alt }: PinchZoomImageProps) {
   // Pan state
   const panRef = useRef({ startX: 0, startY: 0, lastX: 0, lastY: 0, panning: false });
 
-  const getDistance = (t1: Touch, t2: Touch) =>
+  const getDistance = (t1: React.Touch, t2: React.Touch) =>
     Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
