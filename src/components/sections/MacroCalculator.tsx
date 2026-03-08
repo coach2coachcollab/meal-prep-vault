@@ -67,15 +67,20 @@ export function MacroCalculator() {
       return;
     }
 
+    // Convert to metric for calculation if imperial
+    const wKg = isImperial ? w * 0.453592 : w;
+    const hCm = isImperial ? h * 2.54 : h;
+
     // Mifflin-St Jeor
     const bmr = gender === "male"
-      ? 10 * w + 6.25 * h - 5 * a + 5
-      : 10 * w + 6.25 * h - 5 * a - 161;
+      ? 10 * wKg + 6.25 * hCm - 5 * a + 5
+      : 10 * wKg + 6.25 * hCm - 5 * a - 161;
 
     const tdee = bmr * activityMultipliers[activityLevel];
     const calories = tdee * goalMultipliers[goal];
-    const protein = w * 2.2; // 1g per lb
+    const protein = wKg * 2.2; // 1g per lb
     const fats = (calories * 0.25) / 9;
+    const carbs = (calories - protein * 4 - fats * 9) / 4;
     const carbs = (calories - protein * 4 - fats * 9) / 4;
 
     const res: MacroResult = {
