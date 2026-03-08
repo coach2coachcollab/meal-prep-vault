@@ -286,7 +286,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               </div>
             </div>
             <p className="text-lg font-bold text-foreground">{waterToday.glasses}/{waterToday.goal}</p>
-            <p className="text-[10px] text-section-label font-semibold">Glasses of water</p>
+            <p className="text-[10px] text-section-label font-label uppercase">Glasses of water</p>
           </CardContent>
         </Card>
       </div>
