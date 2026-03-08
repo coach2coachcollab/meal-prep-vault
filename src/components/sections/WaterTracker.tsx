@@ -220,8 +220,8 @@ export function WaterTracker() {
 
             {/* Mood */}
             <div>
-              <p className="text-xs font-semibold flex items-center gap-1 mb-1.5 text-section-label">
-                <Smile className="h-3.5 w-3.5 text-star-filled" /> Mood
+              <p className="text-xs font-label uppercase flex items-center gap-1 mb-1.5 text-section-label">
+                <Smile className="h-3.5 w-3.5 text-primary" /> Mood
               </p>
               <div className="flex gap-1">
                 {moods.map((m) => (
