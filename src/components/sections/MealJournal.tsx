@@ -73,6 +73,8 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
   const [recipeSearch, setRecipeSearch] = useState("");
   const [mode, setMode] = useState<"pick" | "manual">("pick");
+  const [selectedVaultMeal, setSelectedVaultMeal] = useState<DbMeal | null>(null);
+  const [vaultServings, setVaultServings] = useState(1);
 
   // Map recipe_id -> image for entries
   const [mealImages, setMealImages] = useState<Record<string, string>>({});
