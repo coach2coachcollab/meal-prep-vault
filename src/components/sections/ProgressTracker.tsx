@@ -40,15 +40,12 @@ type Angle = "front" | "back" | "side";
 const ANGLES: Angle[] = ["front", "back", "side"];
 const ANGLE_LABELS: Record<Angle, string> = { front: "Front", back: "Back", side: "Side" };
 
-const KG_TO_LBS = 2.20462;
-const CM_TO_IN = 0.393701;
-
 export function ProgressTracker() {
   const { user } = useAuth();
+  const { useMetric, setUseMetric, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
   const [logs, setLogs] = useState<ProgressLog[]>([]);
   const [logPhotos, setLogPhotos] = useState<Record<string, ProgressPhoto[]>>({});
   const [showAdd, setShowAdd] = useState(false);
-  const [useMetric, setUseMetric] = useState(true);
   const [chartField, setChartField] = useState<"weight" | "waist" | "hips" | "body_fat">("weight");
   const [showCompare, setShowCompare] = useState(false);
   const [compareAngle, setCompareAngle] = useState<Angle>("front");
