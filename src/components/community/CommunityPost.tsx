@@ -94,7 +94,7 @@ interface CommentItemProps {
   onSetEditing: (id: string | null, text?: string) => void;
   onSaveEdit: () => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onToggleLike: (commentId: string) => void;
+  onToggleLike: (commentId: string, reactionType: string) => void;
   onSetReplying: (id: string | null) => void;
   onReplyTextChange: (text: string) => void;
   onSubmitReply: () => Promise<void>;
