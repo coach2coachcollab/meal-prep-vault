@@ -296,13 +296,21 @@ export function MealVault() {
                       )}
                       <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
                     </div>
-                    {mealRating && (
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-star text-star" />
-                        <span className="font-medium">{mealRating.avg}</span>
-                        <span>({mealRating.count})</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {mealRating && (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-star text-star" />
+                          <span className="font-medium">{mealRating.avg}</span>
+                          <span>({mealRating.count})</span>
+                        </div>
+                      )}
+                      {(commentCounts[meal.id] || 0) > 0 && (
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" />
+                          <span>{commentCounts[meal.id]}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Tags */}
