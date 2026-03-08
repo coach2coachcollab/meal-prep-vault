@@ -105,39 +105,39 @@ export function MacroCalculator() {
         <p className="text-muted-foreground">Calculate your BMR, TDEE, and personalized macro targets</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Details</CardTitle>
-            <CardDescription>Enter your information for accurate calculations</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Gender</Label>
-                <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Age</Label>
-                <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Details</CardTitle>
+          <CardDescription>Enter your information for accurate calculations</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <Select value={gender} onValueChange={setGender}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Weight (kg)</Label>
-                <Input type="number" placeholder="70" value={weight} onChange={(e) => setWeight(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Height (cm)</Label>
-                <Input type="number" placeholder="175" value={height} onChange={(e) => setHeight(e.target.value)} />
-              </div>
+            <div className="space-y-2">
+              <Label>Age</Label>
+              <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Weight (kg)</Label>
+              <Input type="number" placeholder="70" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Height (cm)</Label>
+              <Input type="number" placeholder="175" value={height} onChange={(e) => setHeight(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Activity Level</Label>
               <Select value={activityLevel} onValueChange={setActivityLevel}>
@@ -162,71 +162,71 @@ export function MacroCalculator() {
                 </SelectContent>
               </Select>
             </div>
-            <Button className="w-full" onClick={calculate}>
-              Calculate Macros
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+          <Button className="w-full" onClick={calculate}>
+            Calculate Macros
+          </Button>
+        </CardContent>
+      </Card>
 
-        {result && (
-          <div className="space-y-4">
+      {result && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">BMR</p>
-                    <p className="text-2xl font-bold">{result.bmr}</p>
-                    <p className="text-xs text-muted-foreground">cal/day</p>
-                  </div>
-                  <div className="text-center p-4 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">TDEE</p>
-                    <p className="text-2xl font-bold">{result.tdee}</p>
-                    <p className="text-xs text-muted-foreground">cal/day</p>
-                  </div>
-                </div>
+              <CardContent className="pt-6 text-center">
+                <p className="text-sm text-muted-foreground">BMR</p>
+                <p className="text-2xl font-bold">{result.bmr}</p>
+                <p className="text-xs text-muted-foreground">cal/day</p>
               </CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Daily Macro Targets</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10">
-                    <Flame className="h-5 w-5 text-primary" />
-                    <div className="flex-1">
-                      <p className="font-medium">Calories</p>
-                    </div>
-                    <p className="text-xl font-bold">{result.calories}</p>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10">
-                    <Beef className="h-5 w-5 text-destructive" />
-                    <div className="flex-1">
-                      <p className="font-medium">Protein</p>
-                    </div>
-                    <p className="text-xl font-bold">{result.protein}g</p>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-accent">
-                    <Wheat className="h-5 w-5 text-accent-foreground" />
-                    <div className="flex-1">
-                      <p className="font-medium">Carbs</p>
-                    </div>
-                    <p className="text-xl font-bold">{result.carbs}g</p>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                    <Droplets className="h-5 w-5 text-secondary-foreground" />
-                    <div className="flex-1">
-                      <p className="font-medium">Fats</p>
-                    </div>
-                    <p className="text-xl font-bold">{result.fats}g</p>
-                  </div>
-                </div>
+              <CardContent className="pt-6 text-center">
+                <p className="text-sm text-muted-foreground">TDEE</p>
+                <p className="text-2xl font-bold">{result.tdee}</p>
+                <p className="text-xs text-muted-foreground">cal/day</p>
               </CardContent>
             </Card>
           </div>
-        )}
-      </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Daily Macro Targets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10">
+                  <Flame className="h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Calories</p>
+                    <p className="text-xl font-bold">{result.calories}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10">
+                  <Beef className="h-5 w-5 text-destructive" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Protein</p>
+                    <p className="text-xl font-bold">{result.protein}g</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-accent">
+                  <Wheat className="h-5 w-5 text-accent-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Carbs</p>
+                    <p className="text-xl font-bold">{result.carbs}g</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                  <Droplets className="h-5 w-5 text-secondary-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Fats</p>
+                    <p className="text-xl font-bold">{result.fats}g</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
