@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { ExternalLink, Copy, Lock, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -27,18 +29,16 @@ interface Partner {
 
 export function PartnerHub() {
   const { user } = useAuth();
-  const [partners, setPartners] = useState<Partner[]>([]);
   const [activeCategory, setActiveCategory] = useState("All");
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
 
-  useEffect(() => {
-    loadPartners();
-  }, []);
-
-  const loadPartners = async () => {
-    const { data } = await supabase.from("partners").select("*").eq("is_active", true).order("is_featured", { ascending: false });
-    if (data) setPartners(data);
-  };
+  const { data: partners = [] } = useQuery({
+    queryKey: queryKeys.partners(),
+    queryFn: async () => {
+      const { data } = await supabase.from("partners").select("*").eq("is_active", true).order("is_featured", { ascending: false });
+      return (data || []) as Partner[];
+    },
+  });
 
   const filtered = activeCategory === "All" ? partners : partners.filter((p) => p.category === activeCategory);
 
@@ -115,7 +115,6 @@ export function PartnerHub() {
         ))}
       </div>
 
-      {/* Deal sheet */}
       <Sheet open={!!selectedPartner} onOpenChange={() => setSelectedPartner(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl">
           {selectedPartner && (

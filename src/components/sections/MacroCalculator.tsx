@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calculator, ChefHat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { toast } from "sonner";
 import { calculateMacros, type MacroResult } from "@/lib/calculations";
@@ -32,6 +34,7 @@ interface MacroCalculatorProps {
 
 export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { isImperial, weightUnit, heightUnit, toKg, toCm, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("");
@@ -41,34 +44,40 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
   const [goal, setGoal] = useState("maintain");
   const [result, setResult] = useState<MacroResult | null>(null);
 
+  const { data: profileData } = useQuery({
+    queryKey: queryKeys.profile(user?.id),
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("age, weight_kg, height_cm, activity_level, goal")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("age, weight_kg, height_cm, activity_level, goal")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (!data) return;
-        if (data.age) setAge(String(data.age));
-        if (data.weight_kg) {
-          setWeight(isImperial
-            ? String(Math.round(data.weight_kg * KG_TO_LBS))
-            : String(data.weight_kg));
-        }
-        if (data.height_cm) {
-          setHeight(isImperial
-            ? String(Math.round(data.height_cm * CM_TO_IN))
-            : String(data.height_cm));
-        }
-        if (data.activity_level && ACTIVITY_MAP[data.activity_level]) {
-          setActivityLevel(data.activity_level);
-        }
-        if (data.goal && GOAL_MAP[data.goal]) {
-          setGoal(GOAL_MAP[data.goal]);
-        }
-      });
-  }, [user, isImperial]);
+    if (!profileData) return;
+    if (profileData.age) setAge(String(profileData.age));
+    if (profileData.weight_kg) {
+      setWeight(isImperial
+        ? String(Math.round(profileData.weight_kg * KG_TO_LBS))
+        : String(profileData.weight_kg));
+    }
+    if (profileData.height_cm) {
+      setHeight(isImperial
+        ? String(Math.round(profileData.height_cm * CM_TO_IN))
+        : String(profileData.height_cm));
+    }
+    if (profileData.activity_level && ACTIVITY_MAP[profileData.activity_level]) {
+      setActivityLevel(profileData.activity_level);
+    }
+    if (profileData.goal && GOAL_MAP[profileData.goal]) {
+      setGoal(GOAL_MAP[profileData.goal]);
+    }
+  }, [profileData, isImperial]);
 
   const calculate = async () => {
     const w = parseFloat(weight);
@@ -93,9 +102,7 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
     });
     setResult(res);
 
-    // Save to database
     if (user) {
-      // Save calculation history
       const { error } = await supabase.from("macro_calculations").insert({
         user_id: user.id,
         gender,
@@ -112,7 +119,6 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
         fats: res.fats,
       });
 
-      // Upsert active macros so Meal Plan Generator can use them
       const { data: existing } = await supabase
         .from("user_macros")
         .select("id")
@@ -139,6 +145,9 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
           is_custom: false,
         });
       }
+
+      queryClient.invalidateQueries({ queryKey: queryKeys.macros(user.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id) });
 
       if (error) console.error("Save error:", error);
       else toast.success("Macros calculated & saved! You can now generate a meal plan.");
@@ -269,7 +278,6 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
             </Card>
           </div>
 
-          {/* CTA to generate meal plan */}
           {onNavigateToMealVault && (
             <Card className="border-primary/20">
               <CardContent className="pt-6 pb-6 text-center space-y-3">
