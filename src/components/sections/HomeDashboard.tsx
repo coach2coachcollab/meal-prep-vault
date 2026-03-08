@@ -264,7 +264,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               <CheckCircle2 className="h-4 w-4 text-foreground" />
             </div>
             <p className="text-lg font-bold text-foreground">{habitsToday.done}/{habitsToday.total}</p>
-            <p className="text-[10px] text-section-label font-semibold">Habits done</p>
+            <p className="text-[10px] text-section-label font-label uppercase">Habits done</p>
             <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
           </CardContent>
         </Card>
