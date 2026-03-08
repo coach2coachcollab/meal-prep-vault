@@ -308,22 +308,24 @@ export function MealVault() {
 
       {/* Create Recipe Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-2xl sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><ChefHat className="h-5 w-5" /> Create Recipe</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label>Recipe Name *</Label>
-              <Input placeholder="e.g., Protein Pancakes" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input placeholder="Brief description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Recipe Name *</Label>
+                <Input placeholder="e.g., Protein Pancakes" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input placeholder="Brief description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Photo</Label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
+              <label className="flex flex-col items-center justify-center w-full h-32 sm:h-40 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
                 {imagePreview ? (
                   <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
@@ -338,7 +340,7 @@ export function MealVault() {
                 }} />
               </label>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="space-y-2"><Label>Calories</Label><Input type="number" placeholder="0" value={form.calories} onChange={(e) => setForm({ ...form, calories: e.target.value })} /></div>
               <div className="space-y-2"><Label>Protein (g)</Label><Input type="number" placeholder="0" value={form.protein} onChange={(e) => setForm({ ...form, protein: e.target.value })} /></div>
               <div className="space-y-2"><Label>Carbs (g)</Label><Input type="number" placeholder="0" value={form.carbs} onChange={(e) => setForm({ ...form, carbs: e.target.value })} /></div>
@@ -350,8 +352,10 @@ export function MealVault() {
               <div className="space-y-2"><Label>Servings</Label><Input type="number" placeholder="1" value={form.servings} onChange={(e) => setForm({ ...form, servings: e.target.value })} /></div>
             </div>
             <div className="space-y-2"><Label>Tags (comma-separated)</Label><Input placeholder="high-protein, meal-prep, quick" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Ingredients (one per line)</Label><Textarea placeholder={"2 cups oats\n1 scoop whey protein\n1 banana"} rows={4} value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Instructions (one per line)</Label><Textarea placeholder={"Mix dry ingredients\nAdd wet ingredients\nCook on medium heat"} rows={4} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Ingredients (one per line)</Label><Textarea placeholder={"2 cups oats\n1 scoop whey protein\n1 banana"} rows={5} value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Instructions (one per line)</Label><Textarea placeholder={"Mix dry ingredients\nAdd wet ingredients\nCook on medium heat"} rows={5} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></div>
+            </div>
             <Button className="w-full" onClick={createRecipe} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
               Save Recipe
