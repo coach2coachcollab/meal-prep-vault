@@ -206,8 +206,8 @@ export function WaterTracker() {
           <CardContent className="pt-4 pb-4 space-y-3">
             {/* Energy */}
             <div>
-              <p className="text-xs font-medium flex items-center gap-1 mb-1.5">
-                <Zap className="h-3.5 w-3.5 text-primary" /> Energy
+              <p className="text-xs font-semibold flex items-center gap-1 mb-1.5 text-section-label">
+                <Zap className="h-3.5 w-3.5 text-star-filled" /> Energy
               </p>
               <div className="flex gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
