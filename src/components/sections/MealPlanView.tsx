@@ -679,10 +679,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{meal.title}</p>
                     <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>{meal.calories || 0} cal</span>
-                      <span className="text-macro-protein">P:{meal.protein || 0}g</span>
-                      <span className="text-macro-carbs">C:{meal.carbs || 0}g</span>
-                      <span className="text-macro-fat">F:{meal.fats || 0}g</span>
+                      <span>{r2(meal.calories || 0)} cal</span>
+                      <span className="text-macro-protein">P:{r2(meal.protein || 0)}g</span>
+                      <span className="text-macro-carbs">C:{r2(meal.carbs || 0)}g</span>
+                      <span className="text-macro-fat">F:{r2(meal.fats || 0)}g</span>
                     </div>
                   </div>
                   {meal.id === swapEntry?.meal_id && (
