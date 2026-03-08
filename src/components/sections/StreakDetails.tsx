@@ -217,7 +217,7 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
           <p className="text-4xl font-bold text-foreground">{streak}</p>
           <p className="text-sm text-muted-foreground">Day Streak</p>
           {nextMilestone && (
-            <p className="text-xs text-primary mt-2">
+            <p className="text-sm font-semibold text-foreground mt-2">
               {nextMilestone.days - streak} days to {nextMilestone.icon} {nextMilestone.title}
             </p>
           )}
