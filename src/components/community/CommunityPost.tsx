@@ -327,6 +327,7 @@ export function CommunityPost({
 }: CommunityPostProps) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
+  const [imageOpen, setImageOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<InlineComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
