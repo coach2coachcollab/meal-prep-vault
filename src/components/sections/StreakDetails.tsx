@@ -206,7 +206,7 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h2 className="text-xl font-bold">Your Streak</h2>
+        <h2 className="text-xl font-heading">Your Streak</h2>
       </div>
 
       {/* Current Streak Hero */}

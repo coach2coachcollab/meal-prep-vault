@@ -141,7 +141,7 @@ export function GroceryList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+          <h2 className="text-2xl font-heading flex items-center gap-2 text-foreground">
             <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><ShoppingCart className="h-5 w-5 text-foreground" /></div>
             Grocery List
           </h2>

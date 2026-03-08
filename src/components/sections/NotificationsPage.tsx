@@ -74,7 +74,7 @@ export function NotificationsPage({ onNavigateToPost }: NotificationsPageProps) 
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Notifications</h2>
+          <h2 className="text-xl font-heading">Notifications</h2>
           <p className="text-xs text-muted-foreground">
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
           </p>

@@ -61,7 +61,7 @@ export function PartnerHub() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+        <h2 className="text-xl font-heading text-foreground flex items-center gap-2">
           <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center"><Sparkles className="h-5 w-5 text-foreground" /></div>
           Coach-Approved Deals
         </h2>
