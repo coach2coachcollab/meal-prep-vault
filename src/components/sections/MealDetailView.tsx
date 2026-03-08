@@ -446,10 +446,13 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
       {/* Tabs: Ingredients / Instructions / Grocery List */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-          <TabsTrigger value="instructions">Instructions</TabsTrigger>
-          <TabsTrigger value="grocery">Grocery List</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="ingredients" className="text-xs">Ingredients</TabsTrigger>
+          <TabsTrigger value="instructions" className="text-xs">Steps</TabsTrigger>
+          <TabsTrigger value="grocery" className="text-xs">Grocery</TabsTrigger>
+          <TabsTrigger value="community" className="text-xs gap-1">
+            <MessageCircle className="h-3 w-3" /> Chat
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ingredients">
@@ -519,6 +522,120 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                   {addingToList ? "Adding..." : `Add ${selectedIngredients.size > 0 ? selectedIngredients.size : ""} to Shopping List`}
                 </Button>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Community Tab */}
+        <TabsContent value="community">
+          <Card>
+            <CardContent className="pt-5 space-y-4">
+              {/* Share to Community */}
+              {!showShareForm ? (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setShowShareForm(true);
+                    setShareText(`Check out this recipe: "${meal.title}" 🍽️`);
+                  }}
+                >
+                  <Share2 className="h-4 w-4" /> Share to Community
+                </Button>
+              ) : (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-semibold text-section-label">Share this recipe</p>
+                  <Textarea
+                    value={shareText}
+                    onChange={(e) => setShareText(e.target.value)}
+                    rows={2}
+                    placeholder="Say something about this recipe..."
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowShareForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" className="gap-1" onClick={handleShareToCommunity} disabled={sharing || !shareText.trim()}>
+                      <Share2 className="h-3 w-3" /> {sharing ? "Sharing..." : "Share"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Comments Section */}
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                  Comments ({comments.length})
+                </p>
+
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                  {comments.map((c) => (
+                    <div key={c.id} className="flex gap-2 group">
+                      <Avatar className="h-7 w-7 mt-0.5 shrink-0">
+                        <AvatarFallback className="text-[10px] bg-icon-bg font-medium">
+                          {initials(c.user_name || "U")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-muted/50 rounded-xl px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold">{c.user_name}</span>
+                            <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+                            {c.user_id === user?.id && editingId !== c.id && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <MoreHorizontal className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => { setEditingId(c.id); setEditText(c.text); }}>
+                                    <Pencil className="h-3 w-3 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteComment(c.id)}>
+                                    <Trash2 className="h-3 w-3 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
+                          {editingId === c.id ? (
+                            <div className="flex gap-1 mt-1">
+                              <Input value={editText} onChange={(e) => setEditText(e.target.value)} className="h-7 text-sm" onKeyDown={(e) => e.key === "Enter" && handleEditComment(c.id, editText)} />
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-3 w-3" /></Button>
+                              <Button size="icon" className="h-7 w-7" onClick={() => handleEditComment(c.id, editText)}><Check className="h-3 w-3" /></Button>
+                            </div>
+                          ) : (
+                            <p className="text-sm">{c.text}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {comments.length === 0 && (
+                    <div className="text-center py-6">
+                      <MessageCircle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No comments yet. Be the first!</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Add Comment Input */}
+                <div className="flex gap-2 mt-3">
+                  <Input
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                    className="flex-1"
+                  />
+                  <Button size="icon" onClick={handleAddComment} disabled={!newComment.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
