@@ -181,7 +181,7 @@ export function MealPlans() {
       const m = getMealMacros(day.meals[t].meal_id);
       if (m) { cal += m.calories || 0; p += m.protein || 0; c += m.carbs || 0; f += m.fats || 0; }
     });
-    return { cal, p, c, f };
+    return { cal: r2(cal), p: r2(p), c: r2(c), f: r2(f) };
   };
 
   const currentDay = plan?.days[selectedDay];
