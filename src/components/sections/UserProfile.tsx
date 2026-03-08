@@ -248,7 +248,7 @@ export function UserProfile() {
               <span className="font-medium">{profileData.goal}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Activity</span>
+              <span className="text-section-label">Activity</span>
               <span className="font-medium capitalize">{profileData.activity_level}</span>
             </div>
             {profileData.age && (
