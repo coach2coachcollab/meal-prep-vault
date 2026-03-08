@@ -194,8 +194,8 @@ export function MacroCalculator() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10">
-                  <Flame className="h-5 w-5 text-primary" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Flame className="h-5 w-5 text-foreground" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Calories</p>
                     <p className="text-xl font-bold">{result.calories}</p>
