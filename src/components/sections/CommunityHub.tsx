@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -258,21 +258,18 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
         </Button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {channels.map((ch) => (
-          <Badge
-            key={ch.id}
-            variant={activeChannel === ch.id ? "default" : "outline"}
-            className={cn(
-              "cursor-pointer whitespace-nowrap px-3 py-1.5 transition-colors",
-              activeChannel === ch.id && "bg-primary text-primary-foreground"
-            )}
-            onClick={() => setActiveChannel(ch.id)}
-          >
-            {ch.label}
-          </Badge>
-        ))}
-      </div>
+      <Select value={activeChannel} onValueChange={setActiveChannel}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {channels.map((ch) => (
+            <SelectItem key={ch.id} value={ch.id}>
+              {ch.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <div className="space-y-3">
         {posts.length === 0 && (
