@@ -14,6 +14,7 @@ import { PartnerHub } from "@/components/sections/PartnerHub";
 import { WaterTracker } from "@/components/sections/WaterTracker";
 import { ProgressTracker } from "@/components/sections/ProgressTracker";
 import { NotificationsPage } from "@/components/sections/NotificationsPage";
+import { StreakDetails } from "@/components/sections/StreakDetails";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,8 @@ export default function Dashboard() {
         return <CommunityHub highlightPostId={highlightPostId} onHighlightHandled={() => setHighlightPostId(null)} />;
       case "notifications":
         return <NotificationsPage onNavigateToPost={navigateToPost} />;
+      case "streak":
+        return <StreakDetails onBack={() => setActiveTab("home")} streak={streak} />;
       case "profile":
         return (
           <Tabs value={profileSub} onValueChange={setProfileSub}>
@@ -110,10 +113,13 @@ export default function Dashboard() {
     <div className="h-full flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b safe-area-top">
         <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 transition-all duration-300 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}>
+          <button
+            onClick={() => setActiveTab("streak")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 transition-all duration-300 hover:bg-primary/20 active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
+          >
             <Zap className={`h-3.5 w-3.5 text-primary transition-transform duration-300 ${justIncreased ? "scale-125" : ""}`} />
             <span className="text-xs font-bold text-foreground">{streak}🔥</span>
-          </div>
+          </button>
           <div className="flex items-center gap-2">
             <NotificationBell
               onNavigateToCommunity={() => setActiveTab("community")}
