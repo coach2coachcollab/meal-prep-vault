@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Flame, Zap, Trophy, Target, Calendar, TrendingUp } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Flame, Zap, Trophy, Target, Calendar, TrendingUp, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStreakReminder } from "@/hooks/useStreakReminder";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 
