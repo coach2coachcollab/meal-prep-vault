@@ -121,6 +121,8 @@ function CommentItem({
   onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
 }: CommentItemProps) {
   const [repliesExpanded, setRepliesExpanded] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const replyCount = c.replies?.length || 0;
   const shouldCollapse = depth === 0 && replyCount > 1;
 
