@@ -348,15 +348,15 @@ export function MealVault() {
                         <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                       </button>
                       {/* Macro overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-2.5 pt-6">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pb-2.5 pt-8">
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-white text-base font-bold">{cal}</span>
                           <span className="text-white/70 text-xs">cal/serving</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs font-medium text-macro-protein px-1.5 py-0.5 rounded bg-white/15 backdrop-blur-sm">{p}g P</span>
-                          <span className="text-xs font-medium text-macro-carbs px-1.5 py-0.5 rounded bg-white/15 backdrop-blur-sm">{c}g C</span>
-                          <span className="text-xs font-medium text-macro-fat px-1.5 py-0.5 rounded bg-white/15 backdrop-blur-sm">{f}g F</span>
+                          <span className="text-xs font-semibold text-white px-1.5 py-0.5 rounded bg-macro-protein/80">{p}g P</span>
+                          <span className="text-xs font-semibold text-white px-1.5 py-0.5 rounded bg-macro-carbs/80">{c}g C</span>
+                          <span className="text-xs font-semibold text-white px-1.5 py-0.5 rounded bg-macro-fat/80">{f}g F</span>
                         </div>
                       </div>
                     </div>
