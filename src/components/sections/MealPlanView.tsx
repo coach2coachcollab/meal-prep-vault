@@ -415,6 +415,3 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
     </div>
   );
 }
-
-// Need Sparkles import
-import { Sparkles } from "lucide-react";
