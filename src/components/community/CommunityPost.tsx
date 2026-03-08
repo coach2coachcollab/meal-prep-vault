@@ -130,7 +130,10 @@ function CommentItem({
             </Button>
           </div>
         ) : (
-          <div className="bg-muted/50 rounded-xl px-3 py-1.5">
+          <div
+            className="bg-muted/50 rounded-xl px-3 py-1.5 cursor-pointer"
+            onClick={() => setShowActions((prev) => !prev)}
+          >
             <span className="text-xs font-semibold">{c.user_name}</span>
             <p className="text-sm">{c.text}</p>
           </div>
@@ -144,7 +147,7 @@ function CommentItem({
             <Heart className={cn("h-3 w-3", c.is_liked && "fill-current")} />
             {c.like_count > 0 && <span>{c.like_count}</span>}
           </button>
-          <div className="hidden group-hover:flex items-center gap-3">
+          <div className={cn("items-center gap-3", showActions ? "flex" : "hidden group-hover:flex")}>
             {depth < 2 && (
               <button
                 className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-0.5"
