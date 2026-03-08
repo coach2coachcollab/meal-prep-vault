@@ -54,9 +54,8 @@ export function MacroCalculator() {
       return;
     }
 
-    // Convert to metric for calculation if imperial
-    const wKg = isImperial ? w * 0.453592 : w;
-    const hCm = isImperial ? h * 2.54 : h;
+    const wKg = toKg(w);
+    const hCm = toCm(h);
 
     // Mifflin-St Jeor
     const bmr = gender === "male"

@@ -76,15 +76,8 @@ export function ProgressTracker() {
     if (user) {
       loadLogs();
       loadGoalWeight();
-      loadPreferredUnits();
     }
   }, [user]);
-
-  const loadPreferredUnits = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("profiles").select("preferred_units").eq("user_id", user.id).single();
-    if (data?.preferred_units) setUseMetric(data.preferred_units !== "imperial");
-  };
 
   const loadGoalWeight = async () => {
     if (!user) return;
