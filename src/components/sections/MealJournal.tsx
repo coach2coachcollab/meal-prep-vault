@@ -217,8 +217,8 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       setFoodName("");setFoodCals("");setFoodProtein("");setFoodCarbs("");setFoodFat("");
       setMealPhoto(null);setMealPhotoPreview(null);setSaveToVault(false);
       setDialogOpen(false);
-      loadData();
-      if (recipe_id) loadMeals(); // refresh vault data
+      invalidateJournal();
+      if (recipe_id) queryClient.invalidateQueries({ queryKey: queryKeys.dbMeals() });
       toast.success(recipe_id ? "Food logged & saved to Vault! 🎉" : "Food logged!");
     }
   };
