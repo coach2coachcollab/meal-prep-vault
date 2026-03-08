@@ -181,11 +181,11 @@ export function MealVault() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Heart className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+            <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><Heart className="h-5 w-5 text-foreground" /></div>
             Meal Vault
           </h2>
-          <p className="text-muted-foreground text-sm">Browse recipes and save your favorites</p>
+          <p className="text-section-label font-semibold text-sm">Browse recipes and save your favorites</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1" /> Add Meal
@@ -210,8 +210,8 @@ export function MealVault() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
-          <ChefHat className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-muted-foreground">
+          <div className="h-16 w-16 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-3"><ChefHat className="h-8 w-8 text-foreground" /></div>
+          <p className="text-section-label font-medium">
             {searchTerm ? "No meals match your search" : "No recipes yet. Add your first one!"}
           </p>
         </div>

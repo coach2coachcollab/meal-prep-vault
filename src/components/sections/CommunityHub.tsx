@@ -248,8 +248,8 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Community</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="text-xl font-bold text-foreground">Community</h2>
+          <p className="text-xs text-section-label font-semibold">
             {activeChannel === "saved" ? `${posts.length} favourites` : `${posts.length} posts in this channel`}
           </p>
         </div>
@@ -277,15 +277,15 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
             <CardContent className="py-12 text-center">
               {activeChannel === "saved" ? (
                  <>
-                   <Bookmark className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                   <p className="text-muted-foreground font-medium">No favourites yet</p>
-                   <p className="text-sm text-muted-foreground mt-1">Tap the bookmark icon on posts to add them here</p>
+                   <div className="h-14 w-14 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-2"><Bookmark className="h-7 w-7 text-foreground" /></div>
+                   <p className="text-foreground font-medium">No favourites yet</p>
+                   <p className="text-sm text-section-label mt-1">Tap the bookmark icon on posts to add them here</p>
                  </>
               ) : (
                 <>
                   <p className="text-3xl mb-2">💬</p>
-                  <p className="text-muted-foreground font-medium">No posts yet in this channel</p>
-                  <p className="text-sm text-muted-foreground mt-1">Be the first to share something!</p>
+                   <p className="text-foreground font-medium">No posts yet in this channel</p>
+                   <p className="text-sm text-section-label mt-1">Be the first to share something!</p>
                   <Button size="sm" className="mt-4" onClick={() => setDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" /> Create Post
                   </Button>

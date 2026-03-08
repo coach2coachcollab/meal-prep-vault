@@ -191,13 +191,13 @@ export function MealPlans() {
       {!plan && (
         <div className="space-y-4">
           <div className="text-center py-8">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-bold mb-1">AI Meal Plan Generator</h3>
-            <p className="text-sm text-muted-foreground mb-2 max-w-xs mx-auto">
+            <div className="h-16 w-16 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-4"><Calendar className="h-8 w-8 text-foreground" /></div>
+            <h3 className="text-lg font-bold text-foreground mb-1">AI Meal Plan Generator</h3>
+            <p className="text-sm text-section-label mb-2 max-w-xs mx-auto">
               Generate a personalized 7-day meal plan from your Meal Vault recipes, matched to your macro targets.
             </p>
             {dbMeals.length > 0 && (
-              <p className="text-xs text-muted-foreground mb-4">{dbMeals.length} recipes available</p>
+              <p className="text-xs text-section-label font-semibold mb-4">{dbMeals.length} recipes available</p>
             )}
             <Button onClick={generatePlan} disabled={generating} size="lg">
               {generating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="h-4 w-4 mr-2" /> Generate Plan</>}
@@ -208,7 +208,7 @@ export function MealPlans() {
 
           {savedPlans.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground">Saved Plans</h4>
+              <h4 className="text-sm font-semibold text-section-label">Saved Plans</h4>
               {savedPlans.map((sp) => (
                 <Card key={sp.id}>
                   <CardContent className="py-3 flex items-center justify-between">

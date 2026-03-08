@@ -98,11 +98,11 @@ export function MacroCalculator() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Calculator className="h-6 w-6 text-primary" />
+        <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+          <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><Calculator className="h-5 w-5 text-foreground" /></div>
           Macro Calculator
         </h2>
-        <p className="text-muted-foreground">Calculate your BMR, TDEE, and personalized macro targets</p>
+        <p className="text-section-label font-semibold">Calculate your BMR, TDEE, and personalized macro targets</p>
       </div>
 
       <Card>
@@ -194,29 +194,29 @@ export function MacroCalculator() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10">
-                  <Flame className="h-5 w-5 text-primary" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Flame className="h-5 w-5 text-foreground" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Calories</p>
                     <p className="text-xl font-bold">{result.calories}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10">
-                  <Beef className="h-5 w-5 text-destructive" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-protein/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Beef className="h-5 w-5 text-macro-protein" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Protein</p>
                     <p className="text-xl font-bold">{result.protein}g</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-accent">
-                  <Wheat className="h-5 w-5 text-accent-foreground" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-carbs/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Wheat className="h-5 w-5 text-macro-carbs" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Carbs</p>
                     <p className="text-xl font-bold">{result.carbs}g</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                  <Droplets className="h-5 w-5 text-secondary-foreground" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-fat/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Droplets className="h-5 w-5 text-macro-fat" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Fats</p>
                     <p className="text-xl font-bold">{result.fats}g</p>
