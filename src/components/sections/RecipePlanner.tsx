@@ -104,11 +104,11 @@ export function RecipePlanner() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-primary" />
+        <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+          <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><BookOpen className="h-5 w-5 text-foreground" /></div>
           Recipe Planner
         </h2>
-        <p className="text-muted-foreground">Create and save your own custom recipes</p>
+        <p className="text-section-label font-semibold">Create and save your own custom recipes</p>
       </div>
 
       <Card>

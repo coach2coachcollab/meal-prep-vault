@@ -215,8 +215,8 @@ export function MacroCalculator() {
                     <p className="text-xl font-bold">{result.carbs}g</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                  <Droplets className="h-5 w-5 text-secondary-foreground" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-fat/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Droplets className="h-5 w-5 text-macro-fat" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Fats</p>
                     <p className="text-xl font-bold">{result.fats}g</p>

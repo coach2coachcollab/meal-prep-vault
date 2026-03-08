@@ -208,7 +208,7 @@ export function MealPlans() {
 
           {savedPlans.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground">Saved Plans</h4>
+              <h4 className="text-sm font-semibold text-section-label">Saved Plans</h4>
               {savedPlans.map((sp) => (
                 <Card key={sp.id}>
                   <CardContent className="py-3 flex items-center justify-between">

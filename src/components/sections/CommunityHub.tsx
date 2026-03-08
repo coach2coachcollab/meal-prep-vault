@@ -284,8 +284,8 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
               ) : (
                 <>
                   <p className="text-3xl mb-2">💬</p>
-                  <p className="text-muted-foreground font-medium">No posts yet in this channel</p>
-                  <p className="text-sm text-muted-foreground mt-1">Be the first to share something!</p>
+                   <p className="text-foreground font-medium">No posts yet in this channel</p>
+                   <p className="text-sm text-section-label mt-1">Be the first to share something!</p>
                   <Button size="sm" className="mt-4" onClick={() => setDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" /> Create Post
                   </Button>
