@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ProgressLog {
   id: string;
@@ -42,9 +44,8 @@ const ANGLE_LABELS: Record<Angle, string> = { front: "Front", back: "Back", side
 
 export function ProgressTracker() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { useMetric, setUseMetric, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
-  const [logs, setLogs] = useState<ProgressLog[]>([]);
-  const [logPhotos, setLogPhotos] = useState<Record<string, ProgressPhoto[]>>({});
   const [showAdd, setShowAdd] = useState(false);
   const [chartField, setChartField] = useState<"weight" | "waist" | "hips" | "body_fat">("weight");
   const [showCompare, setShowCompare] = useState(false);
@@ -53,7 +54,6 @@ export function ProgressTracker() {
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
   const [viewPhotoList, setViewPhotoList] = useState<{ url: string; label: string }[]>([]);
   const [viewPhotoIndex, setViewPhotoIndex] = useState(0);
-  const [goalWeightKg, setGoalWeightKg] = useState<number | null>(null);
   const [goalInput, setGoalInput] = useState("");
   const [showGoalEdit, setShowGoalEdit] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -72,17 +72,53 @@ export function ProgressTracker() {
     weight: "", waist: "", hips: "", chest: "", arms: "", thighs: "", body_fat: "", notes: "",
   });
 
-  useEffect(() => {
-    if (user) {
-      loadLogs();
-      loadGoalWeight();
-    }
-  }, [user]);
+  // Progress logs + photos query
+  const { data: logsData } = useQuery({
+    queryKey: queryKeys.progressLogs(user?.id),
+    queryFn: async () => {
+      if (!user) return { logs: [] as ProgressLog[], logPhotos: {} as Record<string, ProgressPhoto[]> };
+      const { data } = await supabase
+        .from("progress_logs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: true });
+      const logs = (data || []) as ProgressLog[];
+      let logPhotos: Record<string, ProgressPhoto[]> = {};
+      const logIds = logs.map((l) => l.id);
+      if (logIds.length > 0) {
+        const { data: photos } = await supabase
+          .from("progress_photos")
+          .select("*")
+          .in("progress_log_id", logIds);
+        if (photos) {
+          (photos as ProgressPhoto[]).forEach((p) => {
+            if (!logPhotos[p.progress_log_id]) logPhotos[p.progress_log_id] = [];
+            logPhotos[p.progress_log_id].push(p);
+          });
+        }
+      }
+      return { logs, logPhotos };
+    },
+    enabled: !!user,
+  });
 
-  const loadGoalWeight = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("profiles").select("goal_weight_kg").eq("user_id", user.id).single();
-    if (data?.goal_weight_kg) setGoalWeightKg(data.goal_weight_kg);
+  const logs = logsData?.logs || [];
+  const logPhotos = logsData?.logPhotos || {};
+
+  // Goal weight query
+  const { data: goalWeightKg = null } = useQuery({
+    queryKey: queryKeys.goalWeight(user?.id),
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("goal_weight_kg").eq("user_id", user.id).single();
+      return data?.goal_weight_kg || null;
+    },
+    enabled: !!user,
+  });
+
+  const invalidateLogs = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.progressLogs(user?.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.progressSummary(user?.id) });
   };
 
   const saveGoalWeight = async () => {
@@ -91,38 +127,10 @@ export function ProgressTracker() {
     const rounded = Math.round(kg * 10) / 10;
     const { error } = await supabase.from("profiles").update({ goal_weight_kg: rounded }).eq("user_id", user.id);
     if (error) { toast.error("Failed to save goal"); return; }
-    setGoalWeightKg(rounded);
+    queryClient.invalidateQueries({ queryKey: queryKeys.goalWeight(user.id) });
     setGoalInput("");
     setShowGoalEdit(false);
     toast.success("Goal weight set! 🎯");
-  };
-
-  const loadLogs = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("progress_logs")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("date", { ascending: true });
-    if (data) {
-      setLogs(data);
-      // Load all photos for these logs
-      const logIds = data.map((l) => l.id);
-      if (logIds.length > 0) {
-        const { data: photos } = await supabase
-          .from("progress_photos")
-          .select("*")
-          .in("progress_log_id", logIds);
-        if (photos) {
-          const grouped: Record<string, ProgressPhoto[]> = {};
-          (photos as ProgressPhoto[]).forEach((p) => {
-            if (!grouped[p.progress_log_id]) grouped[p.progress_log_id] = [];
-            grouped[p.progress_log_id].push(p);
-          });
-          setLogPhotos(grouped);
-        }
-      }
-    }
   };
 
   const handleAnglePhotoSelect = (angle: Angle, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,12 +235,12 @@ export function ProgressTracker() {
     setForm({ date: new Date().toISOString().split("T")[0], weight: "", waist: "", hips: "", chest: "", arms: "", thighs: "", body_fat: "", notes: "" });
     resetPhotoState();
     setShowAdd(false);
-    loadLogs();
+    invalidateLogs();
   };
 
   const deleteLog = async (id: string) => {
     await supabase.from("progress_logs").delete().eq("id", id);
-    loadLogs();
+    invalidateLogs();
     toast.success("Entry removed");
   };
 

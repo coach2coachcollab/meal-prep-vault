@@ -14,6 +14,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
 const moods = ["😊", "😐", "😴", "😤", "😢"];
@@ -46,10 +48,8 @@ interface DbMeal {
 
 export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [macroTargets, setMacroTargets] = useState<{calories: number;protein_g: number;carbs_g: number;fat_g: number;} | null>(null);
-  const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addMealType, setAddMealType] = useState("Breakfast");
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
@@ -71,44 +71,66 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const [saveToVault, setSaveToVault] = useState(false);
 
   // Recipe picker
-  const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
   const [recipeSearch, setRecipeSearch] = useState("");
   const [mode, setMode] = useState<"pick" | "manual">("pick");
   const [selectedVaultMeal, setSelectedVaultMeal] = useState<DbMeal | null>(null);
   const [vaultServings, setVaultServings] = useState(1);
 
-  // Map recipe_id -> image for entries
-  const [mealImages, setMealImages] = useState<Record<string, string>>({});
+  // Journal entries query
+  const { data: entries = [] } = useQuery({
+    queryKey: queryKeys.journalEntries(user?.id, date),
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date);
+      return (data || []) as JournalEntry[];
+    },
+    enabled: !!user,
+  });
 
+  // Macro targets query
+  const { data: macroTargets = null } = useQuery({
+    queryKey: queryKeys.macros(user?.id),
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      return data as { calories: number; protein_g: number; carbs_g: number; fat_g: number } | null;
+    },
+    enabled: !!user,
+  });
+
+  // Daily note query
+  const { data: dailyNoteData } = useQuery({
+    queryKey: queryKeys.dailyNote(user?.id, date),
+    queryFn: async () => {
+      if (!user) return { energy_level: 0, mood_emoji: "", notes: "" };
+      const { data } = await supabase.from("journal_daily_notes").select("*").eq("user_id", user.id).eq("date", date).maybeSingle();
+      if (data) return { energy_level: data.energy_level || 0, mood_emoji: data.mood_emoji || "", notes: data.notes || "" };
+      return { energy_level: 0, mood_emoji: "", notes: "" };
+    },
+    enabled: !!user,
+  });
+  const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
+  // Sync query data to local state for editing
   useEffect(() => {
-    if (user) {
-      loadData();
-      loadMeals();
-    }
-  }, [user, date]);
+    if (dailyNoteData) setDailyNote(dailyNoteData);
+  }, [dailyNoteData]);
 
-  const loadMeals = async () => {
-    const { data } = await supabase.
-    from("meals").
-    select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").
-    order("title");
-    if (data) {
-      setDbMeals(data);
-      const imgMap: Record<string, string> = {};
-      data.forEach((m) => {if (m.image_url) imgMap[m.id] = m.image_url;});
-      setMealImages(imgMap);
-    }
-  };
+  // DB meals query
+  const { data: dbMeals = [] } = useQuery({
+    queryKey: queryKeys.dbMeals(),
+    queryFn: async () => {
+      const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
+      return (data || []) as DbMeal[];
+    },
+  });
 
-  const loadData = async () => {
-    if (!user) return;
-    const { data: e } = await supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date);
-    if (e) setEntries(e);
-    const { data: m } = await supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-    if (m) setMacroTargets(m);
-    const { data: n } = await supabase.from("journal_daily_notes").select("*").eq("user_id", user.id).eq("date", date).maybeSingle();
-    if (n) setDailyNote({ energy_level: n.energy_level || 0, mood_emoji: n.mood_emoji || "", notes: n.notes || "" });else
-    setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
+  // Derived meal images map
+  const mealImages: Record<string, string> = {};
+  dbMeals.forEach((m) => { if (m.image_url) mealImages[m.id] = m.image_url; });
+
+  const invalidateJournal = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries(user?.id, date) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
   };
 
   const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -143,7 +165,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       setRecipeSearch("");
       setSelectedVaultMeal(null);
       setVaultServings(1);
-      loadData();
+      invalidateJournal();
       toast.success(`${meal.title} logged (${servingCount} serving${servingCount !== 1 ? "s" : ""})!`);
     }
   };
@@ -195,15 +217,15 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       setFoodName("");setFoodCals("");setFoodProtein("");setFoodCarbs("");setFoodFat("");
       setMealPhoto(null);setMealPhotoPreview(null);setSaveToVault(false);
       setDialogOpen(false);
-      loadData();
-      if (recipe_id) loadMeals(); // refresh vault data
+      invalidateJournal();
+      if (recipe_id) queryClient.invalidateQueries({ queryKey: queryKeys.dbMeals() });
       toast.success(recipe_id ? "Food logged & saved to Vault! 🎉" : "Food logged!");
     }
   };
 
   const deleteEntry = async (id: string) => {
     await supabase.from("journal_entries").delete().eq("id", id);
-    loadData();
+    invalidateJournal();
   };
 
   const saveDailyNote = async () => {
