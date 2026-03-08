@@ -78,21 +78,25 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     if (data) setSavedPostIds(new Set(data.map((d) => d.post_id)));
   };
 
-  const loadPosts = async () => {
+  const loadPosts = async (append = false) => {
     if (!user) return;
+    if (append) setLoadingMore(true);
+    const offset = append ? posts.length : 0;
     let postData: any[] | null = null;
 
     if (activeChannel === "saved") {
       const { data: savedData } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id).order("saved_at", { ascending: false });
-      if (!savedData || savedData.length === 0) { setPosts([]); return; }
+      if (!savedData || savedData.length === 0) { setPosts([]); setHasMore(false); setLoadingMore(false); return; }
       const ids = savedData.map((s) => s.post_id);
       const { data } = await supabase.from("community_posts").select("*").in("id", ids);
       postData = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
+      setHasMore(false); // saved loads all at once
     } else {
-      const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).limit(50);
+      const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).range(offset, offset + PAGE_SIZE - 1);
       postData = data;
+      setHasMore((data?.length || 0) === PAGE_SIZE);
     }
-    if (!postData) return;
+    if (!postData) { setLoadingMore(false); return; }
 
     const userIds = [...new Set(postData.map((p) => p.user_id))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, name, avatar_url").in("user_id", userIds);
