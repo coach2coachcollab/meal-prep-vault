@@ -77,7 +77,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const [vaultServings, setVaultServings] = useState(1);
 
   // Journal entries query
-  const { data: entries = [] } = useQuery({
+  const { data: entries = [], isLoading: entriesLoading } = useQuery({
     queryKey: queryKeys.journalEntries(user?.id, date),
     queryFn: async () => {
       if (!user) return [];
