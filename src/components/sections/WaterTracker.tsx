@@ -135,7 +135,7 @@ export function WaterTracker() {
 
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold flex items-center gap-2">
+        <h2 className="text-xl font-heading flex items-center gap-2">
           <Smile className="h-5 w-5 text-primary" />
           Daily Wellness
         </h2>
