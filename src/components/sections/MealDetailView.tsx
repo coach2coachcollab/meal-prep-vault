@@ -625,21 +625,63 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
               {/* Share form (expandable) */}
               {showShareForm && (
-                <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-xs font-semibold text-section-label">Share this recipe</p>
+                <div className="space-y-3 p-3 rounded-lg bg-muted/50 border border-border">
+                  {/* Share mode toggle */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={shareMode === "community" ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={() => setShareMode("community")}
+                    >
+                      <Globe className="h-3 w-3" /> Community
+                    </Button>
+                    <Button
+                      variant={shareMode === "social" ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={() => setShareMode("social")}
+                    >
+                      <Instagram className="h-3 w-3" /> Social Story
+                    </Button>
+                  </div>
+
                   <Textarea
                     value={shareText}
                     onChange={(e) => setShareText(e.target.value)}
                     rows={2}
-                    placeholder="Say something about this recipe..."
+                    placeholder={shareMode === "community" ? "Say something about this recipe..." : "Caption for your story..."}
                     className="text-sm"
                   />
+
+                  {/* Photo upload preview */}
+                  {sharePhotoPreview && (
+                    <div className="relative">
+                      <img src={sharePhotoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
+                      <Button size="icon" variant="secondary" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={removeSharePhoto}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  <input ref={shareFileRef} type="file" accept="image/*" className="hidden" onChange={handleSharePhoto} />
+
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setShowShareForm(false)}>
+                    <Button variant="ghost" size="sm" className="gap-1" onClick={() => shareFileRef.current?.click()}>
+                      <ImagePlus className="h-3 w-3" /> Photo
+                    </Button>
+                    <div className="flex-1" />
+                    <Button variant="ghost" size="sm" onClick={() => { setShowShareForm(false); removeSharePhoto(); }}>
                       Cancel
                     </Button>
-                    <Button size="sm" className="gap-1" onClick={handleShareToCommunity} disabled={sharing || !shareText.trim()}>
-                      <Share2 className="h-3 w-3" /> {sharing ? "Sharing..." : "Share"}
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      onClick={shareMode === "community" ? handleShareToCommunity : handleShareToSocial}
+                      disabled={sharing || !shareText.trim()}
+                    >
+                      {shareMode === "community" ? <Share2 className="h-3 w-3" /> : <Instagram className="h-3 w-3" />}
+                      {sharing ? "Sharing..." : shareMode === "community" ? "Share" : "Post Story"}
                     </Button>
                   </div>
                 </div>
