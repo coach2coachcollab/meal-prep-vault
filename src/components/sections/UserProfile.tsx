@@ -18,10 +18,7 @@ export function UserProfile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [useMetric, setUseMetric] = useState(true);
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== "undefined") return document.documentElement.classList.contains("dark");
-    return false;
-  });
+  const { isDark: darkMode, toggle: toggleDarkMode } = useTheme();
   const [profileData, setProfileData] = useState<{
     goal?: string;
     activity_level?: string;
