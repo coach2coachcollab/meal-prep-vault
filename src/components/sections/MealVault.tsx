@@ -273,20 +273,29 @@ export function MealVault() {
                     )}
                   </div>
 
-                  {/* Macro badges */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold">{meal.calories || 0}</span>
-                    <span className="text-[10px] text-muted-foreground">cal</span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-protein/15 text-macro-protein border-0 font-semibold">
-                      {meal.protein || 0}g <span className="font-normal ml-0.5">protein</span>
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-carbs/15 text-macro-carbs border-0 font-semibold">
-                      {meal.carbs || 0}g <span className="font-normal ml-0.5">carbs</span>
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-fat/15 text-macro-fat border-0 font-semibold">
-                      {meal.fats || 0}g <span className="font-normal ml-0.5">fat</span>
-                    </Badge>
-                  </div>
+                  {/* Per-serving macro badges */}
+                  {(() => {
+                    const s = meal.servings || 1;
+                    const cal = Math.round((meal.calories || 0) / s);
+                    const p = Math.round(((meal.protein || 0) / s) * 10) / 10;
+                    const c = Math.round(((meal.carbs || 0) / s) * 10) / 10;
+                    const f = Math.round(((meal.fats || 0) / s) * 10) / 10;
+                    return (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold">{cal}</span>
+                        <span className="text-[10px] text-muted-foreground">cal/serving</span>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-protein/15 text-macro-protein border-0 font-semibold">
+                          {p}g <span className="font-normal ml-0.5">protein</span>
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-carbs/15 text-macro-carbs border-0 font-semibold">
+                          {c}g <span className="font-normal ml-0.5">carbs</span>
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-fat/15 text-macro-fat border-0 font-semibold">
+                          {f}g <span className="font-normal ml-0.5">fat</span>
+                        </Badge>
+                      </div>
+                    );
+                  })()}
 
                   {/* Time + servings + rating */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
