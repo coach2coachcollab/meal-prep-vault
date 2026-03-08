@@ -151,13 +151,12 @@ export function MealVault() {
     if (!user) return;
     if (favorites.includes(mealId)) {
       await supabase.from("favorite_meals").delete().eq("user_id", user.id).eq("meal_id", mealId);
-      setFavorites(favorites.filter((id) => id !== mealId));
       toast.success("Removed from favorites");
     } else {
       await supabase.from("favorite_meals").insert({ user_id: user.id, meal_id: mealId });
-      setFavorites([...favorites, mealId]);
       toast.success("Added to favorites");
     }
+    queryClient.invalidateQueries({ queryKey: queryKeys.favorites(user.id) });
   };
 
   const deleteMeal = async (mealId: string) => {
@@ -165,7 +164,7 @@ export function MealVault() {
     if (error) {
       toast.error("Failed to delete meal");
     } else {
-      setMeals(meals.filter((m) => m.id !== mealId));
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals() });
       toast.success("Meal deleted");
     }
   };
