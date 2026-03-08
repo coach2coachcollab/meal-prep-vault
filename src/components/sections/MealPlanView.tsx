@@ -685,16 +685,28 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
               </button>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 shrink-0"
-            onClick={generateShoppingList}
-            disabled={generatingList || entries.length === 0}
-          >
-            {generatingList ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-            Shopping List
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={exportPlanAsPdf}
+              disabled={entries.length === 0}
+            >
+              <Download className="h-3.5 w-3.5" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={generateShoppingList}
+              disabled={generatingList || entries.length === 0}
+            >
+              {generatingList ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+              Shopping List
+            </Button>
+          </div>
         </div>
 
         {/* Weekly Nutrition Summary */}
