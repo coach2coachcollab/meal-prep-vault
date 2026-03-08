@@ -83,7 +83,7 @@ export function PartnerHub() {
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <Card><CardContent className="py-8 text-center text-muted-foreground">No deals available in this category yet.</CardContent></Card>
+          <Card><CardContent className="py-8 text-center text-section-label font-medium">No deals available in this category yet.</CardContent></Card>
         )}
         {filtered.map((p) => (
           <Card key={p.id} className="hover:shadow-md transition-shadow">
