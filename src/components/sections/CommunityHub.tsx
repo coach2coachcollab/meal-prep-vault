@@ -225,13 +225,19 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     toast.success("Comment deleted");
   };
 
-  const toggleCommentLike = async (commentId: string, postId: string) => {
+  const toggleCommentLike = async (commentId: string, postId: string, reactionType: string = "👍") => {
     if (!user) return;
-    const { data: existing } = await supabase.from("comment_likes").select("id").eq("comment_id", commentId).eq("user_id", user.id).maybeSingle();
+    const { data: existing } = await supabase.from("comment_likes").select("id, reaction_type").eq("comment_id", commentId).eq("user_id", user.id).maybeSingle();
     if (existing) {
-      await supabase.from("comment_likes").delete().eq("id", existing.id);
+      if ((existing as any).reaction_type === reactionType) {
+        // Same reaction — remove it
+        await supabase.from("comment_likes").delete().eq("id", existing.id);
+      } else {
+        // Different reaction — update it
+        await supabase.from("comment_likes").update({ reaction_type: reactionType } as any).eq("id", existing.id);
+      }
     } else {
-      await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id });
+      await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id, reaction_type: reactionType } as any);
       // Notify comment author
       const { data: comment } = await supabase.from("post_comments").select("user_id").eq("id", commentId).single();
       if (comment) notify(comment.user_id, "comment_like", postId, commentId);
