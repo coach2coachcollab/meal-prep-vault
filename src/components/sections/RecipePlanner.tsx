@@ -210,8 +210,8 @@ export function RecipePlanner() {
             </div>
           </div>
 
-          <Button className="w-full sm:w-auto sm:px-12" onClick={saveRecipe}>
-            <Plus className="h-4 w-4 mr-1" /> Save Recipe
+          <Button className="w-full sm:w-auto sm:px-12" onClick={saveRecipe} disabled={saving}>
+            <Plus className="h-4 w-4 mr-1" /> {saving ? "Saving..." : "Save Recipe"}
           </Button>
         </CardContent>
       </Card>
