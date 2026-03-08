@@ -781,8 +781,8 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => viewPlan(plan)}>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Pencil className="h-3.5 w-3.5" />
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => duplicatePlan(plan)} disabled={duplicating === plan.id} title="Duplicate plan">
+                  {duplicating === plan.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deletePlan(plan.id)}>
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
