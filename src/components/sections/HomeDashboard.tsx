@@ -258,33 +258,35 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition:habits")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:habits")}>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <CheckCircle2 className="h-5 w-5 text-primary mb-1" />
-            <p className="text-lg font-bold">{habitsToday.done}/{habitsToday.total}</p>
-            <p className="text-[10px] text-muted-foreground">Habits done</p>
+            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
+              <CheckCircle2 className="h-4 w-4 text-foreground" />
+            </div>
+            <p className="text-lg font-bold text-foreground">{habitsToday.done}/{habitsToday.total}</p>
+            <p className="text-[10px] text-section-label font-semibold">Habits done</p>
             <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition:water")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:water")}>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="relative h-12 w-12 mb-1">
               <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
-                <circle cx="24" cy="24" r="20" fill="none" className="stroke-muted" strokeWidth="4" />
+                <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--water-ring-bg))" strokeWidth="4" />
                 <circle
                   cx="24" cy="24" r="20" fill="none"
-                  className="stroke-primary"
+                  stroke="hsl(var(--water-ring))"
                   strokeWidth="4"
                   strokeLinecap="round"
                   strokeDasharray={`${Math.min(waterToday.glasses / waterToday.goal, 1) * 125.6} ${125.6 - Math.min(waterToday.glasses / waterToday.goal, 1) * 125.6}`}
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <Droplets className="h-4 w-4 text-primary" />
+                <Droplets className="h-4 w-4 text-water-ring" />
               </div>
             </div>
-            <p className="text-lg font-bold">{waterToday.glasses}/{waterToday.goal}</p>
-            <p className="text-[10px] text-muted-foreground">Glasses of water</p>
+            <p className="text-lg font-bold text-foreground">{waterToday.glasses}/{waterToday.goal}</p>
+            <p className="text-[10px] text-section-label font-semibold">Glasses of water</p>
           </CardContent>
         </Card>
       </div>

@@ -147,8 +147,8 @@ export function WaterTracker() {
         <Card>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="flex items-center justify-between w-full mb-2">
-              <p className="text-xs font-medium flex items-center gap-1">
-                <Droplets className="h-3.5 w-3.5 text-primary" /> Water
+              <p className="text-xs font-semibold flex items-center gap-1 text-section-label">
+                <Droplets className="h-3.5 w-3.5 text-water-ring" /> Water
               </p>
               <Popover>
                 <PopoverTrigger asChild>
@@ -170,10 +170,10 @@ export function WaterTracker() {
 
             <div className="relative w-28 h-28 mb-2">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 112 112">
-                <circle cx="56" cy="56" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="7" />
+                <circle cx="56" cy="56" r={radius} fill="none" stroke="hsl(var(--water-ring-bg))" strokeWidth="7" />
                 <circle
                   cx="56" cy="56" r={radius} fill="none"
-                  stroke="hsl(var(--primary))" strokeWidth="7"
+                  stroke="hsl(var(--water-ring))" strokeWidth="7"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
@@ -181,7 +181,7 @@ export function WaterTracker() {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold">{glasses}</span>
+                <span className="text-xl font-bold text-foreground">{glasses}</span>
                 <span className="text-[10px] text-muted-foreground">of {goal}</span>
               </div>
             </div>
@@ -206,13 +206,13 @@ export function WaterTracker() {
           <CardContent className="pt-4 pb-4 space-y-3">
             {/* Energy */}
             <div>
-              <p className="text-xs font-medium flex items-center gap-1 mb-1.5">
-                <Zap className="h-3.5 w-3.5 text-primary" /> Energy
+              <p className="text-xs font-semibold flex items-center gap-1 mb-1.5 text-section-label">
+                <Zap className="h-3.5 w-3.5 text-star-filled" /> Energy
               </p>
               <div className="flex gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} onClick={() => setDailyNote({ ...dailyNote, energy_level: n })}>
-                    <Star className={cn("h-5 w-5 transition-colors", n <= dailyNote.energy_level ? "fill-primary text-primary" : "text-muted")} />
+                    <Star className={cn("h-5 w-5 transition-colors", n <= dailyNote.energy_level ? "fill-star-filled text-star-filled" : "text-star-empty")} />
                   </button>
                 ))}
               </div>
@@ -220,8 +220,8 @@ export function WaterTracker() {
 
             {/* Mood */}
             <div>
-              <p className="text-xs font-medium flex items-center gap-1 mb-1.5">
-                <Smile className="h-3.5 w-3.5 text-primary" /> Mood
+              <p className="text-xs font-semibold flex items-center gap-1 mb-1.5 text-section-label">
+                <Smile className="h-3.5 w-3.5 text-star-filled" /> Mood
               </p>
               <div className="flex gap-1">
                 {moods.map((m) => (
@@ -257,8 +257,8 @@ export function WaterTracker() {
       {/* Notes */}
       <Card>
         <CardContent className="pt-4 pb-4 space-y-2">
-          <p className="text-xs font-medium flex items-center gap-1">
-            <StickyNote className="h-3.5 w-3.5 text-primary" /> Daily Notes
+          <p className="text-xs font-semibold flex items-center gap-1 text-section-label">
+            <StickyNote className="h-3.5 w-3.5 text-section-label" /> Daily Notes
           </p>
           <Textarea
             placeholder="How are you feeling today? Any wins or struggles?"
