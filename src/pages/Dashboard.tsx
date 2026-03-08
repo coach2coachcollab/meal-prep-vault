@@ -19,7 +19,7 @@ import { StreakDetails } from "@/components/sections/StreakDetails";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { User, Zap } from "lucide-react";
+import { User, Zap, Moon, Sun } from "lucide-react";
 import { useStreak } from "@/hooks/useStreak";
 
 export default function Dashboard() {
