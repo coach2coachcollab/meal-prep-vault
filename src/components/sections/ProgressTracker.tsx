@@ -432,11 +432,11 @@ export function ProgressTracker() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Scale className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+            <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center"><Scale className="h-5 w-5 text-foreground" /></div>
             Progress
           </h2>
-          <p className="text-sm text-muted-foreground">Track your body over time</p>
+          <p className="text-sm text-section-label font-semibold">Track your body over time</p>
         </div>
         <div className="flex gap-2">
           <div className="flex gap-0.5 bg-muted rounded-lg p-0.5 text-[10px]">
@@ -457,21 +457,21 @@ export function ProgressTracker() {
       {/* Summary cards */}
       {logs.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
-          <Card>
+          <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Current</p>
-              <p className="text-sm font-bold">{displayWeight(lastLog?.weight_kg)}</p>
+              <p className="text-[10px] text-section-label font-semibold">Current</p>
+              <p className="text-sm font-bold text-foreground">{displayWeight(lastLog?.weight_kg)}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Start</p>
-              <p className="text-sm font-bold">{displayWeight(firstLog?.weight_kg)}</p>
+              <p className="text-[10px] text-section-label font-semibold">Start</p>
+              <p className="text-sm font-bold text-foreground">{displayWeight(firstLog?.weight_kg)}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Change</p>
+              <p className="text-[10px] text-section-label font-semibold">Change</p>
               {weightChange != null ? (
                 <p className={cn("text-sm font-bold flex items-center justify-center gap-0.5", weightChange < 0 ? "text-primary" : "text-destructive")}>
                   {weightChange < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}

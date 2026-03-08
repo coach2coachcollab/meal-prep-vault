@@ -186,7 +186,7 @@ export function UserProfile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Units</Label>
+            <Label className="text-xs text-section-label font-semibold">Units</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
               <button onClick={() => setUseMetric(true)} className={`px-3 py-1 rounded-md transition-colors ${useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>kg / cm</button>
               <button onClick={() => setUseMetric(false)} className={`px-3 py-1 rounded-md transition-colors ${!useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>lbs / ft</button>
@@ -194,7 +194,7 @@ export function UserProfile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Theme</Label>
+            <Label className="text-xs text-section-label font-semibold">Theme</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
               <button onClick={() => { if (darkMode) toggleDarkMode(); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${!darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
                 <Sun className="h-3 w-3" /> Light
@@ -240,20 +240,20 @@ export function UserProfile() {
       {profileData.goal && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Your Profile</CardTitle>
+            <CardTitle className="text-sm text-section-label font-semibold">Your Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Goal</span>
+              <span className="text-section-label">Goal</span>
               <span className="font-medium">{profileData.goal}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Activity</span>
+              <span className="text-section-label">Activity</span>
               <span className="font-medium capitalize">{profileData.activity_level}</span>
             </div>
             {profileData.age && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Stats</span>
+                <span className="text-section-label">Stats</span>
                 <span className="font-medium">
                   {profileData.age}yr · {useMetric
                     ? `${profileData.height_cm}cm · ${profileData.weight_kg}kg`
@@ -264,7 +264,7 @@ export function UserProfile() {
             )}
             {profileData.diet_prefs && profileData.diet_prefs.length > 0 && (
               <div>
-                <span className="text-muted-foreground text-xs">Diet Preferences</span>
+                <span className="text-section-label text-xs">Diet Preferences</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {profileData.diet_prefs.map((d) => <Badge key={d} variant="secondary" className="text-xs">{d}</Badge>)}
                 </div>

@@ -61,8 +61,11 @@ export function PartnerHub() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold">Coach-Approved Deals</h2>
-        <p className="text-sm text-muted-foreground">Vetted products and services we actually use and believe in</p>
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center"><Sparkles className="h-5 w-5 text-foreground" /></div>
+          Coach-Approved Deals
+        </h2>
+        <p className="text-sm text-section-label font-semibold">Vetted products and services we actually use and believe in</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -80,14 +83,14 @@ export function PartnerHub() {
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <Card><CardContent className="py-8 text-center text-muted-foreground">No deals available in this category yet.</CardContent></Card>
+          <Card><CardContent className="py-8 text-center text-section-label font-medium">No deals available in this category yet.</CardContent></Card>
         )}
         {filtered.map((p) => (
           <Card key={p.id} className="hover:shadow-md transition-shadow">
             <CardContent className="pt-4 pb-4">
               <div className="flex gap-4">
-                <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0 text-2xl">
-                  {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-full w-full object-cover rounded-lg" /> : <Sparkles className="h-6 w-6 text-primary" />}
+                <div className="h-14 w-14 rounded-lg bg-icon-bg flex items-center justify-center shrink-0 text-2xl">
+                  {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-full w-full object-cover rounded-lg" /> : <Sparkles className="h-6 w-6 text-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
