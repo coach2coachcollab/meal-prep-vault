@@ -244,7 +244,7 @@ export function UserProfile() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Goal</span>
+              <span className="text-section-label">Goal</span>
               <span className="font-medium">{profileData.goal}</span>
             </div>
             <div className="flex justify-between">
