@@ -13,6 +13,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        heading: ["Georgia", "'Times New Roman'", "serif"],
+        label: ["'Courier Prime'", "'Courier New'", "monospace"],
+        body: ["system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -72,6 +77,8 @@ export default {
         "water-ring-bg": "hsl(var(--water-ring-bg))",
         "star-empty": "hsl(var(--star-empty))",
         "star-filled": "hsl(var(--star-filled))",
+        "center-btn": "hsl(var(--center-btn))",
+        "center-btn-foreground": "hsl(var(--center-btn-foreground))",
       },
       borderRadius: {
         lg: "var(--radius)",
