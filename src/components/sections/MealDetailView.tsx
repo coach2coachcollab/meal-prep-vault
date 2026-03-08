@@ -213,25 +213,90 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     if (!error) loadComments();
   };
 
+  const handleSharePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    setSharePhoto(file);
+    setSharePhotoPreview(URL.createObjectURL(file));
+  };
+
+  const removeSharePhoto = () => {
+    setSharePhoto(null);
+    setSharePhotoPreview(null);
+    if (shareFileRef.current) shareFileRef.current.value = "";
+  };
+
   const handleShareToCommunity = async () => {
     if (!user || !shareText.trim()) return;
     setSharing(true);
+
+    let imageUrl = meal.image_url;
+
+    // Upload optional photo
+    if (sharePhoto) {
+      const ext = sharePhoto.name.split(".").pop();
+      const path = `community/${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("recipe-images")
+        .upload(path, sharePhoto, { contentType: sharePhoto.type });
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+
     const { error } = await supabase.from("community_posts").insert({
       user_id: user.id,
       channel: "meals",
       text: shareText.trim(),
       recipe_id: meal.id,
-      image_url: meal.image_url,
+      image_url: imageUrl,
     });
     if (error) {
       toast.error("Failed to share");
     } else {
       toast.success("Shared to community!");
       setShareText("");
+      removeSharePhoto();
       setShowShareForm(false);
       loadComments();
     }
     setSharing(false);
+  };
+
+  const handleShareToSocial = async () => {
+    // Build a share-friendly canvas with recipe info
+    const title = meal.title;
+    const text = shareText.trim() || `Check out this recipe: "${title}" 🍽️`;
+    const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        const shareData: ShareData = { title, text, url };
+
+        // If user attached a photo, include it
+        if (sharePhoto) {
+          const file = new File([sharePhoto], sharePhoto.name, { type: sharePhoto.type });
+          if (navigator.canShare?.({ files: [file] })) {
+            shareData.files = [file];
+          }
+        }
+
+        await navigator.share(shareData);
+        toast.success("Shared!");
+        setShareText("");
+        removeSharePhoto();
+        setShowShareForm(false);
+      } catch (err: any) {
+        if (err.name !== "AbortError") toast.error("Share failed");
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      toast.success("Copied to clipboard! Paste into your story.");
+      setShowShareForm(false);
+    }
   };
 
   const timeAgo = (dateStr: string) => {
