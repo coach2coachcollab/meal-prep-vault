@@ -89,7 +89,7 @@ export function PartnerHub() {
           <Card key={p.id} className="hover:shadow-md transition-shadow">
             <CardContent className="pt-4 pb-4">
               <div className="flex gap-4">
-                <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0 text-2xl">
+                <div className="h-14 w-14 rounded-lg bg-icon-bg flex items-center justify-center shrink-0 text-2xl">
                   {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-full w-full object-cover rounded-lg" /> : <Sparkles className="h-6 w-6 text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
