@@ -57,50 +57,50 @@
   }
 
   .dark {
-    --background: 150 15% 8%;
-    --foreground: 150 5% 92%;
+    --background: 150 12% 7%;
+    --foreground: 150 5% 95%;
 
-    --card: 150 12% 12%;
-    --card-foreground: 150 5% 92%;
+    --card: 150 10% 11%;
+    --card-foreground: 150 5% 95%;
 
-    --popover: 150 12% 12%;
-    --popover-foreground: 150 5% 92%;
+    --popover: 150 10% 11%;
+    --popover-foreground: 150 5% 95%;
 
-    --primary: 72 85% 50%;
-    --primary-foreground: 150 10% 15%;
+    --primary: 72 80% 48%;
+    --primary-foreground: 150 15% 8%;
 
-    --secondary: 150 10% 18%;
-    --secondary-foreground: 150 5% 85%;
+    --secondary: 150 8% 16%;
+    --secondary-foreground: 150 5% 90%;
 
-    --muted: 150 10% 16%;
-    --muted-foreground: 150 5% 55%;
+    --muted: 150 8% 14%;
+    --muted-foreground: 150 5% 65%;
 
-    --accent: 150 10% 20%;
-    --accent-foreground: 150 5% 90%;
+    --accent: 150 8% 18%;
+    --accent-foreground: 150 5% 93%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 10% 20%;
-    --input: 150 10% 20%;
-    --ring: 72 85% 50%;
+    --border: 150 8% 22%;
+    --input: 150 8% 22%;
+    --ring: 72 80% 48%;
 
-    --sidebar-background: 150 15% 6%;
-    --sidebar-foreground: 150 5% 85%;
-    --sidebar-primary: 72 85% 50%;
-    --sidebar-primary-foreground: 150 10% 15%;
-    --sidebar-accent: 150 10% 12%;
-    --sidebar-accent-foreground: 150 5% 90%;
-    --sidebar-border: 150 10% 14%;
-    --sidebar-ring: 72 85% 50%;
+    --sidebar-background: 150 12% 5%;
+    --sidebar-foreground: 150 5% 90%;
+    --sidebar-primary: 72 80% 48%;
+    --sidebar-primary-foreground: 150 15% 8%;
+    --sidebar-accent: 150 8% 12%;
+    --sidebar-accent-foreground: 150 5% 93%;
+    --sidebar-border: 150 8% 16%;
+    --sidebar-ring: 72 80% 48%;
 
-    --macro-protein: 142 71% 50%;
-    --macro-carbs: 25 95% 65%;
-    --macro-fat: 45 93% 58%;
-    --success: 142 71% 50%;
-    --warning: 25 95% 65%;
-    --star: 45 93% 58%;
-    --streak: 25 95% 65%;
+    --macro-protein: 142 65% 55%;
+    --macro-carbs: 25 90% 62%;
+    --macro-fat: 45 90% 58%;
+    --success: 142 65% 55%;
+    --warning: 25 90% 62%;
+    --star: 45 90% 58%;
+    --streak: 25 90% 62%;
   }
 }
 
