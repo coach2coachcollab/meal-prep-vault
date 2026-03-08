@@ -253,7 +253,7 @@ export function UserProfile() {
             </div>
             {profileData.age && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Stats</span>
+                <span className="text-section-label">Stats</span>
                 <span className="font-medium">
                   {profileData.age}yr · {useMetric
                     ? `${profileData.height_cm}cm · ${profileData.weight_kg}kg`
