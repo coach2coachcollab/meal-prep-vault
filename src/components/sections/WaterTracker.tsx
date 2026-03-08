@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { WeeklySummaryCharts } from "./WeeklySummaryCharts";
+import { WeeklyInsightsCard } from "./WeeklyInsightsCard";
 
 const moods = ["😊", "😐", "😴", "😤", "😢"];
 
