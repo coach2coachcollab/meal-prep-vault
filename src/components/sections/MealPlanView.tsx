@@ -176,6 +176,35 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
     toast.success("Meal removed from plan");
   };
 
+  const reorderEntries = async (dragId: string, dropId: string) => {
+    const dragEntry = entries.find((e) => e.id === dragId);
+    const dropEntry = entries.find((e) => e.id === dropId);
+    if (!dragEntry || !dropEntry || dragEntry.day_of_week !== dropEntry.day_of_week) return;
+
+    // Swap meal_time values
+    const dragTime = dragEntry.meal_time;
+    const dropTime = dropEntry.meal_time;
+
+    const [r1, r2] = await Promise.all([
+      supabase.from("meal_plan_entries").update({ meal_time: dropTime }).eq("id", dragId),
+      supabase.from("meal_plan_entries").update({ meal_time: dragTime }).eq("id", dropId),
+    ]);
+
+    if (r1.error || r2.error) {
+      toast.error("Failed to reorder meals");
+      return;
+    }
+
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id === dragId) return { ...e, meal_time: dropTime };
+        if (e.id === dropId) return { ...e, meal_time: dragTime };
+        return e;
+      })
+    );
+    toast.success("Meals reordered");
+  };
+
   const setAsActive = (planId: string) => {
     setActivePlanId(planId);
     toast.success("Meal plan set as active");
