@@ -191,9 +191,9 @@ export function MealPlans() {
       {!plan && (
         <div className="space-y-4">
           <div className="text-center py-8">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-bold mb-1">AI Meal Plan Generator</h3>
-            <p className="text-sm text-muted-foreground mb-2 max-w-xs mx-auto">
+            <div className="h-16 w-16 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-4"><Calendar className="h-8 w-8 text-foreground" /></div>
+            <h3 className="text-lg font-bold text-foreground mb-1">AI Meal Plan Generator</h3>
+            <p className="text-sm text-section-label mb-2 max-w-xs mx-auto">
               Generate a personalized 7-day meal plan from your Meal Vault recipes, matched to your macro targets.
             </p>
             {dbMeals.length > 0 && (
