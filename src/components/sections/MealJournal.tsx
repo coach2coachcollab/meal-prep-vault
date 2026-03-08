@@ -225,7 +225,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
 
   const deleteEntry = async (id: string) => {
     await supabase.from("journal_entries").delete().eq("id", id);
-    loadData();
+    invalidateJournal();
   };
 
   const saveDailyNote = async () => {
