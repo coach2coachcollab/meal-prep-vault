@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 export function useStreak() {
   const { user } = useAuth();
   const [streak, setStreak] = useState(0);
+  const [justIncreased, setJustIncreased] = useState(false);
+  const prevStreak = useRef<number | null>(null);
 
   const loadStreak = useCallback(async () => {
     if (!user) return;
@@ -39,6 +41,13 @@ export function useStreak() {
       count++;
       d.setDate(d.getDate() - 1);
     }
+
+    // Check if streak increased
+    if (prevStreak.current !== null && count > prevStreak.current) {
+      setJustIncreased(true);
+      setTimeout(() => setJustIncreased(false), 1500);
+    }
+    prevStreak.current = count;
     setStreak(count);
   }, [user]);
 
@@ -46,5 +55,5 @@ export function useStreak() {
     loadStreak();
   }, [loadStreak]);
 
-  return streak;
+  return { streak, justIncreased, refresh: loadStreak };
 }
