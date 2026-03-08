@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,21 @@ export function MacroCalculator() {
   const [activityLevel, setActivityLevel] = useState("moderate");
   const [goal, setGoal] = useState("maintain");
   const [result, setResult] = useState<MacroResult | null>(null);
+  const [units, setUnits] = useState<"metric" | "imperial">("metric");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("preferred_units")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.preferred_units === "imperial") setUnits("imperial");
+      });
+  }, [user]);
+
+  const isImperial = units === "imperial";
 
   const activityMultipliers: Record<string, number> = {
     sedentary: 1.2,
