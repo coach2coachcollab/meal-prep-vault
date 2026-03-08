@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check } from "lucide-react";
+import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check, ImagePlus, Instagram, Globe } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
