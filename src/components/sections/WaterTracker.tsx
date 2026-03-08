@@ -277,6 +277,9 @@ export function WaterTracker() {
 
       {/* Weekly Summary */}
       <WeeklySummaryCharts />
+
+      {/* AI Weekly Insights */}
+      <WeeklyInsightsCard />
     </div>
   );
 }
