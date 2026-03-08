@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Bookmark } from "lucide-react";
+import { Plus, Bookmark, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
