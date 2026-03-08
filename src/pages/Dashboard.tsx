@@ -37,7 +37,15 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "home":
-        return <HomeDashboard onNavigate={setActiveTab} />;
+        return <HomeDashboard onNavigate={(tab) => {
+          if (tab.startsWith("nutrition:")) {
+            const sub = tab.split(":")[1];
+            setActiveTab("nutrition");
+            setNutritionSub(sub);
+          } else {
+            setActiveTab(tab);
+          }
+        }} />;
       case "nutrition":
         return (
           <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
@@ -86,7 +94,15 @@ export default function Dashboard() {
           </Tabs>
         );
       default:
-        return <HomeDashboard onNavigate={setActiveTab} />;
+        return <HomeDashboard onNavigate={(tab) => {
+          if (tab.startsWith("nutrition:")) {
+            const sub = tab.split(":")[1];
+            setActiveTab("nutrition");
+            setNutritionSub(sub);
+          } else {
+            setActiveTab(tab);
+          }
+        }} />;
     }
   };
 
