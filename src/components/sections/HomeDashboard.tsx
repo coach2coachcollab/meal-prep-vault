@@ -209,7 +209,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">{greeting()}, {profileName || "there"} 👋</h2>
+        <h2 className="text-2xl font-heading">{greeting()}, {profileName || "there"} 👋</h2>
         <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
       </div>
 
@@ -264,7 +264,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               <CheckCircle2 className="h-4 w-4 text-foreground" />
             </div>
             <p className="text-lg font-bold text-foreground">{habitsToday.done}/{habitsToday.total}</p>
-            <p className="text-[10px] text-section-label font-semibold">Habits done</p>
+            <p className="text-[10px] text-section-label font-label uppercase">Habits done</p>
             <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
           </CardContent>
         </Card>
@@ -286,7 +286,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               </div>
             </div>
             <p className="text-lg font-bold text-foreground">{waterToday.glasses}/{waterToday.goal}</p>
-            <p className="text-[10px] text-section-label font-semibold">Glasses of water</p>
+            <p className="text-[10px] text-section-label font-label uppercase">Glasses of water</p>
           </CardContent>
         </Card>
       </div>
@@ -298,7 +298,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           <CardContent className="pt-5 pb-5">
             <div className="flex items-center gap-2 mb-3">
               <Activity className="h-4 w-4 text-primary" />
-              <p className="text-xs font-semibold text-primary">
+              <p className="text-xs font-label uppercase text-primary">
                 {progressSummary.period === "week" ? "Weekly" : "Monthly"} Progress
               </p>
             </div>
@@ -350,7 +350,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       {/* Daily Tip */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="pt-5 pb-5">
-          <p className="text-xs font-semibold text-primary mb-1">💡 Daily Tip</p>
+          <p className="text-xs font-label uppercase text-primary mb-1">💡 Daily Tip</p>
           <p className="text-sm text-foreground">{tip}</p>
         </CardContent>
       </Card>

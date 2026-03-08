@@ -135,7 +135,7 @@ export function WaterTracker() {
 
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold flex items-center gap-2">
+        <h2 className="text-xl font-heading flex items-center gap-2">
           <Smile className="h-5 w-5 text-primary" />
           Daily Wellness
         </h2>
@@ -147,8 +147,8 @@ export function WaterTracker() {
         <Card>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="flex items-center justify-between w-full mb-2">
-              <p className="text-xs font-semibold flex items-center gap-1 text-section-label">
-                <Droplets className="h-3.5 w-3.5 text-water-ring" /> Water
+              <p className="text-xs font-label uppercase flex items-center gap-1 text-section-label">
+                <Droplets className="h-3.5 w-3.5 text-primary" /> Water
               </p>
               <Popover>
                 <PopoverTrigger asChild>
@@ -206,8 +206,8 @@ export function WaterTracker() {
           <CardContent className="pt-4 pb-4 space-y-3">
             {/* Energy */}
             <div>
-              <p className="text-xs font-semibold flex items-center gap-1 mb-1.5 text-section-label">
-                <Zap className="h-3.5 w-3.5 text-star-filled" /> Energy
+              <p className="text-xs font-label uppercase flex items-center gap-1 mb-1.5 text-section-label">
+                <Zap className="h-3.5 w-3.5 text-primary" /> Energy
               </p>
               <div className="flex gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -220,8 +220,8 @@ export function WaterTracker() {
 
             {/* Mood */}
             <div>
-              <p className="text-xs font-semibold flex items-center gap-1 mb-1.5 text-section-label">
-                <Smile className="h-3.5 w-3.5 text-star-filled" /> Mood
+              <p className="text-xs font-label uppercase flex items-center gap-1 mb-1.5 text-section-label">
+                <Smile className="h-3.5 w-3.5 text-primary" /> Mood
               </p>
               <div className="flex gap-1">
                 {moods.map((m) => (
@@ -257,8 +257,8 @@ export function WaterTracker() {
       {/* Notes */}
       <Card>
         <CardContent className="pt-4 pb-4 space-y-2">
-          <p className="text-xs font-semibold flex items-center gap-1 text-section-label">
-            <StickyNote className="h-3.5 w-3.5 text-section-label" /> Daily Notes
+          <p className="text-xs font-label uppercase flex items-center gap-1 text-section-label">
+            <StickyNote className="h-3.5 w-3.5 text-primary" /> Daily Notes
           </p>
           <Textarea
             placeholder="How are you feeling today? Any wins or struggles?"

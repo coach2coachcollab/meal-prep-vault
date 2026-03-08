@@ -134,7 +134,7 @@ export function HabitTracker() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Habits Today</h2>
+          <h2 className="text-xl font-heading">Habits Today</h2>
           <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>

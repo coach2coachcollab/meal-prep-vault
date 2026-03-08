@@ -117,7 +117,7 @@ export default function Dashboard() {
         <div className="max-w-2xl mx-auto px-4 md:px-6 h-12 flex items-center justify-between">
           <button
             onClick={() => setActiveTab("streak")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary border border-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.5)] transition-all duration-300 hover:bg-primary/90 hover:shadow-[0_0_18px_hsl(var(--primary)/0.6)] active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary border border-primary/50 shadow-[0_0_10px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:bg-primary/90 hover:shadow-[0_0_16px_hsl(var(--primary)/0.4)] active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
           >
             <Zap className={`h-4 w-4 text-primary-foreground transition-transform duration-300 ${justIncreased ? "scale-125" : ""}`} />
             <span className="text-sm font-extrabold text-primary-foreground">{streak}🔥</span>

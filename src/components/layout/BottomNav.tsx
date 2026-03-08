@@ -69,7 +69,7 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
                   key={tab.id}
                   onClick={() => setQuickOpen((o) => !o)}
                   className={cn(
-                    "flex items-center justify-center h-12 w-12 -mt-5 rounded-full bg-primary text-primary-foreground shadow-[0_0_14px_hsl(var(--primary)/0.5)] transition-all hover:scale-105 hover:shadow-[0_0_20px_hsl(var(--primary)/0.65)] active:scale-95",
+                    "flex items-center justify-center h-12 w-12 -mt-5 rounded-full bg-center-btn text-center-btn-foreground shadow-[0_0_14px_hsl(var(--center-btn)/0.4)] transition-all hover:scale-105 hover:shadow-[0_0_20px_hsl(var(--center-btn)/0.55)] active:scale-95",
                     quickOpen && "rotate-45"
                   )}
                 >
@@ -90,7 +90,7 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
               >
                 {/* Active indicator dot */}
                 {activeTab === tab.id && (
-                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-1 w-6 rounded-full bg-nav-active shadow-[0_0_8px_hsl(var(--nav-active)/0.6)] animate-scale-in" />
+                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-1 w-6 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.4)] animate-scale-in" />
                 )}
                 <tab.icon className={cn(
                   "h-5 w-5 transition-all duration-200",

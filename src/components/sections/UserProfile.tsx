@@ -186,7 +186,7 @@ export function UserProfile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-section-label font-semibold">Units</Label>
+            <Label className="text-xs text-section-label font-label uppercase">Units</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
               <button onClick={() => setUseMetric(true)} className={`px-3 py-1 rounded-md transition-colors ${useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>kg / cm</button>
               <button onClick={() => setUseMetric(false)} className={`px-3 py-1 rounded-md transition-colors ${!useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>lbs / ft</button>
@@ -194,7 +194,7 @@ export function UserProfile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-section-label font-semibold">Theme</Label>
+            <Label className="text-xs text-section-label font-label uppercase">Theme</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
               <button onClick={() => { if (darkMode) toggleDarkMode(); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${!darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
                 <Sun className="h-3 w-3" /> Light
@@ -240,7 +240,7 @@ export function UserProfile() {
       {profileData.goal && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-section-label font-semibold">Your Profile</CardTitle>
+            <CardTitle className="text-sm text-section-label font-label uppercase">Your Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
