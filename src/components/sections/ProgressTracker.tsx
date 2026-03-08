@@ -235,12 +235,12 @@ export function ProgressTracker() {
     setForm({ date: new Date().toISOString().split("T")[0], weight: "", waist: "", hips: "", chest: "", arms: "", thighs: "", body_fat: "", notes: "" });
     resetPhotoState();
     setShowAdd(false);
-    loadLogs();
+    invalidateLogs();
   };
 
   const deleteLog = async (id: string) => {
     await supabase.from("progress_logs").delete().eq("id", id);
-    loadLogs();
+    invalidateLogs();
     toast.success("Entry removed");
   };
 
