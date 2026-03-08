@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
+import { ProgressTrackerSkeleton } from "@/components/skeletons/ProgressTrackerSkeleton";
 
 interface ProgressLog {
   id: string;
