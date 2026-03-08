@@ -125,19 +125,25 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     setDate(d.toISOString().split("T")[0]);
   };
 
-  const logFromRecipe = async (meal: DbMeal) => {
+  const logFromRecipe = async (meal: DbMeal, servingCount: number = 1) => {
     if (!user) return;
+    const totalServings = meal.servings || 1;
+    const factor = servingCount / totalServings;
     const { error } = await supabase.from("journal_entries").insert({
       user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
-      calories: meal.calories || 0, protein_g: meal.protein || 0,
-      carbs_g: meal.carbs || 0, fat_g: meal.fats || 0,
-      recipe_id: meal.id, servings: meal.servings || 1
+      calories: Math.round((meal.calories || 0) * factor),
+      protein_g: Math.round((meal.protein || 0) * factor * 10) / 10,
+      carbs_g: Math.round((meal.carbs || 0) * factor * 10) / 10,
+      fat_g: Math.round((meal.fats || 0) * factor * 10) / 10,
+      recipe_id: meal.id, servings: servingCount
     });
     if (!error) {
       setDialogOpen(false);
       setRecipeSearch("");
+      setSelectedVaultMeal(null);
+      setVaultServings(1);
       loadData();
-      toast.success(`${meal.title} logged!`);
+      toast.success(`${meal.title} logged (${servingCount} serving${servingCount !== 1 ? "s" : ""})!`);
     }
   };
 
