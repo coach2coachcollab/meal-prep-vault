@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check, ImagePlus, Instagram, Globe } from "lucide-react";
+import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check, ImagePlus, Instagram, Globe, Download, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRef } from "react";
+import { generateStoryCard } from "@/lib/story-card-generator";
 
 interface Meal {
   id: string;
@@ -67,6 +68,9 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [sharePhoto, setSharePhoto] = useState<File | null>(null);
   const [sharePhotoPreview, setSharePhotoPreview] = useState<string | null>(null);
   const shareFileRef = useRef<HTMLInputElement>(null);
+  const [storyCardBlob, setStoryCardBlob] = useState<Blob | null>(null);
+  const [storyCardUrl, setStoryCardUrl] = useState<string | null>(null);
+  const [generatingCard, setGeneratingCard] = useState(false);
 
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
@@ -265,36 +269,92 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     setSharing(false);
   };
 
+  const handleGenerateStoryCard = async () => {
+    setGeneratingCard(true);
+    try {
+      const blob = await generateStoryCard({
+        title: meal.title,
+        imageUrl: sharePhoto ? sharePhotoPreview : meal.image_url,
+        calories: meal.calories || 0,
+        protein: meal.protein || 0,
+        carbs: meal.carbs || 0,
+        fats: meal.fats || 0,
+        prepTime: (meal.prep_time || 0) + (meal.cook_time || 0),
+        servings: meal.servings || 1,
+        caption: shareText.trim() || undefined,
+      });
+      setStoryCardBlob(blob);
+      setStoryCardUrl(URL.createObjectURL(blob));
+    } catch {
+      toast.error("Failed to generate story card");
+    }
+    setGeneratingCard(false);
+  };
+
+  const handleDownloadStoryCard = () => {
+    if (!storyCardUrl) return;
+    const a = document.createElement("a");
+    a.href = storyCardUrl;
+    a.download = `${meal.title.replace(/\s+/g, "-").toLowerCase()}-story.png`;
+    a.click();
+    toast.success("Story card downloaded!");
+  };
+
   const handleShareToSocial = async () => {
-    // Build a share-friendly canvas with recipe info
-    const title = meal.title;
-    const text = shareText.trim() || `Check out this recipe: "${title}" 🍽️`;
-    const url = window.location.href;
-
-    if (navigator.share) {
+    // Generate story card first if not already generated
+    let blob = storyCardBlob;
+    if (!blob) {
+      setGeneratingCard(true);
       try {
-        const shareData: ShareData = { title, text, url };
+        blob = await generateStoryCard({
+          title: meal.title,
+          imageUrl: sharePhoto ? sharePhotoPreview : meal.image_url,
+          calories: meal.calories || 0,
+          protein: meal.protein || 0,
+          carbs: meal.carbs || 0,
+          fats: meal.fats || 0,
+          prepTime: (meal.prep_time || 0) + (meal.cook_time || 0),
+          servings: meal.servings || 1,
+          caption: shareText.trim() || undefined,
+        });
+      } catch {
+        toast.error("Failed to generate story card");
+        setGeneratingCard(false);
+        return;
+      }
+      setGeneratingCard(false);
+    }
 
-        // If user attached a photo, include it
-        if (sharePhoto) {
-          const file = new File([sharePhoto], sharePhoto.name, { type: sharePhoto.type });
-          if (navigator.canShare?.({ files: [file] })) {
-            shareData.files = [file];
-          }
-        }
+    const file = new File([blob], "recipe-story.png", { type: "image/png" });
 
-        await navigator.share(shareData);
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: meal.title,
+          text: shareText.trim() || `Check out this recipe: "${meal.title}" 🍽️`,
+        });
         toast.success("Shared!");
         setShareText("");
         removeSharePhoto();
+        setStoryCardBlob(null);
+        setStoryCardUrl(null);
         setShowShareForm(false);
       } catch (err: any) {
-        if (err.name !== "AbortError") toast.error("Share failed");
+        if (err.name !== "AbortError") {
+          // Fallback to download
+          handleDownloadStoryCard();
+        }
       }
     } else {
-      // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(`${text}\n${url}`);
-      toast.success("Copied to clipboard! Paste into your story.");
+      // Fallback: download the story card
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${meal.title.replace(/\s+/g, "-").toLowerCase()}-story.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Story card downloaded! Share it to your favorite platform.");
       setShowShareForm(false);
     }
   };
@@ -640,7 +700,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                       variant={shareMode === "social" ? "default" : "outline"}
                       size="sm"
                       className="flex-1 gap-1.5 text-xs"
-                      onClick={() => setShareMode("social")}
+                      onClick={() => { setShareMode("social"); setStoryCardBlob(null); setStoryCardUrl(null); }}
                     >
                       <Instagram className="h-3 w-3" /> Social Story
                     </Button>
@@ -648,9 +708,9 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
                   <Textarea
                     value={shareText}
-                    onChange={(e) => setShareText(e.target.value)}
+                    onChange={(e) => { setShareText(e.target.value); setStoryCardBlob(null); setStoryCardUrl(null); }}
                     rows={2}
-                    placeholder={shareMode === "community" ? "Say something about this recipe..." : "Caption for your story..."}
+                    placeholder={shareMode === "community" ? "Say something about this recipe..." : "Add a caption for your story card..."}
                     className="text-sm"
                   />
 
@@ -658,30 +718,58 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                   {sharePhotoPreview && (
                     <div className="relative">
                       <img src={sharePhotoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
-                      <Button size="icon" variant="secondary" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={removeSharePhoto}>
+                      <Button size="icon" variant="secondary" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={() => { removeSharePhoto(); setStoryCardBlob(null); setStoryCardUrl(null); }}>
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
                   )}
 
+                  {/* Story card preview */}
+                  {shareMode === "social" && storyCardUrl && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground">Story Card Preview</p>
+                      <img src={storyCardUrl} alt="Story card preview" className="w-full max-h-64 object-contain rounded-lg border border-border" />
+                    </div>
+                  )}
+
                   <input ref={shareFileRef} type="file" accept="image/*" className="hidden" onChange={handleSharePhoto} />
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button variant="ghost" size="sm" className="gap-1" onClick={() => shareFileRef.current?.click()}>
                       <ImagePlus className="h-3 w-3" /> Photo
                     </Button>
+
+                    {shareMode === "social" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        onClick={handleGenerateStoryCard}
+                        disabled={generatingCard}
+                      >
+                        {generatingCard ? <Loader2 className="h-3 w-3 animate-spin" /> : <Instagram className="h-3 w-3" />}
+                        {generatingCard ? "Generating..." : storyCardUrl ? "Regenerate" : "Preview Card"}
+                      </Button>
+                    )}
+
+                    {shareMode === "social" && storyCardUrl && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={handleDownloadStoryCard}>
+                        <Download className="h-3 w-3" /> Save
+                      </Button>
+                    )}
+
                     <div className="flex-1" />
-                    <Button variant="ghost" size="sm" onClick={() => { setShowShareForm(false); removeSharePhoto(); }}>
+                    <Button variant="ghost" size="sm" onClick={() => { setShowShareForm(false); removeSharePhoto(); setStoryCardBlob(null); setStoryCardUrl(null); }}>
                       Cancel
                     </Button>
                     <Button
                       size="sm"
                       className="gap-1"
                       onClick={shareMode === "community" ? handleShareToCommunity : handleShareToSocial}
-                      disabled={sharing || !shareText.trim()}
+                      disabled={sharing || generatingCard || (shareMode === "community" && !shareText.trim())}
                     >
                       {shareMode === "community" ? <Share2 className="h-3 w-3" /> : <Instagram className="h-3 w-3" />}
-                      {sharing ? "Sharing..." : shareMode === "community" ? "Share" : "Post Story"}
+                      {sharing ? "Sharing..." : shareMode === "community" ? "Share" : "Share Story"}
                     </Button>
                   </div>
                 </div>
