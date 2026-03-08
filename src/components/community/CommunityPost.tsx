@@ -412,7 +412,14 @@ export function CommunityPost({
                         onSaveEdit={handleSaveCommentEdit}
                         onDelete={handleDeleteComment}
                         onToggleLike={(commentId) => onToggleCommentLike(commentId, post.id)}
-                        onSetReplying={setReplyingToId}
+                        onSetReplying={(id) => {
+                          setReplyingToId(id);
+                          if (id) {
+                            const target = comments.find((cm) => cm.id === id);
+                            if (target?.user_name) setReplyText(`@${target.user_name} `);
+                            else setReplyText("");
+                          }
+                        }}
                         onReplyTextChange={setReplyText}
                         onSubmitReply={handleSubmitReply}
                         setEditCommentText={setEditCommentText}
