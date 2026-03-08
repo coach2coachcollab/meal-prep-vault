@@ -1,32 +1,21 @@
 
 
-## Plan: Move streak badge and profile button to the sticky header bar
+## Recommendation: Set a Default/Preferred View (Calendar or List)
 
-**Goal:** Place the streak counter (🔥) and a profile avatar/button in the top header, on the same line as the notification bell. Order: streak → notification bell → profile button (left to right, right-aligned).
+The best option for your use case is **remembering your preferred view** (Calendar vs List). Here's why:
 
-### Steps
+- You already have both Calendar and List views built — this just lets you pick which one loads by default
+- It's lightweight: saves your preference to `localStorage` so it persists across sessions
+- No extra database work needed
+- Feels natural — once you find the view you like, it just stays that way
 
-1. **Lift streak data out of HomeDashboard into Dashboard**
-   - Extract the `loadStreak` logic from `HomeDashboard.tsx` into the `Dashboard.tsx` component (or a small custom hook) so the streak value is available in the header at all times, not just on the home tab.
-   - Remove the streak badge from the HomeDashboard header section (lines 258-263).
+### Plan
 
-2. **Add profile button to the header in Dashboard.tsx**
-   - Import `User` icon (or `Avatar` component).
-   - Add a clickable profile button that sets `activeTab` to `"profile"` when clicked.
+1. **Save view preference to localStorage** in `MealPlanView.tsx`
+   - When the user toggles between Calendar/List, persist the choice to `localStorage` under a key like `"mealPlanPreferredView"`
+   - On component mount, read the saved preference and use it as the initial `viewMode` state (defaulting to `"calendar"` if none saved)
 
-3. **Update the header layout in Dashboard.tsx**
-   - Change the header `div` (line 91) to include three items in a row (right-aligned):
-     - Streak badge (conditionally rendered when streak > 0)
-     - NotificationBell (existing)
-     - Profile button (new)
-   - Use `flex items-center gap-2 justify-end`.
+2. **Update the view toggle buttons** to include a subtle visual hint (e.g., a small "Default" badge or filled star) on the currently preferred view, so the user knows which is saved
 
-4. **Adjust HomeDashboard header**
-   - Remove the streak badge from the top-right of HomeDashboard since it now lives in the global header.
-   - The greeting text can span full width.
-
-### Technical Details
-
-- The streak logic (~40 lines in `loadStreak`) will be extracted. It queries `meal_journal` and `habit_completions` for distinct dates to compute consecutive days. This will run on mount in `Dashboard.tsx` using `useAuth` for the user context.
-- The profile button will be a simple ghost `Button` with `User` icon, matching the `NotificationBell` style (`h-9 w-9`).
+That's it — a small, clean change with immediate usability improvement.
 
