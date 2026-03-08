@@ -264,7 +264,7 @@ export function UserProfile() {
             )}
             {profileData.diet_prefs && profileData.diet_prefs.length > 0 && (
               <div>
-                <span className="text-muted-foreground text-xs">Diet Preferences</span>
+                <span className="text-section-label text-xs">Diet Preferences</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {profileData.diet_prefs.map((d) => <Badge key={d} variant="secondary" className="text-xs">{d}</Badge>)}
                 </div>
