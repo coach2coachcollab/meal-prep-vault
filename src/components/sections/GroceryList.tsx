@@ -145,7 +145,7 @@ export function GroceryList() {
             <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><ShoppingCart className="h-5 w-5 text-foreground" /></div>
             Grocery List
           </h2>
-          <p className="text-section-label font-semibold">
+          <p className="text-section-label font-label uppercase text-xs">
             {items.length} items · {checkedCount} checked
           </p>
         </div>

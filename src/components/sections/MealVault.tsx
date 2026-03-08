@@ -185,7 +185,7 @@ export function MealVault() {
             <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><Heart className="h-5 w-5 text-foreground" /></div>
             Meal Vault
           </h2>
-          <p className="text-section-label font-semibold text-sm">Browse recipes and save your favorites</p>
+          <p className="text-section-label font-label uppercase text-xs">Browse recipes and save your favorites</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-1" /> Add Meal
