@@ -50,7 +50,7 @@ interface CommunityPostProps {
   onAddComment: (postId: string, text: string, parentId?: string) => Promise<void>;
   onEditComment: (commentId: string, newText: string) => Promise<void>;
   onDeleteComment: (commentId: string, postId: string) => Promise<void>;
-  onToggleCommentLike: (commentId: string, postId: string) => Promise<void>;
+  onToggleCommentLike: (commentId: string, postId: string, reactionType: string) => Promise<void>;
 }
 
 const timeAgo = (dateStr: string) => {
