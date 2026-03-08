@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check } from "lucide-react";
+import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check, ImagePlus, Instagram, Globe } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useRef } from "react";
 
 interface Meal {
   id: string;
@@ -62,6 +63,10 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [shareText, setShareText] = useState("");
   const [sharing, setSharing] = useState(false);
   const [showShareForm, setShowShareForm] = useState(false);
+  const [shareMode, setShareMode] = useState<"community" | "social">("community");
+  const [sharePhoto, setSharePhoto] = useState<File | null>(null);
+  const [sharePhotoPreview, setSharePhotoPreview] = useState<string | null>(null);
+  const shareFileRef = useRef<HTMLInputElement>(null);
 
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
@@ -208,25 +213,90 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     if (!error) loadComments();
   };
 
+  const handleSharePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    setSharePhoto(file);
+    setSharePhotoPreview(URL.createObjectURL(file));
+  };
+
+  const removeSharePhoto = () => {
+    setSharePhoto(null);
+    setSharePhotoPreview(null);
+    if (shareFileRef.current) shareFileRef.current.value = "";
+  };
+
   const handleShareToCommunity = async () => {
     if (!user || !shareText.trim()) return;
     setSharing(true);
+
+    let imageUrl = meal.image_url;
+
+    // Upload optional photo
+    if (sharePhoto) {
+      const ext = sharePhoto.name.split(".").pop();
+      const path = `community/${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("recipe-images")
+        .upload(path, sharePhoto, { contentType: sharePhoto.type });
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+
     const { error } = await supabase.from("community_posts").insert({
       user_id: user.id,
       channel: "meals",
       text: shareText.trim(),
       recipe_id: meal.id,
-      image_url: meal.image_url,
+      image_url: imageUrl,
     });
     if (error) {
       toast.error("Failed to share");
     } else {
       toast.success("Shared to community!");
       setShareText("");
+      removeSharePhoto();
       setShowShareForm(false);
       loadComments();
     }
     setSharing(false);
+  };
+
+  const handleShareToSocial = async () => {
+    // Build a share-friendly canvas with recipe info
+    const title = meal.title;
+    const text = shareText.trim() || `Check out this recipe: "${title}" 🍽️`;
+    const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        const shareData: ShareData = { title, text, url };
+
+        // If user attached a photo, include it
+        if (sharePhoto) {
+          const file = new File([sharePhoto], sharePhoto.name, { type: sharePhoto.type });
+          if (navigator.canShare?.({ files: [file] })) {
+            shareData.files = [file];
+          }
+        }
+
+        await navigator.share(shareData);
+        toast.success("Shared!");
+        setShareText("");
+        removeSharePhoto();
+        setShowShareForm(false);
+      } catch (err: any) {
+        if (err.name !== "AbortError") toast.error("Share failed");
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      toast.success("Copied to clipboard! Paste into your story.");
+      setShowShareForm(false);
+    }
   };
 
   const timeAgo = (dateStr: string) => {
@@ -555,21 +625,63 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
               {/* Share form (expandable) */}
               {showShareForm && (
-                <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-xs font-semibold text-section-label">Share this recipe</p>
+                <div className="space-y-3 p-3 rounded-lg bg-muted/50 border border-border">
+                  {/* Share mode toggle */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={shareMode === "community" ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={() => setShareMode("community")}
+                    >
+                      <Globe className="h-3 w-3" /> Community
+                    </Button>
+                    <Button
+                      variant={shareMode === "social" ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={() => setShareMode("social")}
+                    >
+                      <Instagram className="h-3 w-3" /> Social Story
+                    </Button>
+                  </div>
+
                   <Textarea
                     value={shareText}
                     onChange={(e) => setShareText(e.target.value)}
                     rows={2}
-                    placeholder="Say something about this recipe..."
+                    placeholder={shareMode === "community" ? "Say something about this recipe..." : "Caption for your story..."}
                     className="text-sm"
                   />
+
+                  {/* Photo upload preview */}
+                  {sharePhotoPreview && (
+                    <div className="relative">
+                      <img src={sharePhotoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
+                      <Button size="icon" variant="secondary" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={removeSharePhoto}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  <input ref={shareFileRef} type="file" accept="image/*" className="hidden" onChange={handleSharePhoto} />
+
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setShowShareForm(false)}>
+                    <Button variant="ghost" size="sm" className="gap-1" onClick={() => shareFileRef.current?.click()}>
+                      <ImagePlus className="h-3 w-3" /> Photo
+                    </Button>
+                    <div className="flex-1" />
+                    <Button variant="ghost" size="sm" onClick={() => { setShowShareForm(false); removeSharePhoto(); }}>
                       Cancel
                     </Button>
-                    <Button size="sm" className="gap-1" onClick={handleShareToCommunity} disabled={sharing || !shareText.trim()}>
-                      <Share2 className="h-3 w-3" /> {sharing ? "Sharing..." : "Share"}
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      onClick={shareMode === "community" ? handleShareToCommunity : handleShareToSocial}
+                      disabled={sharing || !shareText.trim()}
+                    >
+                      {shareMode === "community" ? <Share2 className="h-3 w-3" /> : <Instagram className="h-3 w-3" />}
+                      {sharing ? "Sharing..." : shareMode === "community" ? "Share" : "Post Story"}
                     </Button>
                   </div>
                 </div>
