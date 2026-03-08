@@ -390,19 +390,19 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                     return (
                       <div className="grid grid-cols-4 gap-2 p-3 rounded-lg bg-muted/50">
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.calories || 0) * factor)}</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.calories || 0) * factor)}</p>
                           <p className="text-[10px] text-muted-foreground">Cal</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.protein || 0) * factor * 10) / 10}g</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.protein || 0) * factor)}g</p>
                           <p className="text-[10px] text-muted-foreground">Protein</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.carbs || 0) * factor * 10) / 10}g</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.carbs || 0) * factor)}g</p>
                           <p className="text-[10px] text-muted-foreground">Carbs</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.fats || 0) * factor * 10) / 10}g</p>
+                          <p className="font-bold text-sm">{r2((selectedVaultMeal.fats || 0) * factor)}g</p>
                           <p className="text-[10px] text-muted-foreground">Fat</p>
                         </div>
                       </div>

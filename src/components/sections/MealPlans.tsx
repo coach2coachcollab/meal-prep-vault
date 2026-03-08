@@ -318,10 +318,10 @@ export function MealPlans() {
               <button key={meal.id} onClick={() => swapMeal(meal.id)} className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors">
                 <p className="font-medium text-sm">{meal.title}</p>
                 <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                  <span>{meal.calories || 0} cal</span>
-                  <span>{meal.protein || 0}g P</span>
-                  <span>{meal.carbs || 0}g C</span>
-                  <span>{meal.fats || 0}g F</span>
+                  <span>{r2(meal.calories || 0)} cal</span>
+                  <span>{r2(meal.protein || 0)}g P</span>
+                  <span>{r2(meal.carbs || 0)}g C</span>
+                  <span>{r2(meal.fats || 0)}g F</span>
                 </div>
               </button>
             ))}
