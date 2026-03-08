@@ -60,14 +60,13 @@ export function UserProfile() {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg, preferred_units")
+      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
       .eq("user_id", user.id)
       .single();
     if (data) {
       if (data.name) setName(data.name);
       if (data.avatar_url) setAvatarUrl(data.avatar_url);
       if (data.age) setAge(String(data.age));
-      if (data.preferred_units) setUseMetric(data.preferred_units !== "imperial");
       setProfileData(data);
     }
   };
