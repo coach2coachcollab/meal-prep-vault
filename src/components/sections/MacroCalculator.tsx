@@ -148,12 +148,12 @@ export function MacroCalculator() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Weight (kg)</Label>
-              <Input type="number" placeholder="70" value={weight} onChange={(e) => setWeight(e.target.value)} />
+              <Label>Weight ({isImperial ? "lbs" : "kg"})</Label>
+              <Input type="number" placeholder={isImperial ? "154" : "70"} value={weight} onChange={(e) => setWeight(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Height (cm)</Label>
-              <Input type="number" placeholder="175" value={height} onChange={(e) => setHeight(e.target.value)} />
+              <Label>Height ({isImperial ? "in" : "cm"})</Label>
+              <Input type="number" placeholder={isImperial ? "69" : "175"} value={height} onChange={(e) => setHeight(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
