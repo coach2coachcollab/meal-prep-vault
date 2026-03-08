@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, Loader2 } from "lucide-react";
+import { MoodNutritionChart } from "./MoodNutritionChart";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -89,7 +90,8 @@ export function WeeklyInsightsCard() {
         </div>
 
         {data ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            <MoodNutritionChart />
             <ul className="space-y-1.5">
               {data.insights.map((insight, i) => (
                 <li key={i} className="text-sm text-foreground flex gap-2">
