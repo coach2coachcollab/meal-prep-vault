@@ -105,6 +105,7 @@ function CommentItem({
   onSetEditing, onSaveEdit, onDelete, onToggleLike,
   onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
 }: CommentItemProps) {
+  const [showActions, setShowActions] = useState(false);
   return (
     <div className={cn("flex gap-2 group", depth > 0 && "ml-6 border-l-2 border-muted pl-2")}>
       <Avatar className="h-6 w-6 mt-0.5 shrink-0">
