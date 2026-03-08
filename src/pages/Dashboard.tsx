@@ -112,7 +112,7 @@ export default function Dashboard() {
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b safe-area-top">
-        <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
+        <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 md:px-6 h-12 flex items-center justify-between">
           <button
             onClick={() => setActiveTab("streak")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 transition-all duration-300 hover:bg-primary/20 active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
