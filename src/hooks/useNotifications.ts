@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface Notification {
   id: string;
@@ -17,72 +19,71 @@ export interface Notification {
 
 export function useNotifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const queryClient = useQueryClient();
 
-  const loadNotifications = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (!data) return;
+  const { data: notifications = [], refetch } = useQuery({
+    queryKey: queryKeys.notifications(user?.id),
+    queryFn: async (): Promise<Notification[]> => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!data) return [];
 
-    const actorIds = [...new Set(data.map((n) => n.actor_id))];
-    const postIds = [...new Set(data.map((n) => n.post_id).filter(Boolean))] as string[];
+      const actorIds = [...new Set(data.map((n) => n.actor_id))];
+      const postIds = [...new Set(data.map((n) => n.post_id).filter(Boolean))] as string[];
 
-    const [{ data: profiles }, { data: posts }] = await Promise.all([
-      supabase.from("profiles").select("user_id, name").in("user_id", actorIds),
-      postIds.length > 0
-        ? supabase.from("community_posts").select("id, text").in("id", postIds)
-        : Promise.resolve({ data: [] }),
-    ]);
+      const [{ data: profiles }, { data: posts }] = await Promise.all([
+        supabase.from("profiles").select("user_id, name").in("user_id", actorIds),
+        postIds.length > 0
+          ? supabase.from("community_posts").select("id, text").in("id", postIds)
+          : Promise.resolve({ data: [] }),
+      ]);
 
-    const nameMap = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
-    const postMap = Object.fromEntries((posts || []).map((p) => [p.id, p.text]));
+      const nameMap = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
+      const postMap = Object.fromEntries((posts || []).map((p) => [p.id, p.text]));
 
-    const enriched: Notification[] = data.map((n) => ({
-      ...n,
-      actor_name: nameMap[n.actor_id] || "Someone",
-      post_text: n.post_id ? (postMap[n.post_id] || "").slice(0, 60) : undefined,
-    }));
+      return data.map((n) => ({
+        ...n,
+        actor_name: nameMap[n.actor_id] || "Someone",
+        post_text: n.post_id ? (postMap[n.post_id] || "").slice(0, 60) : undefined,
+      }));
+    },
+    enabled: !!user,
+  });
 
-    setNotifications(enriched);
-    setUnreadCount(enriched.filter((n) => !n.is_read).length);
-  }, [user]);
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const markAllRead = useCallback(async () => {
     if (!user) return;
     await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-  }, [user]);
+    queryClient.setQueryData(queryKeys.notifications(user.id), (old: Notification[] | undefined) =>
+      (old || []).map((n) => ({ ...n, is_read: true }))
+    );
+  }, [user, queryClient]);
 
   const markOneRead = useCallback(async (id: string) => {
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
-    setUnreadCount((c) => Math.max(0, c - 1));
-  }, []);
+    queryClient.setQueryData(queryKeys.notifications(user?.id), (old: Notification[] | undefined) =>
+      (old || []).map((n) => (n.id === id ? { ...n, is_read: true } : n))
+    );
+  }, [user, queryClient]);
 
   const deleteOne = useCallback(async (id: string) => {
-    const n = notifications.find((n) => n.id === id);
     await supabase.from("notifications").delete().eq("id", id);
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    if (n && !n.is_read) setUnreadCount((c) => Math.max(0, c - 1));
-  }, [notifications]);
+    queryClient.setQueryData(queryKeys.notifications(user?.id), (old: Notification[] | undefined) =>
+      (old || []).filter((n) => n.id !== id)
+    );
+  }, [user, queryClient]);
 
   const deleteAll = useCallback(async () => {
     if (!user) return;
     await supabase.from("notifications").delete().eq("user_id", user.id);
-    setNotifications([]);
-    setUnreadCount(0);
-  }, [user]);
-
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+    queryClient.setQueryData(queryKeys.notifications(user.id), []);
+  }, [user, queryClient]);
 
   // Realtime subscription for new notifications
   useEffect(() => {
@@ -92,11 +93,11 @@ export function useNotifications() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        () => loadNotifications()
+        () => refetch()
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, loadNotifications]);
+  }, [user, refetch]);
 
-  return { notifications, unreadCount, markAllRead, markOneRead, deleteOne, deleteAll, reload: loadNotifications };
+  return { notifications, unreadCount, markAllRead, markOneRead, deleteOne, deleteAll, reload: refetch };
 }

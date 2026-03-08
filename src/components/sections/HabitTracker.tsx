@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CheckCircle2, Circle, Plus, Flame, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -28,80 +30,79 @@ const defaultHabitsByGoal: Record<string, string[]> = {
 
 export function HabitTracker() {
   const { user } = useAuth();
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [weekData, setWeekData] = useState<Record<string, boolean[]>>({});
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newHabit, setNewHabit] = useState("");
   const today = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    if (user) loadHabits();
-  }, [user]);
+  const { data: habitData } = useQuery({
+    queryKey: queryKeys.habits(user?.id),
+    queryFn: async () => {
+      if (!user) return { habits: [] as Habit[], weekData: {} as Record<string, boolean[]> };
 
-  const loadHabits = async () => {
-    if (!user) return;
-    const { data: habitsData } = await supabase.from("user_habits").select("*").eq("user_id", user.id).eq("is_active", true).order("sort_order");
+      let habitsData = await supabase.from("user_habits").select("*").eq("user_id", user.id).eq("is_active", true).order("sort_order").then(r => r.data);
 
-    if (!habitsData || habitsData.length === 0) {
-      await seedDefaults();
-      return;
-    }
-
-    // Load today's logs
-    const { data: todayLogs } = await supabase.from("habit_logs").select("habit_id, completed").eq("user_id", user.id).eq("date", today);
-    const completedSet = new Set((todayLogs || []).filter((l) => l.completed).map((l) => l.habit_id));
-
-    // Calc streaks
-    const enriched: Habit[] = [];
-    for (const h of habitsData) {
-      const { data: streakData } = await supabase.from("habit_logs").select("date, completed").eq("habit_id", h.id).eq("completed", true).order("date", { ascending: false }).limit(30);
-      let streak = 0;
-      if (streakData) {
-        const dates = streakData.map((d) => d.date);
-        const check = new Date();
-        for (let i = 0; i < 30; i++) {
-          const ds = check.toISOString().split("T")[0];
-          if (dates.includes(ds)) { streak++; check.setDate(check.getDate() - 1); }
-          else if (i === 0) { check.setDate(check.getDate() - 1); continue; } // allow today not done yet
-          else break;
+      if (!habitsData || habitsData.length === 0) {
+        // Seed defaults
+        const { data: profile } = await supabase.from("profiles").select("goal").eq("user_id", user.id).single();
+        const goal = profile?.goal || "Maintain weight";
+        const defaults = defaultHabitsByGoal[goal] || defaultHabitsByGoal["Maintain weight"];
+        for (let i = 0; i < defaults.length; i++) {
+          await supabase.from("user_habits").insert({ user_id: user.id, name: defaults[i], sort_order: i });
         }
+        habitsData = await supabase.from("user_habits").select("*").eq("user_id", user.id).eq("is_active", true).order("sort_order").then(r => r.data);
+        if (!habitsData) return { habits: [] as Habit[], weekData: {} as Record<string, boolean[]> };
       }
-      enriched.push({ id: h.id, name: h.name, icon: h.icon, completed: completedSet.has(h.id), streak });
-    }
-    setHabits(enriched);
 
-    // Week data
-    loadWeek(habitsData.map((h) => h.id));
-  };
+      const { data: todayLogs } = await supabase.from("habit_logs").select("habit_id, completed").eq("user_id", user.id).eq("date", today);
+      const completedSet = new Set((todayLogs || []).filter((l) => l.completed).map((l) => l.habit_id));
 
-  const loadWeek = async (habitIds: string[]) => {
-    const weekStart = new Date();
-    const day = weekStart.getDay();
-    const diff = day === 0 ? 6 : day - 1; // Handle Sunday (getDay()===0) correctly
-    weekStart.setDate(weekStart.getDate() - diff); // Monday
-    const dates: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setDate(d.getDate() + i);
-      dates.push(d.toISOString().split("T")[0]);
-    }
-    const { data: weekLogs } = await supabase.from("habit_logs").select("habit_id, date, completed").eq("user_id", user!.id).in("date", dates).eq("completed", true);
-    const map: Record<string, boolean[]> = {};
-    for (const hid of habitIds) {
-      map[hid] = dates.map((d) => !!(weekLogs || []).find((l) => l.habit_id === hid && l.date === d));
-    }
-    setWeekData(map);
-  };
+      const enriched: Habit[] = [];
+      for (const h of habitsData) {
+        const { data: streakData } = await supabase.from("habit_logs").select("date, completed").eq("habit_id", h.id).eq("completed", true).order("date", { ascending: false }).limit(30);
+        let streak = 0;
+        if (streakData) {
+          const dates = streakData.map((d) => d.date);
+          const check = new Date();
+          for (let i = 0; i < 30; i++) {
+            const ds = check.toISOString().split("T")[0];
+            if (dates.includes(ds)) { streak++; check.setDate(check.getDate() - 1); }
+            else if (i === 0) { check.setDate(check.getDate() - 1); continue; }
+            else break;
+          }
+        }
+        enriched.push({ id: h.id, name: h.name, icon: h.icon, completed: completedSet.has(h.id), streak });
+      }
 
-  const seedDefaults = async () => {
-    if (!user) return;
-    const { data: profile } = await supabase.from("profiles").select("goal").eq("user_id", user.id).single();
-    const goal = profile?.goal || "Maintain weight";
-    const defaults = defaultHabitsByGoal[goal] || defaultHabitsByGoal["Maintain weight"];
-    for (let i = 0; i < defaults.length; i++) {
-      await supabase.from("user_habits").insert({ user_id: user.id, name: defaults[i], sort_order: i });
-    }
-    loadHabits();
+      // Week data
+      const weekStart = new Date();
+      const day = weekStart.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      weekStart.setDate(weekStart.getDate() - diff);
+      const dates: string[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(d.getDate() + i);
+        dates.push(d.toISOString().split("T")[0]);
+      }
+      const { data: weekLogs } = await supabase.from("habit_logs").select("habit_id, date, completed").eq("user_id", user.id).in("date", dates).eq("completed", true);
+      const weekMap: Record<string, boolean[]> = {};
+      for (const hid of habitsData.map(h => h.id)) {
+        weekMap[hid] = dates.map((d) => !!(weekLogs || []).find((l) => l.habit_id === hid && l.date === d));
+      }
+
+      return { habits: enriched, weekData: weekMap };
+    },
+    enabled: !!user,
+  });
+
+  const habits = habitData?.habits || [];
+  const weekData = habitData?.weekData || {};
+
+  const invalidateHabits = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.habits(user?.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.streak(user?.id) });
   };
 
   const toggleHabit = async (habit: Habit) => {
@@ -111,7 +112,7 @@ export function HabitTracker() {
     } else {
       await supabase.from("habit_logs").upsert({ habit_id: habit.id, user_id: user.id, date: today, completed: true }, { onConflict: "habit_id,date" });
     }
-    loadHabits();
+    invalidateHabits();
   };
 
   const addHabit = async () => {
@@ -119,13 +120,13 @@ export function HabitTracker() {
     await supabase.from("user_habits").insert({ user_id: user.id, name: newHabit, sort_order: habits.length });
     setNewHabit("");
     setDialogOpen(false);
-    loadHabits();
+    invalidateHabits();
     toast.success("Habit added!");
   };
 
   const deleteHabit = async (id: string) => {
     await supabase.from("user_habits").delete().eq("id", id);
-    loadHabits();
+    invalidateHabits();
     toast.success("Habit removed");
   };
 
@@ -201,7 +202,6 @@ export function HabitTracker() {
                   ))}
                 </div>
               ))}
-              {/* Daily completion counts */}
               <div className="grid grid-cols-8 gap-1 items-center pt-1 border-t border-border mt-1">
                 <span className="text-[10px] text-muted-foreground font-medium">Done</span>
                 {Array.from({ length: 7 }, (_, dayIdx) => {

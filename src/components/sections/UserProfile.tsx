@@ -8,27 +8,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Save, LogOut, Moon, Sun, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { useTheme } from "@/hooks/useTheme";
 import { toast } from "sonner";
 
 export function UserProfile() {
   const { user, signOut } = useAuth();
+  const queryClient = useQueryClient();
   const { useMetric, setUseMetric } = usePreferredUnits();
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { isDark: darkMode, toggle: toggleDarkMode } = useTheme();
-  const [profileData, setProfileData] = useState<{
-    goal?: string;
-    activity_level?: string;
-    diet_prefs?: string[];
-    allergies?: string[];
-    age?: number;
-    height_cm?: number;
-    weight_kg?: number;
-  }>({});
   const [loading, setLoading] = useState(false);
 
   const [age, setAge] = useState("");
@@ -37,11 +31,29 @@ export function UserProfile() {
   const [heightIn, setHeightIn] = useState("");
   const [weight, setWeight] = useState("");
 
-  useEffect(() => {
-    if (user) loadProfile();
-  }, [user]);
+  const { data: profileData } = useQuery({
+    queryKey: ['user-profile-full', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
 
   useEffect(() => {
+    if (!profileData) return;
+    if (profileData.name) setName(profileData.name);
+    if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
+    if (profileData.age) setAge(String(profileData.age));
+  }, [profileData]);
+
+  useEffect(() => {
+    if (!profileData) return;
     if (profileData.height_cm != null) {
       if (useMetric) {
         setHeight(String(profileData.height_cm));
@@ -54,22 +66,7 @@ export function UserProfile() {
     if (profileData.weight_kg != null) {
       setWeight(useMetric ? String(profileData.weight_kg) : String(Math.round(profileData.weight_kg * 2.20462)));
     }
-  }, [useMetric, profileData.height_cm, profileData.weight_kg]);
-
-  const loadProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
-      .eq("user_id", user.id)
-      .single();
-    if (data) {
-      if (data.name) setName(data.name);
-      if (data.avatar_url) setAvatarUrl(data.avatar_url);
-      if (data.age) setAge(String(data.age));
-      setProfileData(data);
-    }
-  };
+  }, [useMetric, profileData]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,6 +95,7 @@ export function UserProfile() {
     await supabase.from("profiles").update({ avatar_url: newUrl }).eq("user_id", user.id);
     setAvatarUrl(newUrl);
     setUploadingAvatar(false);
+    queryClient.invalidateQueries({ queryKey: ['user-profile-full', user.id] });
     toast.success("Avatar updated!");
   };
 
@@ -105,8 +103,8 @@ export function UserProfile() {
     if (!user) return;
     setLoading(true);
 
-    let height_cm = profileData.height_cm;
-    let weight_kg = profileData.weight_kg;
+    let height_cm = profileData?.height_cm;
+    let weight_kg = profileData?.weight_kg;
 
     if (useMetric) {
       if (height) height_cm = parseFloat(height);
@@ -131,7 +129,9 @@ export function UserProfile() {
     if (error) toast.error("Failed to save");
     else {
       toast.success("Profile updated!");
-      setProfileData((prev) => ({ ...prev, age: parseInt(age) || undefined, height_cm: height_cm || undefined, weight_kg: weight_kg || undefined }));
+      queryClient.invalidateQueries({ queryKey: ['user-profile-full', user.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile(user.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id) });
     }
   };
 
@@ -236,7 +236,7 @@ export function UserProfile() {
         </CardContent>
       </Card>
 
-      {profileData.goal && (
+      {profileData?.goal && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-section-label font-label uppercase">Your Profile</CardTitle>

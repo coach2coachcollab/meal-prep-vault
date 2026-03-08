@@ -4,6 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
@@ -20,32 +22,107 @@ const tips = [
 
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
-  const [profileName, setProfileName] = useState("");
-  const [macros, setMacros] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
-  const [todayJournal, setTodayJournal] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
-  const [habitsToday, setHabitsToday] = useState({ done: 0, total: 0 });
-  const [waterToday, setWaterToday] = useState({ glasses: 0, goal: 8 });
   const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
-  const [streak] = useState(0); // streak now displayed in global header
-  const [isLoading, setIsLoading] = useState(true);
-  const [progressSummary, setProgressSummary] = useState<{
-    period: "week" | "month";
-    weightChange: number | null;
-    waistChange: number | null;
-    currentWeight: number | null;
-    entries: number;
-    useMetric: boolean;
-  } | null>(null);
-
-  useEffect(() => {
-    if (user) {
-      setIsLoading(true);
-      Promise.all([loadData(), loadProgressSummary()])
-        .finally(() => setIsLoading(false));
-    }
-  }, [user]);
-
   const shownMilestones = useRef(new Set<string>());
+
+  const { data: dashData, isLoading } = useQuery({
+    queryKey: queryKeys.dashboard(user?.id),
+    queryFn: async () => {
+      if (!user) return null;
+      const today = new Date().toISOString().split("T")[0];
+
+      const [
+        { data: profile },
+        { data: macro },
+        { data: journal },
+        { data: habits },
+        { data: logs },
+        { data: water },
+      ] = await Promise.all([
+        supabase.from("profiles").select("name").eq("user_id", user.id).single(),
+        supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("journal_entries").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).eq("date", today),
+        supabase.from("user_habits").select("id").eq("user_id", user.id).eq("is_active", true),
+        supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true),
+        supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle(),
+      ]);
+
+      const r = (n: number) => Math.round(n * 100) / 100;
+      const todayJournal = journal ? {
+        calories: r(journal.reduce((s, j) => s + (Number(j.calories) || 0), 0)),
+        protein: r(journal.reduce((s, j) => s + (Number(j.protein_g) || 0), 0)),
+        carbs: r(journal.reduce((s, j) => s + (Number(j.carbs_g) || 0), 0)),
+        fat: r(journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0)),
+      } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
+      return {
+        profileName: profile?.name || "",
+        macros: macro || null,
+        todayJournal,
+        habitsToday: { done: logs?.length || 0, total: habits?.length || 0 },
+        waterToday: water ? { glasses: water.glasses, goal: water.goal } : { glasses: 0, goal: 8 },
+      };
+    },
+    enabled: !!user,
+  });
+
+  const { data: progressSummary } = useQuery({
+    queryKey: queryKeys.progressSummary(user?.id),
+    queryFn: async () => {
+      if (!user) return null;
+      const { data: profile } = await supabase.from("profiles").select("preferred_units").eq("user_id", user.id).single();
+      const isMetric = profile?.preferred_units !== "imperial";
+
+      const now = new Date();
+      const monthAgo = new Date(now);
+      monthAgo.setDate(monthAgo.getDate() - 30);
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      const { data: recentLogs } = await supabase
+        .from("progress_logs")
+        .select("date, weight_kg, waist_cm")
+        .eq("user_id", user.id)
+        .gte("date", monthAgo.toISOString().split("T")[0])
+        .order("date", { ascending: true });
+
+      if (!recentLogs || recentLogs.length < 2) return null;
+
+      const weekLogs = recentLogs.filter((l) => new Date(l.date) >= weekAgo);
+      const useLogs = weekLogs.length >= 2 ? weekLogs : recentLogs;
+      const period = weekLogs.length >= 2 ? "week" as const : "month" as const;
+
+      const first = useLogs[0];
+      const last = useLogs[useLogs.length - 1];
+      const KG_TO_LBS = 2.20462;
+      const CM_TO_IN = 0.393701;
+
+      let weightChange: number | null = null;
+      if (first.weight_kg != null && last.weight_kg != null) {
+        const diff = last.weight_kg - first.weight_kg;
+        weightChange = isMetric ? Math.round(diff * 10) / 10 : Math.round(diff * KG_TO_LBS * 10) / 10;
+      }
+
+      let waistChange: number | null = null;
+      if (first.waist_cm != null && last.waist_cm != null) {
+        const diff = last.waist_cm - first.waist_cm;
+        waistChange = isMetric ? Math.round(diff * 10) / 10 : Math.round(diff * CM_TO_IN * 10) / 10;
+      }
+
+      const currentWeight = last.weight_kg != null
+        ? (isMetric ? last.weight_kg : Math.round(last.weight_kg * KG_TO_LBS * 10) / 10)
+        : null;
+
+      return { period, weightChange, waistChange, currentWeight, entries: useLogs.length, useMetric: isMetric };
+    },
+    enabled: !!user,
+  });
+
+  const profileName = dashData?.profileName || "";
+  const macros = dashData?.macros || null;
+  const todayJournal = dashData?.todayJournal || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  const habitsToday = dashData?.habitsToday || { done: 0, total: 0 };
+  const waterToday = dashData?.waterToday || { glasses: 0, goal: 8 };
 
   const showMilestone = (key: string, icon: string, title: string, description: string) => {
     const storageKey = `milestone_${user?.id}_${key}`;
@@ -54,144 +131,8 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
     shownMilestones.current.add(key);
     localStorage.setItem(storageKey, new Date().toISOString());
     setTimeout(() => {
-      toast(title, {
-        description,
-        icon,
-        duration: 6000,
-      });
+      toast(title, { description, icon, duration: 6000 });
     }, 1500);
-  };
-
-  const checkMilestones = async () => {
-    if (!user) return;
-
-    // Fetch latest data for checks
-    const [{ data: profile }, { data: latestLog }, { count: totalEntries }] = await Promise.all([
-      supabase.from("profiles").select("goal_weight_kg").eq("user_id", user.id).single(),
-      supabase.from("progress_logs").select("weight_kg").eq("user_id", user.id).order("date", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    ]);
-
-    // Goal weight reached
-    if (profile?.goal_weight_kg && latestLog?.weight_kg) {
-      if (latestLog.weight_kg <= profile.goal_weight_kg) {
-        showMilestone("goal_weight", "🏆", "Goal Weight Reached!", "You've hit your goal weight — incredible work!");
-      }
-    }
-
-    // Meal logging milestones
-    const mealCount = totalEntries || 0;
-    if (mealCount >= 100) showMilestone("meals_100", "⭐", "100 Meals Logged!", "You've logged 100 meals — dedication pays off!");
-    else if (mealCount >= 50) showMilestone("meals_50", "🌟", "50 Meals Logged!", "Half a century of meals tracked — great consistency!");
-    else if (mealCount >= 10) showMilestone("meals_10", "✨", "10 Meals Logged!", "You're building a strong tracking habit!");
-  };
-
-  const loadData = async () => {
-    if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
-
-    // Profile name
-    const { data: profile } = await supabase.from("profiles").select("name").eq("user_id", user.id).single();
-    if (profile?.name) setProfileName(profile.name);
-
-    // User macros
-    const { data: macro } = await supabase
-      .from("user_macros")
-      .select("calories, protein_g, carbs_g, fat_g")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (macro) setMacros(macro);
-
-    // Today's journal
-    const { data: journal } = await supabase
-      .from("journal_entries")
-      .select("calories, protein_g, carbs_g, fat_g")
-      .eq("user_id", user.id)
-      .eq("date", today);
-    if (journal) {
-      const r = (n: number) => Math.round(n * 100) / 100;
-      setTodayJournal({
-        calories: r(journal.reduce((s, j) => s + (Number(j.calories) || 0), 0)),
-        protein: r(journal.reduce((s, j) => s + (Number(j.protein_g) || 0), 0)),
-        carbs: r(journal.reduce((s, j) => s + (Number(j.carbs_g) || 0), 0)),
-        fat: r(journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0)),
-      });
-    }
-
-    // Today's habits
-    const { data: habits } = await supabase.from("user_habits").select("id").eq("user_id", user.id).eq("is_active", true);
-    const { data: logs } = await supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true);
-    setHabitsToday({ done: logs?.length || 0, total: habits?.length || 0 });
-
-    // Today's water
-    const { data: water } = await supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle();
-    if (water) setWaterToday({ glasses: water.glasses, goal: water.goal });
-  };
-
-  // Streak logic moved to useStreak hook in global header
-
-
-  const loadProgressSummary = async () => {
-    if (!user) return;
-    const { data: profile } = await supabase.from("profiles").select("preferred_units").eq("user_id", user.id).single();
-    const isMetric = profile?.preferred_units !== "imperial";
-
-    const now = new Date();
-    const weekAgo = new Date(now);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const monthAgo = new Date(now);
-    monthAgo.setDate(monthAgo.getDate() - 30);
-
-    const { data: recentLogs } = await supabase
-      .from("progress_logs")
-      .select("date, weight_kg, waist_cm")
-      .eq("user_id", user.id)
-      .gte("date", monthAgo.toISOString().split("T")[0])
-      .order("date", { ascending: true });
-
-    if (!recentLogs || recentLogs.length < 2) return;
-
-    // Determine if we have enough for weekly vs monthly
-    const weekLogs = recentLogs.filter((l) => new Date(l.date) >= weekAgo);
-    const useLogs = weekLogs.length >= 2 ? weekLogs : recentLogs;
-    const period = weekLogs.length >= 2 ? "week" as const : "month" as const;
-
-    const first = useLogs[0];
-    const last = useLogs[useLogs.length - 1];
-
-    const KG_TO_LBS = 2.20462;
-    const CM_TO_IN = 0.393701;
-
-    let weightChange: number | null = null;
-    if (first.weight_kg != null && last.weight_kg != null) {
-      const diff = last.weight_kg - first.weight_kg;
-      weightChange = isMetric
-        ? Math.round(diff * 10) / 10
-        : Math.round(diff * KG_TO_LBS * 10) / 10;
-    }
-
-    let waistChange: number | null = null;
-    if (first.waist_cm != null && last.waist_cm != null) {
-      const diff = last.waist_cm - first.waist_cm;
-      waistChange = isMetric
-        ? Math.round(diff * 10) / 10
-        : Math.round(diff * CM_TO_IN * 10) / 10;
-    }
-
-    const currentWeight = last.weight_kg != null
-      ? (isMetric ? last.weight_kg : Math.round(last.weight_kg * KG_TO_LBS * 10) / 10)
-      : null;
-
-    setProgressSummary({
-      period,
-      weightChange,
-      waistChange,
-      currentWeight,
-      entries: useLogs.length,
-      useMetric: isMetric,
-    });
   };
 
   const greeting = () => {
@@ -255,7 +196,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </CardContent>
       </Card>
 
-
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:habits")}>
@@ -290,7 +230,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           </CardContent>
         </Card>
       </div>
-
 
       {/* Progress Summary */}
       {progressSummary && (

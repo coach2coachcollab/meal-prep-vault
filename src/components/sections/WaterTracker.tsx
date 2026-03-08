@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Droplets, Plus, Minus, Settings2, Star, Smile, Zap, StickyNote, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,12 +19,9 @@ const moods = ["😊", "😐", "😴", "😤", "😢"];
 
 export function WaterTracker() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [glasses, setGlasses] = useState(0);
-  const [goal, setGoal] = useState(8);
   const [editGoal, setEditGoal] = useState("8");
-
-  // Mood / Energy / Notes
   const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
   const [noteSaved, setNoteSaved] = useState(false);
 
@@ -34,54 +33,56 @@ export function WaterTracker() {
     setDate(d.toISOString().split("T")[0]);
   };
 
-  useEffect(() => {
-    if (user) {
-      loadWater();
-      loadDailyNote();
-    }
-  }, [user, date]);
-
-  const loadWater = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("water_logs")
-      .select("glasses, goal")
-      .eq("user_id", user.id)
-      .eq("date", date)
-      .maybeSingle();
-    if (data) {
-      setGlasses(data.glasses);
-      setGoal(data.goal);
-      setEditGoal(String(data.goal));
-    } else {
-      setGlasses(0);
-      setGoal(8);
+  const { data: waterData } = useQuery({
+    queryKey: queryKeys.waterLog(user?.id, date),
+    queryFn: async () => {
+      if (!user) return { glasses: 0, goal: 8 };
+      const { data } = await supabase
+        .from("water_logs")
+        .select("glasses, goal")
+        .eq("user_id", user.id)
+        .eq("date", date)
+        .maybeSingle();
+      if (data) {
+        setEditGoal(String(data.goal));
+        return { glasses: data.glasses, goal: data.goal };
+      }
       setEditGoal("8");
-    }
-  };
+      return { glasses: 0, goal: 8 };
+    },
+    enabled: !!user,
+  });
 
-  const loadDailyNote = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("journal_daily_notes")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("date", date)
-      .maybeSingle();
-    if (data) {
-      setDailyNote({
-        energy_level: data.energy_level || 0,
-        mood_emoji: data.mood_emoji || "",
-        notes: data.notes || "",
-      });
-    } else {
-      setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
-    }
-  };
+  const glasses = waterData?.glasses ?? 0;
+  const goal = waterData?.goal ?? 8;
+
+  useQuery({
+    queryKey: queryKeys.dailyNote(user?.id, date),
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("journal_daily_notes")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("date", date)
+        .maybeSingle();
+      if (data) {
+        setDailyNote({
+          energy_level: data.energy_level || 0,
+          mood_emoji: data.mood_emoji || "",
+          notes: data.notes || "",
+        });
+      } else {
+        setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
+      }
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const updateGlasses = async (newCount: number) => {
     if (!user || newCount < 0) return;
-    setGlasses(newCount);
+    queryClient.setQueryData(queryKeys.waterLog(user.id, date), { glasses: newCount, goal });
     const { error } = await supabase
       .from("water_logs")
       .upsert(
@@ -90,12 +91,14 @@ export function WaterTracker() {
       );
     if (error) console.error("Water log error", error);
     if (newCount === goal && newCount > 0) toast.success("💧 Daily water goal reached!");
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.weeklySummary(user.id) });
   };
 
   const saveGoal = async () => {
     const newGoal = parseInt(editGoal) || 8;
-    setGoal(newGoal);
     if (!user) return;
+    queryClient.setQueryData(queryKeys.waterLog(user.id, date), { glasses, goal: newGoal });
     await supabase
       .from("water_logs")
       .upsert(
@@ -114,6 +117,7 @@ export function WaterTracker() {
       setNoteSaved(true);
       toast.success("Daily notes saved!");
       setTimeout(() => setNoteSaved(false), 2000);
+      queryClient.invalidateQueries({ queryKey: queryKeys.weeklySummary(user.id) });
     }
   };
 
@@ -273,7 +277,6 @@ export function WaterTracker() {
           </Button>
         </CardContent>
       </Card>
-
 
       {/* Weekly Summary */}
       <WeeklySummaryCharts />
