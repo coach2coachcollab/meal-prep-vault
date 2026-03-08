@@ -50,21 +50,40 @@ export function RecipePlanner() {
     const ingredientList = ingredients.split("\n").filter(Boolean).map((i) => i.trim());
     const instructionList = instructions.split("\n").filter(Boolean).map((i) => i.trim());
 
-    const { error } = await supabase.from("meals").insert({
-      user_id: user.id,
-      title,
-      description,
-      calories: parseFloat(calories) || 0,
-      protein: parseFloat(protein) || 0,
-      carbs: parseFloat(carbs) || 0,
-      fats: parseFloat(fats) || 0,
-      ingredients: ingredientList,
-      instructions: instructionList,
-    });
+    setSaving(true);
+    let imageUrl: string | null = null;
+    let imageFilename: string | null = null;
 
-    if (error) {
-      toast.error("Failed to save recipe");
-    } else {
+    try {
+      if (imageFile) {
+        const ext = imageFile.name.split(".").pop();
+        imageFilename = `${user.id}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("recipe-images")
+          .upload(imageFilename, imageFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from("recipe-images")
+          .getPublicUrl(imageFilename);
+        imageUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from("meals").insert({
+        user_id: user.id,
+        title,
+        description,
+        calories: parseFloat(calories) || 0,
+        protein: parseFloat(protein) || 0,
+        carbs: parseFloat(carbs) || 0,
+        fats: parseFloat(fats) || 0,
+        ingredients: ingredientList,
+        instructions: instructionList,
+        image_url: imageUrl,
+        image_filename: imageFilename,
+      });
+
+      if (error) throw error;
+
       toast.success("Recipe saved to your collection!");
       setTitle("");
       setDescription("");
@@ -74,6 +93,11 @@ export function RecipePlanner() {
       setFats("");
       setIngredients("");
       setInstructions("");
+      removeImage();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save recipe");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -94,6 +118,41 @@ export function RecipePlanner() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label>Recipe Photo</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            {imagePreview ? (
+              <div className="relative w-full max-w-xs">
+                <img
+                  src={imagePreview}
+                  alt="Recipe preview"
+                  className="w-full h-48 object-cover rounded-lg border border-border"
+                />
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-background/80 backdrop-blur rounded-full p-1 hover:bg-destructive/20 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+              >
+                <ImagePlus className="h-5 w-5" />
+                <span className="text-sm">Add a photo</span>
+              </button>
+            )}
+          </div>
+
           {/* Basic Info */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
