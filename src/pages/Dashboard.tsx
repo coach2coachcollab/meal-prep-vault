@@ -81,6 +81,8 @@ export default function Dashboard() {
         return <CommunityHub highlightPostId={highlightPostId} onHighlightHandled={() => setHighlightPostId(null)} />;
       case "notifications":
         return <NotificationsPage onNavigateToPost={navigateToPost} />;
+      case "streak":
+        return <StreakDetails onBack={() => setActiveTab("home")} streak={streak} />;
       case "profile":
         return (
           <Tabs value={profileSub} onValueChange={setProfileSub}>
