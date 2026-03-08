@@ -17,6 +17,7 @@ import { ProgressTracker } from "@/components/sections/ProgressTracker";
 import { NotificationsPage } from "@/components/sections/NotificationsPage";
 import { StreakDetails } from "@/components/sections/StreakDetails";
 import { NotificationBell } from "@/components/community/NotificationBell";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { User, Zap, Moon, Sun } from "lucide-react";
@@ -40,77 +41,103 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "home":
-        return <HomeDashboard onNavigate={(tab) => {
-          if (tab.startsWith("nutrition:")) {
-            const sub = tab.split(":")[1];
-            setActiveTab("nutrition");
-            setNutritionSub(sub);
-          } else {
-            setActiveTab(tab);
-          }
-        }} />;
+        return (
+          <ErrorBoundary fallbackMessage="Dashboard failed to load.">
+            <HomeDashboard onNavigate={(tab) => {
+              if (tab.startsWith("nutrition:")) {
+                const sub = tab.split(":")[1];
+                setActiveTab("nutrition");
+                setNutritionSub(sub);
+              } else {
+                setActiveTab(tab);
+              }
+            }} />
+          </ErrorBoundary>
+        );
       case "nutrition":
         return (
-          <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
-            <TabsList className="w-full grid grid-cols-4 mb-4">
-              <TabsTrigger value="journal">Journal</TabsTrigger>
-              <TabsTrigger value="water">Wellness</TabsTrigger>
-              <TabsTrigger value="habits">Habits</TabsTrigger>
-              <TabsTrigger value="vault">Vault</TabsTrigger>
-            </TabsList>
-            <TabsContent value="journal"><MealJournal autoOpenLog={autoOpenLog} /></TabsContent>
-            <TabsContent value="water"><WaterTracker /></TabsContent>
-            <TabsContent value="habits"><HabitTracker /></TabsContent>
-            <TabsContent value="vault"><MealVault /></TabsContent>
-          </Tabs>
+          <ErrorBoundary fallbackMessage="Nutrition section failed to load.">
+            <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
+              <TabsList className="w-full grid grid-cols-4 mb-4">
+                <TabsTrigger value="journal">Journal</TabsTrigger>
+                <TabsTrigger value="water">Wellness</TabsTrigger>
+                <TabsTrigger value="habits">Habits</TabsTrigger>
+                <TabsTrigger value="vault">Vault</TabsTrigger>
+              </TabsList>
+              <TabsContent value="journal"><MealJournal autoOpenLog={autoOpenLog} /></TabsContent>
+              <TabsContent value="water"><WaterTracker /></TabsContent>
+              <TabsContent value="habits"><HabitTracker /></TabsContent>
+              <TabsContent value="vault"><MealVault /></TabsContent>
+            </Tabs>
+          </ErrorBoundary>
         );
       case "plan":
         return (
-          <Tabs value={planSub} onValueChange={setPlanSub}>
-            <TabsList className="w-full grid grid-cols-3 mb-4">
-              <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
-              <TabsTrigger value="grocery">Shopping</TabsTrigger>
-              <TabsTrigger value="macros">Macros</TabsTrigger>
-            </TabsList>
-            <TabsContent value="recipe"><RecipePlanner /></TabsContent>
-            <TabsContent value="grocery"><GroceryList /></TabsContent>
-            <TabsContent value="macros">
-              <MacroCalculator onNavigateToMealVault={() => {
-                setActiveTab("nutrition");
-                setNutritionSub("vault");
-              }} />
-            </TabsContent>
-          </Tabs>
+          <ErrorBoundary fallbackMessage="Plan section failed to load.">
+            <Tabs value={planSub} onValueChange={setPlanSub}>
+              <TabsList className="w-full grid grid-cols-3 mb-4">
+                <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
+                <TabsTrigger value="grocery">Shopping</TabsTrigger>
+                <TabsTrigger value="macros">Macros</TabsTrigger>
+              </TabsList>
+              <TabsContent value="recipe"><RecipePlanner /></TabsContent>
+              <TabsContent value="grocery"><GroceryList /></TabsContent>
+              <TabsContent value="macros">
+                <MacroCalculator onNavigateToMealVault={() => {
+                  setActiveTab("nutrition");
+                  setNutritionSub("vault");
+                }} />
+              </TabsContent>
+            </Tabs>
+          </ErrorBoundary>
         );
       case "community":
-        return <CommunityHub highlightPostId={highlightPostId} onHighlightHandled={() => setHighlightPostId(null)} />;
+        return (
+          <ErrorBoundary fallbackMessage="Community failed to load.">
+            <CommunityHub highlightPostId={highlightPostId} onHighlightHandled={() => setHighlightPostId(null)} />
+          </ErrorBoundary>
+        );
       case "notifications":
-        return <NotificationsPage onNavigateToPost={navigateToPost} />;
+        return (
+          <ErrorBoundary fallbackMessage="Notifications failed to load.">
+            <NotificationsPage onNavigateToPost={navigateToPost} />
+          </ErrorBoundary>
+        );
       case "streak":
-        return <StreakDetails onBack={() => setActiveTab("home")} streak={streak} />;
+        return (
+          <ErrorBoundary fallbackMessage="Streak details failed to load.">
+            <StreakDetails onBack={() => setActiveTab("home")} streak={streak} />
+          </ErrorBoundary>
+        );
       case "profile":
         return (
-          <Tabs value={profileSub} onValueChange={setProfileSub}>
-            <TabsList className="w-full grid grid-cols-3 mb-4">
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="progress">Progress</TabsTrigger>
-              <TabsTrigger value="partners">Deals</TabsTrigger>
-            </TabsList>
-            <TabsContent value="profile"><UserProfile /></TabsContent>
-            <TabsContent value="progress"><ProgressTracker /></TabsContent>
-            <TabsContent value="partners"><PartnerHub /></TabsContent>
-          </Tabs>
+          <ErrorBoundary fallbackMessage="Profile section failed to load.">
+            <Tabs value={profileSub} onValueChange={setProfileSub}>
+              <TabsList className="w-full grid grid-cols-3 mb-4">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="progress">Progress</TabsTrigger>
+                <TabsTrigger value="partners">Deals</TabsTrigger>
+              </TabsList>
+              <TabsContent value="profile"><UserProfile /></TabsContent>
+              <TabsContent value="progress"><ProgressTracker /></TabsContent>
+              <TabsContent value="partners"><PartnerHub /></TabsContent>
+            </Tabs>
+          </ErrorBoundary>
         );
       default:
-        return <HomeDashboard onNavigate={(tab) => {
-          if (tab.startsWith("nutrition:")) {
-            const sub = tab.split(":")[1];
-            setActiveTab("nutrition");
-            setNutritionSub(sub);
-          } else {
-            setActiveTab(tab);
-          }
-        }} />;
+        return (
+          <ErrorBoundary fallbackMessage="Dashboard failed to load.">
+            <HomeDashboard onNavigate={(tab) => {
+              if (tab.startsWith("nutrition:")) {
+                const sub = tab.split(":")[1];
+                setActiveTab("nutrition");
+                setNutritionSub(sub);
+              } else {
+                setActiveTab(tab);
+              }
+            }} />
+          </ErrorBoundary>
+        );
     }
   };
 
@@ -136,6 +163,7 @@ export default function Dashboard() {
               size="icon"
               className="h-9 w-9 rounded-full"
               onClick={toggleTheme}
+              aria-label="Toggle theme"
             >
               {isDark ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
             </Button>
@@ -144,6 +172,7 @@ export default function Dashboard() {
               size="icon"
               className="h-9 w-9 rounded-full"
               onClick={() => setActiveTab("profile")}
+              aria-label="Profile"
             >
               <User className="h-5 w-5" />
             </Button>
