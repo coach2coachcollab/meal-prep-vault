@@ -33,6 +33,8 @@ export interface InlineComment {
   user_name?: string;
   like_count: number;
   is_liked: boolean;
+  user_reaction: string | null;
+  reaction_counts: Record<string, number>;
   parent_id: string | null;
   replies?: InlineComment[];
 }
