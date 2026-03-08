@@ -319,7 +319,7 @@ export function MealVault() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2">
               {filtered.map((meal) => {
                 const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
                 const allTags = [...(meal.tags || []), ...(meal.diet_tags || []), ...(meal.health_tags || [])];
@@ -332,64 +332,57 @@ export function MealVault() {
 
                 return (
                   <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                    {/* Image */}
-                    {meal.image_url && (
-                      <div className="relative h-44 overflow-hidden">
+                    {/* Image or placeholder */}
+                    <div className="relative h-48 overflow-hidden">
+                      {meal.image_url ? (
                         <img src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleFavorite(meal.id); }}
-                          className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
-                        >
-                          <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
-                        </button>
-                        {/* Macro overlay on image */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white text-sm font-bold">{cal}</span>
-                            <span className="text-white/70 text-[10px]">cal</span>
-                            <Badge className="text-[10px] px-1.5 py-0 bg-macro-protein/80 text-white border-0">{p}g <span className="font-normal">protein</span></Badge>
-                            <Badge className="text-[10px] px-1.5 py-0 bg-macro-carbs/80 text-white border-0">{c}g <span className="font-normal">carbs</span></Badge>
-                            <Badge className="text-[10px] px-1.5 py-0 bg-macro-fat/80 text-white border-0">{f}g <span className="font-normal">fat</span></Badge>
-                          </div>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/10 via-accent/10 to-secondary flex items-center justify-center">
+                          <ChefHat className="h-12 w-12 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavorite(meal.id); }}
+                        className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
+                      >
+                        <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                      </button>
+                      {/* Macro overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-2.5 pt-6">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-white text-base font-bold">{cal}</span>
+                          <span className="text-white/70 text-xs">cal/serving</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-medium text-macro-protein px-1.5 py-0.5 rounded bg-white/15 backdrop-blur-sm">{p}g P</span>
+                          <span className="text-xs font-medium text-macro-carbs px-1.5 py-0.5 rounded bg-white/15 backdrop-blur-sm">{c}g C</span>
+                          <span className="text-xs font-medium text-macro-fat px-1.5 py-0.5 rounded bg-white/15 backdrop-blur-sm">{f}g F</span>
                         </div>
                       </div>
-                    )}
+                    </div>
 
-                    {/* No image macro display */}
-                    {!meal.image_url && (
-                      <CardContent className="pt-3 pb-0 px-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold">{cal}</span>
-                          <span className="text-[10px] text-muted-foreground">cal/serving</span>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-protein/15 text-macro-protein border-0 font-semibold">{p}g protein</Badge>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-carbs/15 text-macro-carbs border-0 font-semibold">{c}g carbs</Badge>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-fat/15 text-macro-fat border-0 font-semibold">{f}g fat</Badge>
-                        </div>
-                      </CardContent>
-                    )}
-
-                    <CardContent className={`${meal.image_url ? 'pt-3' : 'pt-2'} pb-3 px-4 space-y-2`}>
+                    <CardContent className="p-4 space-y-3">
                       <div>
-                        <h3 className="font-semibold text-sm truncate">{meal.title}</h3>
-                        {meal.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{meal.description}</p>}
+                        <h3 className="font-semibold text-base truncate">{meal.title}</h3>
+                        {meal.description && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{meal.description}</p>}
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-3">
-                          {totalTime > 0 && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {totalTime} min</span>}
-                          <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
+                          {totalTime > 0 && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {totalTime} min</span>}
+                          <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           {mealRating && (
                             <div className="flex items-center gap-1">
-                              <Star className="h-3 w-3 fill-star text-star" />
+                              <Star className="h-3.5 w-3.5 fill-star text-star" />
                               <span className="font-medium">{mealRating.avg}</span>
                               <span>({mealRating.count})</span>
                             </div>
                           )}
                           {(commentCounts[meal.id] || 0) > 0 && (
                             <div className="flex items-center gap-1">
-                              <MessageCircle className="h-3 w-3" />
+                              <MessageCircle className="h-3.5 w-3.5" />
                               <span>{commentCounts[meal.id]}</span>
                             </div>
                           )}
@@ -397,26 +390,26 @@ export function MealVault() {
                       </div>
 
                       {allTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {allTags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                        <div className="flex flex-wrap gap-1.5">
+                          {allTags.slice(0, 4).map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-[11px] px-2 py-0.5">{tag}</Badge>
                           ))}
-                          {allTags.length > 3 && <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{allTags.length - 3} more</Badge>}
+                          {allTags.length > 4 && <Badge variant="outline" className="text-[11px] px-2 py-0.5">+{allTags.length - 4}</Badge>}
                         </div>
                       )}
 
                       {/* Action buttons */}
-                      <div className="flex gap-1.5">
-                        <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={() => setSelectedMeal(meal)}>
-                          <Eye className="h-3.5 w-3.5" /> View
+                      <div className="flex gap-2 pt-1">
+                        <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => setSelectedMeal(meal)}>
+                          <Eye className="h-4 w-4" /> View
                         </Button>
                         {meal.user_id === user?.id && (
                           <>
-                            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
-                              <Pencil className="h-3.5 w-3.5" />
+                            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
+                              <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => deleteMeal(meal.id)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => deleteMeal(meal.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </>
                         )}

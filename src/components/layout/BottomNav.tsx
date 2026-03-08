@@ -61,7 +61,7 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-area-bottom">
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+        <div className="flex items-center justify-around h-16 max-w-4xl mx-auto">
           {tabs.map((tab) => {
             if ((tab as any).isCenter) {
               return (

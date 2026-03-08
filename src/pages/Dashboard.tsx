@@ -117,7 +117,7 @@ export default function Dashboard() {
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b safe-area-top">
-        <div className="max-w-2xl mx-auto px-4 md:px-6 h-12 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 h-12 flex items-center justify-between">
           <button
             onClick={() => setActiveTab("streak")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary border border-primary/50 shadow-[0_0_10px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:bg-primary/90 hover:shadow-[0_0_16px_hsl(var(--primary)/0.4)] active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
@@ -151,7 +151,7 @@ export default function Dashboard() {
         </div>
       </header>
       <main className="flex-1 overflow-y-auto pb-20">
-        <div className="max-w-2xl mx-auto px-4 md:px-6 py-6">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
           {renderContent()}
         </div>
       </main>
