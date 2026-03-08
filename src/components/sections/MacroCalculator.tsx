@@ -34,7 +34,11 @@ const ACTIVITY_MAP: Record<string, string> = {
   very_active: "very_active",
 };
 
-export function MacroCalculator() {
+interface MacroCalculatorProps {
+  onNavigateToMealVault?: () => void;
+}
+
+export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps) {
   const { user } = useAuth();
   const { isImperial, weightUnit, heightUnit, toKg, toCm, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
   const [gender, setGender] = useState("male");
