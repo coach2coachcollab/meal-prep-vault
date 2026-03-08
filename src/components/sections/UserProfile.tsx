@@ -121,7 +121,6 @@ export function UserProfile() {
         age: parseInt(age) || null,
         height_cm: height_cm || null,
         weight_kg: weight_kg || null,
-        preferred_units: useMetric ? "metric" : "imperial",
       } as any)
       .eq("user_id", user.id);
     
