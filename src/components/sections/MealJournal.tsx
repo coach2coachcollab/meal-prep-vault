@@ -165,7 +165,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       setRecipeSearch("");
       setSelectedVaultMeal(null);
       setVaultServings(1);
-      loadData();
+      invalidateJournal();
       toast.success(`${meal.title} logged (${servingCount} serving${servingCount !== 1 ? "s" : ""})!`);
     }
   };
