@@ -207,6 +207,91 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
     toast.success("Meals reordered");
   };
 
+  const generateShoppingList = async () => {
+    if (!user || !viewingPlan) return;
+    setGeneratingList(true);
+    try {
+      // Get unique meal IDs from plan entries
+      const mealIds = [...new Set(entries.map((e) => e.meal_id))];
+
+      // Fetch ingredients for all meals
+      const { data: meals } = await supabase
+        .from("meals")
+        .select("id, title, ingredients, servings")
+        .in("id", mealIds);
+
+      if (!meals || meals.length === 0) {
+        toast.error("No meals with ingredients found");
+        return;
+      }
+
+      // Aggregate ingredients, counting occurrences per meal across the week
+      const mealCounts: Record<string, number> = {};
+      entries.forEach((e) => {
+        mealCounts[e.meal_id] = (mealCounts[e.meal_id] || 0) + 1;
+      });
+
+      const ingredientMap = new Map<string, { ingredient: string; count: number }>();
+      meals.forEach((meal) => {
+        const ings = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+        const timesUsed = mealCounts[meal.id] || 1;
+        ings.forEach((ing: string) => {
+          const key = ing.toLowerCase().trim();
+          if (!key) return;
+          const existing = ingredientMap.get(key);
+          if (existing) {
+            existing.count += timesUsed;
+          } else {
+            ingredientMap.set(key, { ingredient: ing.trim(), count: timesUsed });
+          }
+        });
+      });
+
+      if (ingredientMap.size === 0) {
+        toast.error("No ingredients found in plan meals. Add ingredients to your recipes first!");
+        return;
+      }
+
+      // Get or create grocery list
+      let { data: lists } = await supabase
+        .from("grocery_lists")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      let listId: string;
+      if (lists && lists.length > 0) {
+        listId = lists[0].id;
+      } else {
+        const { data } = await supabase
+          .from("grocery_lists")
+          .insert({ user_id: user.id, name: "My Grocery List" })
+          .select("id")
+          .single();
+        if (!data) throw new Error("Failed to create grocery list");
+        listId = data.id;
+      }
+
+      // Insert all aggregated ingredients
+      const items = Array.from(ingredientMap.values()).map(({ ingredient, count }) => ({
+        grocery_list_id: listId,
+        ingredient,
+        quantity: count > 1 ? `×${count} servings` : null,
+        is_checked: false,
+      }));
+
+      const { error } = await supabase.from("grocery_list_items").insert(items);
+      if (error) throw error;
+
+      toast.success(`${items.length} ingredients added to your Grocery List! 🛒`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Failed to generate shopping list");
+    } finally {
+      setGeneratingList(false);
+    }
+  };
+
   const setAsActive = (planId: string) => {
     setActivePlanId(planId);
     toast.success("Meal plan set as active");
