@@ -450,6 +450,8 @@ export function ProgressTracker() {
     }
   };
 
+  if (logsLoading) return <ProgressTrackerSkeleton />;
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
