@@ -147,8 +147,8 @@ export function WaterTracker() {
         <Card>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="flex items-center justify-between w-full mb-2">
-              <p className="text-xs font-semibold flex items-center gap-1 text-section-label">
-                <Droplets className="h-3.5 w-3.5 text-water-ring" /> Water
+              <p className="text-xs font-label uppercase flex items-center gap-1 text-section-label">
+                <Droplets className="h-3.5 w-3.5 text-primary" /> Water
               </p>
               <Popover>
                 <PopoverTrigger asChild>
