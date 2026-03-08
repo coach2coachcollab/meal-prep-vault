@@ -126,7 +126,7 @@ export function UserProfile() {
         preferred_units: useMetric ? "metric" : "imperial",
       } as any)
       .eq("user_id", user.id);
-    if (user) localStorage.setItem(`preferred_units_${user.id}`, useMetric ? "metric" : "imperial");
+    
     setLoading(false);
     if (error) toast.error("Failed to save");
     else {
