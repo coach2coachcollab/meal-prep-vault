@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
+import { MealJournalSkeleton } from "@/components/skeletons/MealJournalSkeleton";
 
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
 const moods = ["😊", "😐", "😴", "😤", "😢"];
@@ -77,7 +78,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const [vaultServings, setVaultServings] = useState(1);
 
   // Journal entries query
-  const { data: entries = [] } = useQuery({
+  const { data: entries = [], isLoading: entriesLoading } = useQuery({
     queryKey: queryKeys.journalEntries(user?.id, date),
     queryFn: async () => {
       if (!user) return [];
@@ -308,6 +309,8 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     setRecipeSearch("");
     setDialogOpen(true);
   };
+
+  if (entriesLoading) return <MealJournalSkeleton />;
 
   return (
     <div className="space-y-5">

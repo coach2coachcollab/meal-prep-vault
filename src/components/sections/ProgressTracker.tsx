@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
+import { ProgressTrackerSkeleton } from "@/components/skeletons/ProgressTrackerSkeleton";
 
 interface ProgressLog {
   id: string;
@@ -73,7 +74,7 @@ export function ProgressTracker() {
   });
 
   // Progress logs + photos query
-  const { data: logsData } = useQuery({
+  const { data: logsData, isLoading: logsLoading } = useQuery({
     queryKey: queryKeys.progressLogs(user?.id),
     queryFn: async () => {
       if (!user) return { logs: [] as ProgressLog[], logPhotos: {} as Record<string, ProgressPhoto[]> };
@@ -448,6 +449,8 @@ export function ProgressTracker() {
       setExporting(false);
     }
   };
+
+  if (logsLoading) return <ProgressTrackerSkeleton />;
 
   return (
     <div className="space-y-5">
