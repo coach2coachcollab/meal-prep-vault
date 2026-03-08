@@ -408,16 +408,19 @@ export function CommunityPost({
                     ))}
 
                     {/* Top-level comment input */}
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex gap-2 pt-2 items-center">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback className="text-[10px] bg-muted font-semibold">You</AvatarFallback>
+                      </Avatar>
                       <Input
                         placeholder="Write a comment..."
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                        className="flex-1 h-8 text-sm"
+                        className="flex-1 h-9 text-sm rounded-full bg-muted/60"
                       />
-                      <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleAddComment} disabled={!newComment.trim()}>
-                        <Send className="h-3.5 w-3.5" />
+                      <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={handleAddComment} disabled={!newComment.trim()}>
+                        <Send className="h-4 w-4" />
                       </Button>
                     </div>
                   </>
