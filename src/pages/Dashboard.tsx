@@ -107,7 +107,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="h-full flex flex-col bg-background overflow-hidden">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
         <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
           {streak > 0 ? (
