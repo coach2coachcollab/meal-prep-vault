@@ -67,16 +67,19 @@ export default function Dashboard() {
       case "plan":
         return (
           <Tabs value={planSub} onValueChange={setPlanSub}>
-            <TabsList className="w-full grid grid-cols-4 mb-4">
-              <TabsTrigger value="plans">Meal Plans</TabsTrigger>
+            <TabsList className="w-full grid grid-cols-3 mb-4">
               <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
               <TabsTrigger value="grocery">Shopping</TabsTrigger>
               <TabsTrigger value="macros">Macros</TabsTrigger>
             </TabsList>
-            <TabsContent value="plans"><MealPlans /></TabsContent>
             <TabsContent value="recipe"><RecipePlanner /></TabsContent>
             <TabsContent value="grocery"><GroceryList /></TabsContent>
-            <TabsContent value="macros"><MacroCalculator /></TabsContent>
+            <TabsContent value="macros">
+              <MacroCalculator onNavigateToMealVault={() => {
+                setActiveTab("nutrition");
+                setNutritionSub("vault");
+              }} />
+            </TabsContent>
           </Tabs>
         );
       case "community":
