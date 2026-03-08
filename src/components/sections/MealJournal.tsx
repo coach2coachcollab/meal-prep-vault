@@ -315,7 +315,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
 
       {/* Add food dialog — recipe picker + manual */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[70vh] flex flex-col overflow-hidden">
           <DialogHeader><DialogTitle>Log {addMealType}</DialogTitle></DialogHeader>
 
           {/* Tab toggle */}
