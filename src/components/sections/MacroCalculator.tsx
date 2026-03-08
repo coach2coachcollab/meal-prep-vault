@@ -267,43 +267,49 @@ export function MacroCalculator() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Daily Macro Targets</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-               <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-border">
-                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Flame className="h-5 w-5 text-foreground" /></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Calories</p>
-                    <p className="text-xl font-bold">{result.calories}</p>
-                  </div>
-                </div>
-               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-protein/10 border border-border">
-                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Beef className="h-5 w-5 text-macro-protein" /></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Protein</p>
-                    <p className="text-xl font-bold">{result.protein}g</p>
-                  </div>
-                </div>
-               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-carbs/10 border border-border">
-                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Wheat className="h-5 w-5 text-macro-carbs" /></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Carbs</p>
-                    <p className="text-xl font-bold">{result.carbs}g</p>
-                  </div>
-                </div>
-               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-fat/10 border border-border">
-                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Droplets className="h-5 w-5 text-macro-fat" /></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Fats</p>
-                    <p className="text-xl font-bold">{result.fats}g</p>
-                  </div>
-                </div>
-              </div>
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="pt-6 pb-4 text-center">
+              <p className="text-sm text-muted-foreground">Target Daily Calories</p>
+              <p className="text-3xl font-bold">{result.calories}</p>
+              <p className="text-xs text-muted-foreground">
+                For {goal === "lose" ? "weight loss" : goal === "gain" ? "muscle gain" : "maintenance"}
+              </p>
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-3 gap-3">
+            <Card className="border-macro-protein/30 bg-macro-protein/5">
+              <CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xl font-bold text-macro-protein">{result.protein}g</p>
+                <p className="text-xs text-muted-foreground">Protein</p>
+              </CardContent>
+            </Card>
+            <Card className="border-macro-carbs/30 bg-macro-carbs/5">
+              <CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xl font-bold text-macro-carbs">{result.carbs}g</p>
+                <p className="text-xs text-muted-foreground">Carbs</p>
+              </CardContent>
+            </Card>
+            <Card className="border-macro-fat/30 bg-macro-fat/5">
+              <CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xl font-bold text-macro-fat">{result.fats}g</p>
+                <p className="text-xs text-muted-foreground">Fats</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* CTA to generate meal plan */}
+          {onNavigateToMealVault && (
+            <Card className="border-primary/20">
+              <CardContent className="pt-6 pb-6 text-center space-y-3">
+                <h3 className="text-lg font-bold text-foreground">Ready to Start Your Meal Plan?</h3>
+                <p className="text-sm text-muted-foreground">Browse our meal vault to find recipes that fit your nutrition targets</p>
+                <Button onClick={onNavigateToMealVault} size="lg" className="gap-2">
+                  <ChefHat className="h-4 w-4" /> Browse Meal Vault
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>
