@@ -530,19 +530,31 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         <TabsContent value="community">
           <Card>
             <CardContent className="pt-5 space-y-4">
-              {/* Share to Community */}
-              {!showShareForm ? (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={() => {
-                    setShowShareForm(true);
-                    setShareText(`Check out this recipe: "${meal.title}" 🍽️`);
-                  }}
-                >
-                  <Share2 className="h-4 w-4" /> Share to Community
-                </Button>
-              ) : (
+              {/* Comments Header + Share icon */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                  Comments ({comments.length})
+                </p>
+                <div className="flex items-center gap-1">
+                  {!showShareForm && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        setShowShareForm(true);
+                        setShareText(`Check out this recipe: "${meal.title}" 🍽️`);
+                      }}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Share form (expandable) */}
+              {showShareForm && (
                 <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
                   <p className="text-xs font-semibold text-section-label">Share this recipe</p>
                   <Textarea
@@ -562,13 +574,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                   </div>
                 </div>
               )}
-
-              {/* Comments Section */}
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  Comments ({comments.length})
-                </p>
 
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                   {comments.map((c) => (
@@ -635,7 +640,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
