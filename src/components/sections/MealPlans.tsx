@@ -283,10 +283,10 @@ export function MealPlans() {
                     <p className="font-medium text-sm">{meal.title}</p>
                     {mealData && (
                       <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                        <span>{mealData.calories || 0} cal</span>
-                        <span>{mealData.protein || 0}g P</span>
-                        <span>{mealData.carbs || 0}g C</span>
-                        <span>{mealData.fats || 0}g F</span>
+                        <span>{r2(mealData.calories || 0)} cal</span>
+                        <span>{r2(mealData.protein || 0)}g P</span>
+                        <span>{r2(mealData.carbs || 0)}g C</span>
+                        <span>{r2(mealData.fats || 0)}g F</span>
                       </div>
                     )}
                   </CardContent>
