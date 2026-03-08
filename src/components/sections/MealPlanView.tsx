@@ -644,7 +644,7 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                   <div>
                     <p className="text-sm font-medium">{swapEntry.meal.title}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {swapEntry.meal.calories || 0} cal · P:{swapEntry.meal.protein || 0}g · C:{swapEntry.meal.carbs || 0}g · F:{swapEntry.meal.fats || 0}g
+                      {r2(swapEntry.meal.calories || 0)} cal · P:{r2(swapEntry.meal.protein || 0)}g · C:{r2(swapEntry.meal.carbs || 0)}g · F:{r2(swapEntry.meal.fats || 0)}g
                     </p>
                   </div>
                 </div>
