@@ -320,6 +320,13 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
           />
           </div>
         ))}
+        {hasMore && posts.length > 0 && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => loadPosts(true)}>
+              {loadingMore ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {user && (
