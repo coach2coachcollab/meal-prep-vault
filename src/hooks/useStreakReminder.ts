@@ -6,8 +6,9 @@ import { toast } from "sonner";
 export function useStreakReminder() {
   const { user } = useAuth();
   const [reminderEnabled, setReminderEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState("18:00");
+  const [reminderTime, setReminderTimeState] = useState("18:00");
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -24,19 +25,42 @@ export function useStreakReminder() {
 
   const loadSettings = useCallback(async () => {
     if (!user) return;
-    const stored = localStorage.getItem(`streak_reminder_${user.id}`);
-    if (stored) {
-      const settings = JSON.parse(stored);
-      setReminderEnabled(settings.enabled);
-      setReminderTime(settings.time || "18:00");
+    setIsLoading(true);
+    
+    // Load from database
+    const { data } = await supabase
+      .from("streak_reminders")
+      .select("enabled, reminder_time")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setReminderEnabled(data.enabled);
+      setReminderTimeState(data.reminder_time?.slice(0, 5) || "18:00");
     }
+    
+    setIsLoading(false);
   }, [user]);
 
-  const saveSettings = useCallback((enabled: boolean, time: string) => {
+  const saveSettings = useCallback(async (enabled: boolean, time: string) => {
     if (!user) return;
-    localStorage.setItem(`streak_reminder_${user.id}`, JSON.stringify({ enabled, time }));
+    
+    const { error } = await supabase
+      .from("streak_reminders")
+      .upsert({
+        user_id: user.id,
+        enabled,
+        reminder_time: time + ":00",
+      }, { onConflict: "user_id" });
+    
+    if (error) {
+      console.error("Failed to save reminder settings:", error);
+      toast.error("Failed to save settings");
+      return;
+    }
+    
     setReminderEnabled(enabled);
-    setReminderTime(time);
+    setReminderTimeState(time);
   }, [user]);
 
   const requestNotificationPermission = useCallback(async () => {
@@ -65,11 +89,14 @@ export function useStreakReminder() {
     
     if (lastReminder) return; // Already reminded today
 
-    const storedSettings = localStorage.getItem(`streak_reminder_${user.id}`);
-    if (!storedSettings) return;
+    // Check if reminders are enabled in database
+    const { data: settings } = await supabase
+      .from("streak_reminders")
+      .select("enabled")
+      .eq("user_id", user.id)
+      .maybeSingle();
     
-    const settings = JSON.parse(storedSettings);
-    if (!settings.enabled) return;
+    if (!settings?.enabled) return;
 
     // Check if user has logged anything today
     const [{ data: journalToday }, { data: habitsToday }] = await Promise.all([
@@ -118,15 +145,13 @@ export function useStreakReminder() {
 
   const enableReminder = useCallback(async (time: string) => {
     const hasPermission = notificationPermission === "granted" || await requestNotificationPermission();
-    if (hasPermission || notificationPermission === "denied") {
-      // Enable even without browser notification permission - we'll show in-app toasts
-      saveSettings(true, time);
-      toast.success("Daily reminders enabled!");
-    }
+    // Enable even without browser notification permission - we'll send emails
+    await saveSettings(true, time);
+    toast.success("Daily reminders enabled! You'll receive email reminders too.");
   }, [notificationPermission, requestNotificationPermission, saveSettings]);
 
-  const disableReminder = useCallback(() => {
-    saveSettings(false, reminderTime);
+  const disableReminder = useCallback(async () => {
+    await saveSettings(false, reminderTime);
     toast("Daily reminders disabled");
   }, [reminderTime, saveSettings]);
 
@@ -134,6 +159,7 @@ export function useStreakReminder() {
     reminderEnabled,
     reminderTime,
     notificationPermission,
+    isLoading,
     enableReminder,
     disableReminder,
     setReminderTime: (time: string) => saveSettings(reminderEnabled, time),
