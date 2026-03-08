@@ -457,13 +457,13 @@ export function ProgressTracker() {
       {/* Summary cards */}
       {logs.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
-          <Card>
+          <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Current</p>
-              <p className="text-sm font-bold">{displayWeight(lastLog?.weight_kg)}</p>
+              <p className="text-[10px] text-section-label font-semibold">Current</p>
+              <p className="text-sm font-bold text-foreground">{displayWeight(lastLog?.weight_kg)}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
               <p className="text-[10px] text-muted-foreground">Start</p>
               <p className="text-sm font-bold">{displayWeight(firstLog?.weight_kg)}</p>
