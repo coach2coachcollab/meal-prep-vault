@@ -1,38 +1,32 @@
 
 
-## Plan: AI-Powered Weekly Wellness Summary
+## Plan: Move streak badge and profile button to the sticky header bar
 
-**Best option: An AI weekly summary card** that analyzes your mood, energy, water, meals, and habits data together — and gives you a short, personalized insight like "You felt most energized on days you hit your protein target" or "Your mood dipped mid-week when water intake dropped."
-
-This is the best because:
-- You already track all the data (mood, energy, water, meals, habits) but nothing connects them today
-- A weekly summary turns raw numbers into actionable insights without requiring you to analyze charts yourself
-- It appears once a week (or on demand), keeping it lightweight and not noisy
+**Goal:** Place the streak counter (🔥) and a profile avatar/button in the top header, on the same line as the notification bell. Order: streak → notification bell → profile button (left to right, right-aligned).
 
 ### Steps
 
-1. **Create a backend function `generate-weekly-summary`**
-   - Queries the last 7 days of `journal_daily_notes`, `journal_entries`, `water_logs`, and `habit_logs` for the user
-   - Builds a structured prompt with the data (e.g., "Monday: 2100 cal, 120g protein, mood 😊, energy 4/5, 8 glasses water, 3/4 habits done")
-   - Calls Lovable AI (gemini-3-flash-preview) to generate 3-4 short bullet-point insights and one encouraging takeaway
-   - Returns the summary text
+1. **Lift streak data out of HomeDashboard into Dashboard**
+   - Extract the `loadStreak` logic from `HomeDashboard.tsx` into the `Dashboard.tsx` component (or a small custom hook) so the streak value is available in the header at all times, not just on the home tab.
+   - Remove the streak badge from the HomeDashboard header section (lines 258-263).
 
-2. **Add a "Weekly Insights" card to the Wellness tab (WaterTracker)**
-   - Sits below `WeeklySummaryCharts`
-   - Shows a "Generate Weekly Insights" button (or auto-generates on first visit each week)
-   - Displays the AI-generated bullet points in a clean card with a sparkle/brain icon
-   - Caches the result in `localStorage` with the week key so it doesn't re-generate unnecessarily
+2. **Add profile button to the header in Dashboard.tsx**
+   - Import `User` icon (or `Avatar` component).
+   - Add a clickable profile button that sets `activeTab` to `"profile"` when clicked.
 
-3. **UI design**
-   - Card with gradient accent border, brain/sparkle icon header
-   - Bullet points for insights, a motivational closing line
-   - "Refresh" button to regenerate if the user wants
+3. **Update the header layout in Dashboard.tsx**
+   - Change the header `div` (line 91) to include three items in a row (right-aligned):
+     - Streak badge (conditionally rendered when streak > 0)
+     - NotificationBell (existing)
+     - Profile button (new)
+   - Use `flex items-center gap-2 justify-end`.
+
+4. **Adjust HomeDashboard header**
+   - Remove the streak badge from the top-right of HomeDashboard since it now lives in the global header.
+   - The greeting text can span full width.
 
 ### Technical Details
 
-- Edge function: `supabase/functions/generate-weekly-summary/index.ts`
-  - Accepts `{ user_id }`, fetches last 7 days of data from 4 tables using service role
-  - Uses Lovable AI gateway with tool calling to return structured `{ insights: string[], takeaway: string }`
-- Frontend cache key: `weekly_summary_${userId}_${weekStart}` in localStorage
-- No new database tables needed — reads existing data only
+- The streak logic (~40 lines in `loadStreak`) will be extracted. It queries `meal_journal` and `habit_completions` for distinct dates to compute consecutive days. This will run on mount in `Dashboard.tsx` using `useAuth` for the user context.
+- The profile button will be a simple ghost `Button` with `User` icon, matching the `NotificationBell` style (`h-9 w-9`).
 

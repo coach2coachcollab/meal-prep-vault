@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-streak-reminders]
 verify_jwt = false
+
+[functions.generate-weekly-summary]
+verify_jwt = false
