@@ -90,7 +90,7 @@ export function PartnerHub() {
             <CardContent className="pt-4 pb-4">
               <div className="flex gap-4">
                 <div className="h-14 w-14 rounded-lg bg-icon-bg flex items-center justify-center shrink-0 text-2xl">
-                  {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-full w-full object-cover rounded-lg" /> : <Sparkles className="h-6 w-6 text-primary" />}
+                  {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-full w-full object-cover rounded-lg" /> : <Sparkles className="h-6 w-6 text-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

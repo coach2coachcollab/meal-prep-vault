@@ -471,7 +471,7 @@ export function ProgressTracker() {
           </Card>
           <Card className="border border-border">
             <CardContent className="pt-3 pb-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Change</p>
+              <p className="text-[10px] text-section-label font-semibold">Change</p>
               {weightChange != null ? (
                 <p className={cn("text-sm font-bold flex items-center justify-center gap-0.5", weightChange < 0 ? "text-primary" : "text-destructive")}>
                   {weightChange < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
