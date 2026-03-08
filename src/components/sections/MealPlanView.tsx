@@ -555,10 +555,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                         </div>
                         <div className="text-right text-xs text-muted-foreground shrink-0 flex items-center gap-2">
                           <Flame className="h-3 w-3" />
-                          <span>{e.meal?.calories || 0}</span>
-                          <span className="text-macro-protein">P:{e.meal?.protein || 0}</span>
-                          <span className="text-macro-carbs">C:{e.meal?.carbs || 0}</span>
-                          <span className="text-macro-fat">F:{e.meal?.fats || 0}</span>
+                          <span>{r2(e.meal?.calories || 0)}</span>
+                          <span className="text-macro-protein">P:{r2(e.meal?.protein || 0)}</span>
+                          <span className="text-macro-carbs">C:{r2(e.meal?.carbs || 0)}</span>
+                          <span className="text-macro-fat">F:{r2(e.meal?.fats || 0)}</span>
                         </div>
                         <div className="flex gap-1 shrink-0">
                           <button
