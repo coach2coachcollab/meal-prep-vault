@@ -124,6 +124,7 @@ export function MacroCalculator() {
 
     // Save to database
     if (user) {
+      // Save calculation history
       const { error } = await supabase.from("macro_calculations").insert({
         user_id: user.id,
         gender,
@@ -139,8 +140,37 @@ export function MacroCalculator() {
         carbs: res.carbs,
         fats: res.fats,
       });
+
+      // Upsert active macros so Meal Plan Generator can use them
+      const { data: existing } = await supabase
+        .from("user_macros")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("user_macros").update({
+          calories: res.calories,
+          protein_g: res.protein,
+          carbs_g: res.carbs,
+          fat_g: res.fats,
+          calculation_method: "mifflin",
+          is_custom: false,
+        }).eq("user_id", user.id);
+      } else {
+        await supabase.from("user_macros").insert({
+          user_id: user.id,
+          calories: res.calories,
+          protein_g: res.protein,
+          carbs_g: res.carbs,
+          fat_g: res.fats,
+          calculation_method: "mifflin",
+          is_custom: false,
+        });
+      }
+
       if (error) console.error("Save error:", error);
-      else toast.success("Calculation saved!");
+      else toast.success("Macros calculated & saved! You can now generate a meal plan.");
     }
   };
 
