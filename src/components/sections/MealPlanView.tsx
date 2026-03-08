@@ -642,6 +642,15 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey, onView
                           <span className="text-macro-fat">F:{r2(e.meal?.fats || 0)}</span>
                         </div>
                         <div className="flex gap-1 shrink-0">
+                          {onViewMeal && e.meal?.id && (
+                            <button
+                              onClick={() => onViewMeal(e.meal!.id)}
+                              className="h-7 w-7 rounded-md border border-border flex items-center justify-center hover:bg-primary/10 transition-colors"
+                              title="View recipe"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setSwapEntry(e)}
                             className="h-7 w-7 rounded-md border border-border flex items-center justify-center hover:bg-muted transition-colors"
