@@ -18,6 +18,48 @@ const milestones = [
   { days: 100, icon: "👑", title: "Century Club", description: "100 day streak!" },
 ];
 
+function ReminderSettings() {
+  const { reminderEnabled, enableReminder, disableReminder, notificationPermission } = useStreakReminder();
+
+  const handleToggle = (checked: boolean) => {
+    if (checked) {
+      enableReminder("18:00");
+    } else {
+      disableReminder();
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary" />
+          Daily Reminder
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Streak Reminder</p>
+            <p className="text-xs text-muted-foreground">
+              Get notified if you haven't logged activity
+            </p>
+          </div>
+          <Switch
+            checked={reminderEnabled}
+            onCheckedChange={handleToggle}
+          />
+        </div>
+        {notificationPermission === "denied" && reminderEnabled && (
+          <p className="text-xs text-warning mt-2">
+            Browser notifications blocked. You'll still see in-app reminders.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 interface StreakDetailsProps {
   onBack: () => void;
   streak: number;
