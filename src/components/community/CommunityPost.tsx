@@ -443,8 +443,8 @@ export function CommunityPost({
             )}
 
             {post.image_url && (
-              <div className="mt-2 rounded-lg overflow-hidden">
-                <img src={post.image_url} alt="Post" className="w-full max-h-72 object-cover rounded-lg" />
+              <div className="mt-2 -mx-3 sm:mx-0 sm:rounded-lg overflow-hidden">
+                <img src={post.image_url} alt="Post" className="w-full max-h-[28rem] sm:max-h-72 object-cover sm:rounded-lg" />
               </div>
             )}
 
