@@ -64,7 +64,7 @@ interface MealPlanViewProps {
   onViewMeal?: (mealId: string) => void;
 }
 
-export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: MealPlanViewProps) {
+export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey, onViewMeal }: MealPlanViewProps) {
   const { user } = useAuth();
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [loading, setLoading] = useState(true);
