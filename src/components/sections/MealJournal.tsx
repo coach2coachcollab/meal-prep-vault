@@ -344,7 +344,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
               {filteredMeals.length === 0 ?
             <p className="text-sm text-muted-foreground text-center py-6">No recipes found. Add meals in the Meal Vault first!</p> :
 
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            <div className="space-y-2 flex-1 overflow-y-auto min-h-0 max-h-[40vh]">
                   {filteredMeals.map((meal) =>
               <button
                 key={meal.id}
