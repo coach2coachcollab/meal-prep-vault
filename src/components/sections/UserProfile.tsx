@@ -186,7 +186,7 @@ export function UserProfile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-section-label font-semibold">Units</Label>
+            <Label className="text-xs text-section-label font-label uppercase">Units</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
               <button onClick={() => setUseMetric(true)} className={`px-3 py-1 rounded-md transition-colors ${useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>kg / cm</button>
               <button onClick={() => setUseMetric(false)} className={`px-3 py-1 rounded-md transition-colors ${!useMetric ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>lbs / ft</button>
