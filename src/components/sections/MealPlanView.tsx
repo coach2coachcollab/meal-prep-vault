@@ -675,15 +675,15 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
             <div className="inline-flex rounded-lg border border-border overflow-hidden">
               <button
                 className={`px-4 py-2 text-sm flex items-center gap-1.5 ${viewMode === "calendar" ? "bg-card font-semibold" : "text-muted-foreground"}`}
-                onClick={() => setViewMode("calendar")}
+                onClick={() => { setViewMode("calendar"); localStorage.setItem("mealPlanPreferredView", "calendar"); }}
               >
-                <Calendar className="h-4 w-4" /> Calendar View
+                <Calendar className="h-4 w-4" /> Calendar
               </button>
               <button
                 className={`px-4 py-2 text-sm flex items-center gap-1.5 ${viewMode === "list" ? "bg-card font-semibold" : "text-muted-foreground"}`}
-                onClick={() => setViewMode("list")}
+                onClick={() => { setViewMode("list"); localStorage.setItem("mealPlanPreferredView", "list"); }}
               >
-                <List className="h-4 w-4" /> Meals List
+                <List className="h-4 w-4" /> List
               </button>
             </div>
           </div>
