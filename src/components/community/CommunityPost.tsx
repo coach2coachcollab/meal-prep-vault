@@ -143,30 +143,32 @@ function CommentItem({
             <Heart className={cn("h-3 w-3", c.is_liked && "fill-current")} />
             {c.like_count > 0 && <span>{c.like_count}</span>}
           </button>
-          {depth < 2 && (
-            <button
-              className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-0.5"
-              onClick={() => onSetReplying(replyingToId === c.id ? null : c.id)}
-            >
-              <Reply className="h-3 w-3" /> Reply
-            </button>
-          )}
-          {c.user_id === currentUserId && editingCommentId !== c.id && (
-            <>
+          <div className="hidden group-hover:flex items-center gap-3">
+            {depth < 2 && (
               <button
-                className="text-[10px] text-muted-foreground hover:text-foreground font-medium"
-                onClick={() => onSetEditing(c.id, c.text)}
+                className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-0.5"
+                onClick={() => onSetReplying(replyingToId === c.id ? null : c.id)}
               >
-                Edit
+                <Reply className="h-3 w-3" /> Reply
               </button>
-              <button
-                className="text-[10px] text-muted-foreground hover:text-destructive font-medium"
-                onClick={() => onDelete(c.id)}
-              >
-                Delete
-              </button>
-            </>
-          )}
+            )}
+            {c.user_id === currentUserId && editingCommentId !== c.id && (
+              <>
+                <button
+                  className="text-[10px] text-muted-foreground hover:text-foreground font-medium"
+                  onClick={() => onSetEditing(c.id, c.text)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="text-[10px] text-muted-foreground hover:text-destructive font-medium"
+                  onClick={() => onDelete(c.id)}
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Reply input */}
