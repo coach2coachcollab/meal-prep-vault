@@ -75,6 +75,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
 
   useEffect(() => {
     loadRatings();
+    loadComments();
   }, [meal.id, user]);
 
   const loadRatings = async () => {
