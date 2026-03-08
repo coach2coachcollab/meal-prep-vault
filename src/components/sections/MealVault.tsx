@@ -208,7 +208,7 @@ export function MealVault() {
       toast.success("Recipe created! 🎉");
       setForm({ title: "", description: "", calories: "", protein: "", carbs: "", fats: "", prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "" });
       setImageFile(null); setImagePreview(null); setShowCreate(false);
-      loadMeals();
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals() });
     }
     setSaving(false);
   };
