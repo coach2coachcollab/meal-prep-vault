@@ -43,11 +43,11 @@ interface DbMeal {
   servings: number | null;
 }
 
-export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
+export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const { user } = useAuth();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [macroTargets, setMacroTargets] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const [macroTargets, setMacroTargets] = useState<{calories: number;protein_g: number;carbs_g: number;fat_g: number;} | null>(null);
   const [dailyNote, setDailyNote] = useState({ energy_level: 0, mood_emoji: "", notes: "" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addMealType, setAddMealType] = useState("Breakfast");
@@ -85,14 +85,14 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
   }, [user, date]);
 
   const loadMeals = async () => {
-    const { data } = await supabase
-      .from("meals")
-      .select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings")
-      .order("title");
+    const { data } = await supabase.
+    from("meals").
+    select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").
+    order("title");
     if (data) {
       setDbMeals(data);
       const imgMap: Record<string, string> = {};
-      data.forEach((m) => { if (m.image_url) imgMap[m.id] = m.image_url; });
+      data.forEach((m) => {if (m.image_url) imgMap[m.id] = m.image_url;});
       setMealImages(imgMap);
     }
   };
@@ -104,8 +104,8 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
     const { data: m } = await supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
     if (m) setMacroTargets(m);
     const { data: n } = await supabase.from("journal_daily_notes").select("*").eq("user_id", user.id).eq("date", date).maybeSingle();
-    if (n) setDailyNote({ energy_level: n.energy_level || 0, mood_emoji: n.mood_emoji || "", notes: n.notes || "" });
-    else setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
+    if (n) setDailyNote({ energy_level: n.energy_level || 0, mood_emoji: n.mood_emoji || "", notes: n.notes || "" });else
+    setDailyNote({ energy_level: 0, mood_emoji: "", notes: "" });
   };
 
   const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -113,7 +113,7 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
     calories: s.calories + Number(e.calories),
     protein: s.protein + Number(e.protein_g),
     carbs: s.carbs + Number(e.carbs_g),
-    fat: s.fat + Number(e.fat_g),
+    fat: s.fat + Number(e.fat_g)
   }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
   const totals = { calories: r2(rawTotals.calories), protein: r2(rawTotals.protein), carbs: r2(rawTotals.carbs), fat: r2(rawTotals.fat) };
 
@@ -129,7 +129,7 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
       user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
       calories: meal.calories || 0, protein_g: meal.protein || 0,
       carbs_g: meal.carbs || 0, fat_g: meal.fats || 0,
-      recipe_id: meal.id, servings: meal.servings || 1,
+      recipe_id: meal.id, servings: meal.servings || 1
     });
     if (!error) {
       setDialogOpen(false);
@@ -140,7 +140,7 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
   };
 
   const addFood = async () => {
-    if (!user || (!foodName.trim() && !mealPhoto)) return;
+    if (!user || !foodName.trim() && !mealPhoto) return;
 
     let image_url: string | null = null;
     if (mealPhoto) {
@@ -168,7 +168,7 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
         fats: parseFloat(foodFat) || 0,
         image_url,
         servings: 1,
-        is_public: false,
+        is_public: false
       }).select("id").single();
       if (!mealErr && mealData) {
         recipe_id = mealData.id;
@@ -180,11 +180,11 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
       calories: parseFloat(foodCals) || 0, protein_g: parseFloat(foodProtein) || 0,
       carbs_g: parseFloat(foodCarbs) || 0, fat_g: parseFloat(foodFat) || 0,
       image_url,
-      ...(recipe_id ? { recipe_id } : {}),
+      ...(recipe_id ? { recipe_id } : {})
     });
     if (!error) {
-      setFoodName(""); setFoodCals(""); setFoodProtein(""); setFoodCarbs(""); setFoodFat("");
-      setMealPhoto(null); setMealPhotoPreview(null); setSaveToVault(false);
+      setFoodName("");setFoodCals("");setFoodProtein("");setFoodCarbs("");setFoodFat("");
+      setMealPhoto(null);setMealPhotoPreview(null);setSaveToVault(false);
       setDialogOpen(false);
       loadData();
       if (recipe_id) loadMeals(); // refresh vault data
@@ -200,7 +200,7 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
   const saveDailyNote = async () => {
     if (!user) return;
     const { error } = await supabase.from("journal_daily_notes").upsert({
-      user_id: user.id, date, ...dailyNote,
+      user_id: user.id, date, ...dailyNote
     }, { onConflict: "user_id,date" });
     if (!error) toast.success("Notes saved!");
   };
@@ -214,8 +214,8 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
   };
 
   const filteredMeals = dbMeals.filter((m) =>
-    m.title.toLowerCase().includes(recipeSearch.toLowerCase()) ||
-    (m.tags || []).some((t) => t.toLowerCase().includes(recipeSearch.toLowerCase()))
+  m.title.toLowerCase().includes(recipeSearch.toLowerCase()) ||
+  (m.tags || []).some((t) => t.toLowerCase().includes(recipeSearch.toLowerCase()))
   );
 
   const openDialog = (type: string) => {
@@ -232,7 +232,7 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
         <Button variant="ghost" size="icon" onClick={() => shiftDate(-1)}><ChevronLeft className="h-5 w-5" /></Button>
         <div className="text-center">
           <p className="font-semibold">{new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</p>
-          {date === new Date().toISOString().split("T")[0] && <p className="text-xs text-primary">Today</p>}
+          {date === new Date().toISOString().split("T")[0] && <p className="text-xs text-primary-foreground">Today</p>}
         </div>
         <Button variant="ghost" size="icon" onClick={() => shiftDate(1)}><ChevronRight className="h-5 w-5" /></Button>
       </div>
@@ -241,14 +241,14 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
       <Card>
         <CardContent className="pt-5 pb-5">
           <div className="grid grid-cols-4 gap-3 text-center text-xs">
-            <div><Flame className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold text-lg">{totals.calories}</p><p className="text-muted-foreground">kcal</p></div>
+            <div className="bg-primary"><Flame className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold text-lg">{totals.calories}</p><p className="text-muted-foreground">kcal</p></div>
             <div><Beef className="h-4 w-4 mx-auto mb-1 text-primary" /><p className="font-bold">{totals.protein}g</p><p className="text-muted-foreground">protein</p></div>
             <div><Wheat className="h-4 w-4 mx-auto mb-1 text-accent-foreground" /><p className="font-bold">{totals.carbs}g</p><p className="text-muted-foreground">carbs</p></div>
             <div><Droplets className="h-4 w-4 mx-auto mb-1 text-secondary-foreground" /><p className="font-bold">{totals.fat}g</p><p className="text-muted-foreground">fat</p></div>
           </div>
-          {statusMessage() && entries.length > 0 && (
-            <p className={cn("text-xs text-center mt-3", statusMessage()!.color)}>{statusMessage()!.text}</p>
-          )}
+          {statusMessage() && entries.length > 0 &&
+          <p className={cn("text-xs text-center mt-3", statusMessage()!.color)}>{statusMessage()!.text}</p>
+          }
         </CardContent>
       </Card>
 
@@ -263,21 +263,21 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            {typeEntries.length > 0 ? (
-              <div className="space-y-2">
-                {typeEntries.map((e) => (
-                  <Card key={e.id}>
+            {typeEntries.length > 0 ?
+            <div className="space-y-2">
+                {typeEntries.map((e) =>
+              <Card key={e.id}>
                     <CardContent className="py-3 px-4 flex items-center gap-3">
                       {/* Meal photo */}
-                      {e.recipe_id && mealImages[e.recipe_id] ? (
-                        <img src={mealImages[e.recipe_id]} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" />
-                      ) : (e as any).image_url ? (
-                        <img src={(e as any).image_url} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      {e.recipe_id && mealImages[e.recipe_id] ?
+                  <img src={mealImages[e.recipe_id]} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" /> :
+                  (e as any).image_url ?
+                  <img src={(e as any).image_url} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" /> :
+
+                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
                           <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
                         </div>
-                      )}
+                  }
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{e.food_name}</p>
                         <p className="text-xs text-muted-foreground">{e.calories} kcal · {e.protein_g}P · {e.carbs_g}C · {e.fat_g}F</p>
@@ -287,13 +287,13 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground pl-1 mb-2">No food logged</p>
-            )}
-          </div>
-        );
+              )}
+              </div> :
+
+            <p className="text-xs text-muted-foreground pl-1 mb-2">No food logged</p>
+            }
+          </div>);
+
       })}
 
 
@@ -306,42 +306,42 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
           <div className="flex gap-1 bg-muted rounded-lg p-1">
             <button
               onClick={() => setMode("pick")}
-              className={cn("flex-1 text-sm py-1.5 rounded-md transition-colors", mode === "pick" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
-            >
+              className={cn("flex-1 text-sm py-1.5 rounded-md transition-colors", mode === "pick" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}>
+              
               From Vault
             </button>
             <button
               onClick={() => setMode("manual")}
-              className={cn("flex-1 text-sm py-1.5 rounded-md transition-colors", mode === "manual" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
-            >
+              className={cn("flex-1 text-sm py-1.5 rounded-md transition-colors", mode === "manual" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}>
+              
               Manual Entry
             </button>
           </div>
 
-          {mode === "pick" ? (
-            <div className="space-y-3 pt-1">
+          {mode === "pick" ?
+          <div className="space-y-3 pt-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search recipes..." className="pl-10" value={recipeSearch} onChange={(e) => setRecipeSearch(e.target.value)} />
               </div>
 
-              {filteredMeals.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No recipes found. Add meals in the Meal Vault first!</p>
-              ) : (
-                <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                  {filteredMeals.map((meal) => (
-                    <button
-                      key={meal.id}
-                      onClick={() => logFromRecipe(meal)}
-                      className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center"
-                    >
-                      {meal.image_url ? (
-                        <img src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              {filteredMeals.length === 0 ?
+            <p className="text-sm text-muted-foreground text-center py-6">No recipes found. Add meals in the Meal Vault first!</p> :
+
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                  {filteredMeals.map((meal) =>
+              <button
+                key={meal.id}
+                onClick={() => logFromRecipe(meal)}
+                className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center">
+                
+                      {meal.image_url ?
+                <img src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" /> :
+
+                <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
                           <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
                         </div>
-                      )}
+                }
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{meal.title}</p>
                         {meal.description && <p className="text-xs text-muted-foreground truncate">{meal.description}</p>}
@@ -353,29 +353,29 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
                         </div>
                       </div>
                     </button>
-                  ))}
-                </div>
               )}
-            </div>
-          ) : (
-            <div className="space-y-3 pt-1">
+                </div>
+            }
+            </div> :
+
+          <div className="space-y-3 pt-1">
               {/* Photo upload — primary action */}
               <div className="space-y-1">
                 <Label>Meal Photo</Label>
                 <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
-                  {mealPhotoPreview ? (
-                    <img src={mealPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex flex-col items-center text-muted-foreground">
+                  {mealPhotoPreview ?
+                <img src={mealPhotoPreview} alt="Preview" className="w-full h-full object-cover" /> :
+
+                <div className="flex flex-col items-center text-muted-foreground">
                       <ImagePlus className="h-8 w-8 mb-1" />
                       <span className="text-sm font-medium">Snap or upload a photo</span>
                       <span className="text-xs mt-0.5">Tap to capture your meal</span>
                     </div>
-                  )}
+                }
                   <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) { setMealPhoto(file); setMealPhotoPreview(URL.createObjectURL(file)); }
-                  }} />
+                  const file = e.target.files?.[0];
+                  if (file) {setMealPhoto(file);setMealPhotoPreview(URL.createObjectURL(file));}
+                }} />
                 </label>
               </div>
               <div className="space-y-1">
@@ -399,9 +399,9 @@ export function MealJournal({ autoOpenLog }: { autoOpenLog?: boolean }) {
               </Collapsible>
               <Button className="w-full" onClick={addFood} disabled={!foodName.trim() && !mealPhoto}>Log Food</Button>
             </div>
-          )}
+          }
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>);
+
 }
