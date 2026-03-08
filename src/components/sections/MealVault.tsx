@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import { r2 } from "@/lib/utils";
 import { MealDetailView } from "./MealDetailView";
 import { MealPlanView } from "./MealPlanView";
 import { GeneratePlanDialog } from "./GeneratePlanDialog";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Meal {
   id: string;

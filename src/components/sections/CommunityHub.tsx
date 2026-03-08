@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +6,8 @@ import { Plus, Bookmark, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { CommunityPost, PostData, InlineComment } from "@/components/community/CommunityPost";
 import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
@@ -27,30 +28,99 @@ const PAGE_SIZE = 20;
 
 export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityHubProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeChannel, setActiveChannel] = useState("wins");
-  const [posts, setPosts] = useState<PostData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadSavedIds();
-      loadPosts();
-    }
-  }, [user, activeChannel]);
+  // Saved post IDs query
+  const { data: savedPostIds = new Set<string>() } = useQuery({
+    queryKey: queryKeys.savedPostIds(user?.id),
+    queryFn: async () => {
+      if (!user) return new Set<string>();
+      const { data } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id);
+      return new Set((data || []).map((d) => d.post_id));
+    },
+    enabled: !!user,
+  });
+
+  // Infinite query for posts
+  const {
+    data: postsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: queryKeys.communityPosts(user?.id, activeChannel),
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!user) return { posts: [] as PostData[], nextOffset: null };
+
+      let postData: any[] | null = null;
+      let hasMore = false;
+
+      if (activeChannel === "saved") {
+        const { data: savedData } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id).order("saved_at", { ascending: false });
+        if (!savedData || savedData.length === 0) return { posts: [] as PostData[], nextOffset: null };
+        const ids = savedData.map((s) => s.post_id);
+        const { data } = await supabase.from("community_posts").select("*").in("id", ids);
+        postData = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
+        hasMore = false;
+      } else {
+        const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).range(pageParam, pageParam + PAGE_SIZE - 1);
+        postData = data;
+        hasMore = (data?.length || 0) === PAGE_SIZE;
+      }
+      if (!postData) return { posts: [] as PostData[], nextOffset: null };
+
+      const userIds = [...new Set(postData.map((p) => p.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("user_id, name, avatar_url").in("user_id", userIds);
+      const profileMap = Object.fromEntries((profiles || []).map((p) => [p.user_id, p]));
+
+      const postIds = postData.map((p) => p.id);
+      const { data: allReactions } = await supabase.from("post_reactions").select("post_id, reaction_type, user_id").in("post_id", postIds);
+      const { data: commentCounts } = await supabase.from("post_comments").select("post_id").in("post_id", postIds);
+
+      // Get current saved ids from cache
+      const currentSaved = queryClient.getQueryData<Set<string>>(queryKeys.savedPostIds(user.id)) || new Set<string>();
+
+      const enriched: PostData[] = postData.map((p) => {
+        const pReactions = (allReactions || []).filter((r) => r.post_id === p.id);
+        const counts: Record<string, number> = {};
+        pReactions.forEach((r) => { counts[r.reaction_type] = (counts[r.reaction_type] || 0) + 1; });
+        const userR = pReactions.filter((r) => r.user_id === user!.id).map((r) => r.reaction_type);
+        const profile = profileMap[p.user_id];
+        return {
+          ...p,
+          user_name: profile?.name || "User",
+          avatar_url: profile?.avatar_url || undefined,
+          reaction_counts: counts,
+          user_reactions: userR,
+          comment_count: (commentCounts || []).filter((c) => c.post_id === p.id).length,
+          is_saved: currentSaved.has(p.id),
+        };
+      });
+
+      return {
+        posts: enriched,
+        nextOffset: hasMore ? pageParam + PAGE_SIZE : null,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
+    enabled: !!user,
+  });
+
+  const posts = useMemo(() => postsData?.pages.flatMap((p) => p.posts) || [], [postsData]);
 
   // Handle deep link to a specific post
   useEffect(() => {
     if (!highlightPostId || !user) return;
     const navigateToPost = async () => {
-      // Find which channel the post is in
       const { data: post } = await supabase.from("community_posts").select("channel").eq("id", highlightPostId).single();
       if (post && post.channel !== activeChannel) {
         setActiveChannel(post.channel);
       }
-      // Scroll to post after render
       setTimeout(() => {
         const el = document.getElementById(`post-${highlightPostId}`);
         if (el) {
@@ -64,70 +134,23 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     navigateToPost();
   }, [highlightPostId, user]);
 
+  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel("community-posts")
-      .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, () => loadPosts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.communityPosts(user?.id, activeChannel) });
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [activeChannel]);
+  }, [activeChannel, user?.id, queryClient]);
 
-  const loadSavedIds = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id);
-    if (data) setSavedPostIds(new Set(data.map((d) => d.post_id)));
-  };
-
-  const loadPosts = async (append = false) => {
-    if (!user) return;
-    if (append) setLoadingMore(true);
-    const offset = append ? posts.length : 0;
-    let postData: any[] | null = null;
-
-    if (activeChannel === "saved") {
-      const { data: savedData } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id).order("saved_at", { ascending: false });
-      if (!savedData || savedData.length === 0) { setPosts([]); setHasMore(false); setLoadingMore(false); return; }
-      const ids = savedData.map((s) => s.post_id);
-      const { data } = await supabase.from("community_posts").select("*").in("id", ids);
-      postData = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
-      setHasMore(false); // saved loads all at once
-    } else {
-      const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).range(offset, offset + PAGE_SIZE - 1);
-      postData = data;
-      setHasMore((data?.length || 0) === PAGE_SIZE);
-    }
-    if (!postData) { setLoadingMore(false); return; }
-
-    const userIds = [...new Set(postData.map((p) => p.user_id))];
-    const { data: profiles } = await supabase.from("profiles").select("user_id, name, avatar_url").in("user_id", userIds);
-    const profileMap = Object.fromEntries((profiles || []).map((p) => [p.user_id, p]));
-
-    const postIds = postData.map((p) => p.id);
-    const { data: allReactions } = await supabase.from("post_reactions").select("post_id, reaction_type, user_id").in("post_id", postIds);
-    const { data: commentCounts } = await supabase.from("post_comments").select("post_id").in("post_id", postIds);
-
-    const enriched: PostData[] = postData.map((p) => {
-      const pReactions = (allReactions || []).filter((r) => r.post_id === p.id);
-      const counts: Record<string, number> = {};
-      pReactions.forEach((r) => { counts[r.reaction_type] = (counts[r.reaction_type] || 0) + 1; });
-      const userR = pReactions.filter((r) => r.user_id === user!.id).map((r) => r.reaction_type);
-      const profile = profileMap[p.user_id];
-      return {
-        ...p,
-        user_name: profile?.name || "User",
-        avatar_url: profile?.avatar_url || undefined,
-        reaction_counts: counts,
-        user_reactions: userR,
-        comment_count: (commentCounts || []).filter((c) => c.post_id === p.id).length,
-        is_saved: savedPostIds.has(p.id),
-      };
-    });
-    setPosts((prev) => append ? [...prev, ...enriched] : enriched);
-    setLoadingMore(false);
+  const invalidatePosts = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.communityPosts(user?.id, activeChannel) });
   };
 
   const notify = async (targetUserId: string, type: string, postId?: string, commentId?: string) => {
-    if (!user || targetUserId === user.id) return; // Don't self-notify
+    if (!user || targetUserId === user.id) return;
     const insert: any = { user_id: targetUserId, actor_id: user.id, type };
     if (postId) insert.post_id = postId;
     if (commentId) insert.comment_id = commentId;
@@ -143,7 +166,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
       await supabase.from("post_reactions").insert({ post_id: postId, user_id: user.id, reaction_type: type });
       if (post) notify(post.user_id, "reaction", postId);
     }
-    loadPosts();
+    invalidatePosts();
   };
 
   const toggleSave = async (postId: string) => {
@@ -151,26 +174,24 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     const isSaved = savedPostIds.has(postId);
     if (isSaved) {
       await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", user.id);
-      setSavedPostIds((prev) => { const n = new Set(prev); n.delete(postId); return n; });
       toast.success("Removed from favourites");
     } else {
       await supabase.from("saved_posts").insert({ post_id: postId, user_id: user.id });
-      setSavedPostIds((prev) => new Set(prev).add(postId));
       toast.success("Added to favourites!");
     }
-    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, is_saved: !isSaved } : p));
-    if (activeChannel === "saved" && isSaved) loadPosts();
+    queryClient.invalidateQueries({ queryKey: queryKeys.savedPostIds(user.id) });
+    invalidatePosts();
   };
 
   const deletePost = async (id: string) => {
     await supabase.from("community_posts").delete().eq("id", id);
-    loadPosts();
+    invalidatePosts();
     toast.success("Post deleted");
   };
 
   const editPost = async (postId: string, newText: string) => {
     await supabase.from("community_posts").update({ text: newText }).eq("id", postId);
-    loadPosts();
+    invalidatePosts();
     toast.success("Post updated");
   };
 
@@ -210,14 +231,12 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     const insert: any = { post_id: postId, user_id: user.id, text };
     if (parentId) insert.parent_id = parentId;
     const { data: inserted } = await supabase.from("post_comments").insert(insert).select("id").single();
-    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
+    invalidatePosts();
 
     if (parentId) {
-      // Notify the parent comment author (reply)
       const { data: parentComment } = await supabase.from("post_comments").select("user_id").eq("id", parentId).single();
       if (parentComment) notify(parentComment.user_id, "reply", postId, inserted?.id);
     } else {
-      // Notify the post author (new comment)
       const post = posts.find((p) => p.id === postId);
       if (post) notify(post.user_id, "comment", postId, inserted?.id);
     }
@@ -230,7 +249,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
 
   const deleteComment = async (commentId: string, postId: string) => {
     await supabase.from("post_comments").delete().eq("id", commentId);
-    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p));
+    invalidatePosts();
     toast.success("Comment deleted");
   };
 
@@ -239,15 +258,12 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     const { data: existing } = await supabase.from("comment_likes").select("id, reaction_type").eq("comment_id", commentId).eq("user_id", user.id).maybeSingle();
     if (existing) {
       if ((existing as any).reaction_type === reactionType) {
-        // Same reaction — remove it
         await supabase.from("comment_likes").delete().eq("id", existing.id);
       } else {
-        // Different reaction — update it
         await supabase.from("comment_likes").update({ reaction_type: reactionType } as any).eq("id", existing.id);
       }
     } else {
       await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id, reaction_type: reactionType } as any);
-      // Notify comment author
       const { data: comment } = await supabase.from("post_comments").select("user_id").eq("id", commentId).single();
       if (comment) notify(comment.user_id, "comment_like", postId, commentId);
     }
@@ -281,7 +297,12 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
       </Select>
 
       <div className="space-y-3">
-        {posts.length === 0 && (
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {!isLoading && posts.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center">
               {activeChannel === "saved" ? (
@@ -320,10 +341,10 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
           />
           </div>
         ))}
-        {hasMore && posts.length > 0 && (
+        {hasNextPage && posts.length > 0 && (
           <div className="flex justify-center pt-2">
-            <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => loadPosts(true)}>
-              {loadingMore ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More"}
+            <Button variant="outline" size="sm" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
+              {isFetchingNextPage ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More"}
             </Button>
           </div>
         )}
@@ -334,7 +355,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           userId={user.id}
-          onCreated={loadPosts}
+          onCreated={invalidatePosts}
         />
       )}
     </div>
