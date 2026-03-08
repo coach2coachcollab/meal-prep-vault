@@ -59,7 +59,7 @@ export function UserProfile() {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
+      .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg, preferred_units")
       .eq("user_id", user.id)
       .single();
     if (data) {
