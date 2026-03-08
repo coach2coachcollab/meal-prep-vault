@@ -170,10 +170,10 @@ export function WaterTracker() {
 
             <div className="relative w-28 h-28 mb-2">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 112 112">
-                <circle cx="56" cy="56" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="7" />
+                <circle cx="56" cy="56" r={radius} fill="none" stroke="hsl(var(--water-ring-bg))" strokeWidth="7" />
                 <circle
                   cx="56" cy="56" r={radius} fill="none"
-                  stroke="hsl(var(--primary))" strokeWidth="7"
+                  stroke="hsl(var(--water-ring))" strokeWidth="7"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
