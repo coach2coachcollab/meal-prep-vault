@@ -739,18 +739,6 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                       <ImagePlus className="h-3 w-3" /> Photo
                     </Button>
 
-                    {shareMode === "social" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={handleGenerateStoryCard}
-                        disabled={generatingCard}
-                      >
-                        {generatingCard ? <Loader2 className="h-3 w-3 animate-spin" /> : <Instagram className="h-3 w-3" />}
-                        {generatingCard ? "Generating..." : storyCardUrl ? "Regenerate" : "Preview Card"}
-                      </Button>
-                    )}
 
                     {shareMode === "social" && storyCardUrl && (
                       <Button variant="outline" size="sm" className="gap-1" onClick={handleDownloadStoryCard}>
