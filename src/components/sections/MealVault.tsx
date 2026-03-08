@@ -426,6 +426,19 @@ export function MealVault() {
           searchTerm={searchTerm}
           showFavoritesOnly={showFavoritesOnly}
           refreshKey={planRefreshKey}
+          onViewMeal={async (mealId) => {
+            const found = meals.find((m) => m.id === mealId);
+            if (found) {
+              setSelectedMeal(found);
+            } else {
+              const { data } = await supabase
+                .from("meals")
+                .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
+                .eq("id", mealId)
+                .maybeSingle();
+              if (data) setSelectedMeal(data);
+            }
+          }}
         />
       )}
 
