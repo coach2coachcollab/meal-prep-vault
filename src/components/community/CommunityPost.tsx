@@ -117,6 +117,10 @@ function CommentItem({
   onSetEditing, onSaveEdit, onDelete, onToggleLike,
   onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
 }: CommentItemProps) {
+  const [repliesExpanded, setRepliesExpanded] = useState(false);
+  const replyCount = c.replies?.length || 0;
+  const shouldCollapse = depth === 0 && replyCount > 1;
+
   return (
     <div className={cn("flex gap-2", depth > 0 && "ml-6 mt-0.5")}>
       <Avatar className={cn("shrink-0 mt-0.5", depth > 0 ? "h-6 w-6" : "h-8 w-8")}>
@@ -207,30 +211,51 @@ function CommentItem({
           </div>
         )}
 
-        {/* Nested replies — tight spacing */}
-        {c.replies && c.replies.length > 0 && (
+        {/* Nested replies */}
+        {c.replies && replyCount > 0 && (
           <div className="mt-0.5">
-            {c.replies.map((reply) => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                currentUserId={currentUserId}
-                postId={postId}
-                depth={depth + 1}
-                editingCommentId={editingCommentId}
-                editCommentText={editCommentText}
-                replyingToId={replyingToId}
-                replyText={replyText}
-                onSetEditing={onSetEditing}
-                onSaveEdit={onSaveEdit}
-                onDelete={onDelete}
-                onToggleLike={onToggleLike}
-                onSetReplying={onSetReplying}
-                onReplyTextChange={onReplyTextChange}
-                onSubmitReply={onSubmitReply}
-                setEditCommentText={setEditCommentText}
-              />
-            ))}
+            {shouldCollapse && !repliesExpanded ? (
+              <button
+                className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline ml-1 mt-1"
+                onClick={() => setRepliesExpanded(true)}
+              >
+                <Reply className="h-3 w-3" />
+                View {replyCount} {replyCount === 1 ? "reply" : "replies"}
+              </button>
+            ) : (
+              <>
+                {shouldCollapse && (
+                  <button
+                    className="flex items-center gap-1 text-[12px] font-semibold text-muted-foreground hover:text-foreground ml-1 mt-1 mb-0.5"
+                    onClick={() => setRepliesExpanded(false)}
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                    Hide replies
+                  </button>
+                )}
+                {c.replies.map((reply) => (
+                  <CommentItem
+                    key={reply.id}
+                    comment={reply}
+                    currentUserId={currentUserId}
+                    postId={postId}
+                    depth={depth + 1}
+                    editingCommentId={editingCommentId}
+                    editCommentText={editCommentText}
+                    replyingToId={replyingToId}
+                    replyText={replyText}
+                    onSetEditing={onSetEditing}
+                    onSaveEdit={onSaveEdit}
+                    onDelete={onDelete}
+                    onToggleLike={onToggleLike}
+                    onSetReplying={onSetReplying}
+                    onReplyTextChange={onReplyTextChange}
+                    onSubmitReply={onSubmitReply}
+                    setEditCommentText={setEditCommentText}
+                  />
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
