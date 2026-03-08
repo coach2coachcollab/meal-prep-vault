@@ -122,7 +122,8 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
         is_saved: savedPostIds.has(p.id),
       };
     });
-    setPosts(enriched);
+    setPosts((prev) => append ? [...prev, ...enriched] : enriched);
+    setLoadingMore(false);
   };
 
   const notify = async (targetUserId: string, type: string, postId?: string, commentId?: string) => {
