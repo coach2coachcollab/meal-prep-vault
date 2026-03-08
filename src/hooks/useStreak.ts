@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { calculateStreak } from "@/lib/calculations";
 
 export function useStreak() {
   const { user } = useAuth();
@@ -32,15 +33,7 @@ export function useStreak() {
     journalDates?.forEach((j) => activeDays.add(j.date));
     habitDates?.forEach((h) => activeDays.add(h.date));
 
-    let count = 0;
-    const d = new Date();
-    if (!activeDays.has(d.toISOString().split("T")[0])) {
-      d.setDate(d.getDate() - 1);
-    }
-    while (activeDays.has(d.toISOString().split("T")[0])) {
-      count++;
-      d.setDate(d.getDate() - 1);
-    }
+    const count = calculateStreak(activeDays);
 
     // Check if streak increased
     if (prevStreak.current !== null && count > prevStreak.current) {

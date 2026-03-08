@@ -9,15 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import { toast } from "sonner";
-
-interface MacroResult {
-  bmr: number;
-  tdee: number;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fats: number;
-}
+import { calculateMacros, type MacroResult } from "@/lib/calculations";
 
 const GOAL_MAP: Record<string, string> = {
   "Lose fat": "lose",
@@ -78,20 +70,6 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
       });
   }, [user, isImperial]);
 
-  const activityMultipliers: Record<string, number> = {
-    sedentary: 1.2,
-    light: 1.375,
-    moderate: 1.55,
-    active: 1.725,
-    very_active: 1.9,
-  };
-
-  const goalMultipliers: Record<string, number> = {
-    lose: 0.8,
-    maintain: 1.0,
-    gain: 1.15,
-  };
-
   const calculate = async () => {
     const w = parseFloat(weight);
     const h = parseFloat(height);
@@ -105,25 +83,14 @@ export function MacroCalculator({ onNavigateToMealVault }: MacroCalculatorProps)
     const wKg = toKg(w);
     const hCm = toCm(h);
 
-    // Mifflin-St Jeor
-    const bmr = gender === "male"
-      ? 10 * wKg + 6.25 * hCm - 5 * a + 5
-      : 10 * wKg + 6.25 * hCm - 5 * a - 161;
-
-    const tdee = bmr * activityMultipliers[activityLevel];
-    const calories = tdee * goalMultipliers[goal];
-    const protein = wKg * 2.2; // 1g per lb
-    const fats = (calories * 0.25) / 9;
-    const carbs = (calories - protein * 4 - fats * 9) / 4;
-
-    const res: MacroResult = {
-      bmr: Math.round(bmr),
-      tdee: Math.round(tdee),
-      calories: Math.round(calories),
-      protein: Math.round(protein),
-      carbs: Math.round(carbs),
-      fats: Math.round(fats),
-    };
+    const res = calculateMacros({
+      gender: gender as "male" | "female",
+      weightKg: wKg,
+      heightCm: hCm,
+      age: a,
+      activityLevel,
+      goal,
+    });
     setResult(res);
 
     // Save to database
