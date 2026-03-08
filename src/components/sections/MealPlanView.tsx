@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ChevronLeft, ChevronRight, Calendar, List, Trash2, Eye, Pencil, Heart,
-  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw, ShoppingCart,
+  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw, ShoppingCart, Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,6 +78,8 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
   const [swapEntry, setSwapEntry] = useState<PlanEntry | null>(null);
   const [allMeals, setAllMeals] = useState<DbMeal[]>([]);
   const [swapSearch, setSwapSearch] = useState("");
+
+  const [duplicating, setDuplicating] = useState<string | null>(null);
 
   // Shopping list generation
   const [generatingList, setGeneratingList] = useState(false);
@@ -289,6 +291,60 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
       toast.error("Failed to generate shopping list");
     } finally {
       setGeneratingList(false);
+    }
+  };
+
+  const duplicatePlan = async (plan: SavedPlan) => {
+    if (!user) return;
+    setDuplicating(plan.id);
+    try {
+      // Create new plan
+      const { data: newPlan, error: planErr } = await supabase
+        .from("meal_plans")
+        .insert({
+          user_id: user.id,
+          name: `${plan.name} (Copy)`,
+          description: plan.description,
+        })
+        .select("id")
+        .single();
+      if (planErr || !newPlan) throw planErr;
+
+      // Copy all entries
+      const { data: sourceEntries } = await supabase
+        .from("meal_plan_entries")
+        .select("meal_id, day_of_week, meal_time")
+        .eq("meal_plan_id", plan.id);
+
+      if (sourceEntries && sourceEntries.length > 0) {
+        const newEntries = sourceEntries.map((e) => ({
+          meal_plan_id: newPlan.id,
+          meal_id: e.meal_id,
+          day_of_week: e.day_of_week,
+          meal_time: e.meal_time,
+        }));
+        const { error: entryErr } = await supabase.from("meal_plan_entries").insert(newEntries);
+        if (entryErr) throw entryErr;
+      }
+
+      toast.success("Plan duplicated! Opening copy for editing...");
+      await loadPlans();
+
+      // Open the duplicated plan for viewing/editing
+      const dupPlan: SavedPlan = {
+        id: newPlan.id,
+        name: `${plan.name} (Copy)`,
+        description: plan.description,
+        created_at: new Date().toISOString(),
+        start_date: null,
+        end_date: null,
+      };
+      viewPlan(dupPlan);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Failed to duplicate plan");
+    } finally {
+      setDuplicating(null);
     }
   };
 
@@ -725,8 +781,8 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => viewPlan(plan)}>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Pencil className="h-3.5 w-3.5" />
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => duplicatePlan(plan)} disabled={duplicating === plan.id} title="Duplicate plan">
+                  {duplicating === plan.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deletePlan(plan.id)}>
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
