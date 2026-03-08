@@ -445,9 +445,19 @@ export function CommunityPost({
             )}
 
             {post.image_url && (
-              <div className="mt-2 -mx-3 sm:mx-0 sm:rounded-lg overflow-hidden aspect-square">
-                <img src={post.image_url} alt="Post" className="w-full h-full object-cover sm:rounded-lg" />
-              </div>
+              <>
+                <div
+                  className="mt-2 -mx-3 sm:mx-0 sm:rounded-lg overflow-hidden aspect-square cursor-pointer"
+                  onClick={() => setImageOpen(true)}
+                >
+                  <img src={post.image_url} alt="Post" className="w-full h-full object-cover sm:rounded-lg" />
+                </div>
+                <Dialog open={imageOpen} onOpenChange={setImageOpen}>
+                  <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
+                    <img src={post.image_url} alt="Post full" className="w-full h-full object-contain max-h-[90vh] rounded-lg" />
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
 
             {/* Reactions */}
