@@ -105,11 +105,10 @@ function CommentItem({
   onSetEditing, onSaveEdit, onDelete, onToggleLike,
   onSetReplying, onReplyTextChange, onSubmitReply, setEditCommentText,
 }: CommentItemProps) {
-  const [showActions, setShowActions] = useState(false);
   return (
-    <div className={cn("flex gap-2 group", depth > 0 && "ml-6 border-l-2 border-muted pl-2")}>
-      <Avatar className="h-6 w-6 mt-0.5 shrink-0">
-        <AvatarFallback className="text-[9px] bg-muted font-medium">
+    <div className={cn("flex gap-2", depth > 0 && "ml-8 mt-1")}>
+      <Avatar className="h-8 w-8 mt-0.5 shrink-0">
+        <AvatarFallback className="text-[10px] bg-muted font-semibold">
           {initials(c.user_name || "U")}
         </AvatarFallback>
       </Avatar>
@@ -119,53 +118,54 @@ function CommentItem({
             <Input
               value={editCommentText}
               onChange={(e) => setEditCommentText(e.target.value)}
-              className="h-7 text-sm"
+              className="h-8 text-sm"
               onKeyDown={(e) => e.key === "Enter" && onSaveEdit()}
             />
-            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onSetEditing(null)}>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => onSetEditing(null)}>
               <X className="h-3 w-3" />
             </Button>
-            <Button size="icon" className="h-7 w-7 shrink-0" onClick={onSaveEdit}>
+            <Button size="icon" className="h-8 w-8 shrink-0" onClick={onSaveEdit}>
               <Check className="h-3 w-3" />
             </Button>
           </div>
         ) : (
-          <div
-            className="bg-muted/50 rounded-xl px-3 py-1.5 cursor-pointer"
-            onClick={() => setShowActions((prev) => !prev)}
-          >
-            <span className="text-xs font-semibold">{c.user_name}</span>
+          <div className="bg-muted/60 rounded-2xl px-3 py-2 inline-block max-w-full">
+            <span className="text-[13px] font-bold block">{c.user_name}</span>
             <p className="text-sm">{c.text}</p>
           </div>
         )}
-        <div className="flex items-center gap-3 mt-0.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
-          <button
-            className={cn("text-[10px] font-medium flex items-center gap-0.5", c.is_liked ? "text-destructive" : "text-muted-foreground hover:text-destructive")}
-            onClick={() => onToggleLike(c.id)}
-          >
-            <Heart className={cn("h-3 w-3", c.is_liked && "fill-current")} />
-            {c.like_count > 0 && <span>{c.like_count}</span>}
-          </button>
-          <div className={cn("items-center gap-3", showActions ? "flex" : "hidden group-hover:flex")}>
+
+        {/* Action row: time · Like · Reply · Edit · Delete */}
+        {editingCommentId !== c.id && (
+          <div className="flex items-center gap-3 mt-0.5 px-1 text-[12px]">
+            <span className="text-muted-foreground">{timeAgo(c.created_at)}</span>
+            <button
+              className={cn(
+                "font-semibold",
+                c.is_liked ? "text-destructive" : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => onToggleLike(c.id)}
+            >
+              Like{c.like_count > 0 && ` · ${c.like_count}`}
+            </button>
             {depth < 2 && (
               <button
-                className="text-[10px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-0.5"
+                className="font-semibold text-muted-foreground hover:text-foreground"
                 onClick={() => onSetReplying(replyingToId === c.id ? null : c.id)}
               >
-                <Reply className="h-3 w-3" /> Reply
+                Reply
               </button>
             )}
-            {c.user_id === currentUserId && editingCommentId !== c.id && (
+            {c.user_id === currentUserId && (
               <>
                 <button
-                  className="text-[10px] text-muted-foreground hover:text-foreground font-medium"
+                  className="font-semibold text-muted-foreground hover:text-foreground"
                   onClick={() => onSetEditing(c.id, c.text)}
                 >
                   Edit
                 </button>
                 <button
-                  className="text-[10px] text-muted-foreground hover:text-destructive font-medium"
+                  className="font-semibold text-muted-foreground hover:text-destructive"
                   onClick={() => onDelete(c.id)}
                 >
                   Delete
@@ -173,7 +173,7 @@ function CommentItem({
               </>
             )}
           </div>
-        </div>
+        )}
 
         {/* Reply input */}
         {replyingToId === c.id && (
@@ -183,13 +183,13 @@ function CommentItem({
               value={replyText}
               onChange={(e) => onReplyTextChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSubmitReply()}
-              className="flex-1 h-7 text-sm"
+              className="flex-1 h-8 text-sm rounded-full"
               autoFocus
             />
-            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onSetReplying(null)}>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => onSetReplying(null)}>
               <X className="h-3 w-3" />
             </Button>
-            <Button size="icon" className="h-7 w-7 shrink-0" onClick={onSubmitReply} disabled={!replyText.trim()}>
+            <Button size="icon" className="h-8 w-8 shrink-0" onClick={onSubmitReply} disabled={!replyText.trim()}>
               <Send className="h-3 w-3" />
             </Button>
           </div>
@@ -197,7 +197,7 @@ function CommentItem({
 
         {/* Nested replies */}
         {c.replies && c.replies.length > 0 && (
-          <div className="mt-2 space-y-2">
+          <div className="mt-1">
             {c.replies.map((reply) => (
               <CommentItem
                 key={reply.id}
@@ -408,16 +408,19 @@ export function CommunityPost({
                     ))}
 
                     {/* Top-level comment input */}
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex gap-2 pt-2 items-center">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback className="text-[10px] bg-muted font-semibold">You</AvatarFallback>
+                      </Avatar>
                       <Input
                         placeholder="Write a comment..."
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                        className="flex-1 h-8 text-sm"
+                        className="flex-1 h-9 text-sm rounded-full bg-muted/60"
                       />
-                      <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleAddComment} disabled={!newComment.trim()}>
-                        <Send className="h-3.5 w-3.5" />
+                      <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={handleAddComment} disabled={!newComment.trim()}>
+                        <Send className="h-4 w-4" />
                       </Button>
                     </div>
                   </>
