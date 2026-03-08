@@ -204,30 +204,41 @@ export function UserProfile() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Age</Label>
-              <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
-            </div>
-            {useMetric ? (
+          {useMetric ? (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Age</Label>
+                <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
+              </div>
               <div className="space-y-1">
                 <Label className="text-xs">Height (cm)</Label>
                 <Input type="number" placeholder="170" value={height} onChange={(e) => setHeight(e.target.value)} />
               </div>
-            ) : (
               <div className="space-y-1">
-                <Label className="text-xs">Height (ft/in)</Label>
-                <div className="flex gap-1">
-                  <Input type="number" placeholder="5" value={heightFt} onChange={(e) => setHeightFt(e.target.value)} className="w-1/2" />
-                  <Input type="number" placeholder="7" value={heightIn} onChange={(e) => setHeightIn(e.target.value)} className="w-1/2" />
-                </div>
+                <Label className="text-xs">Weight (kg)</Label>
+                <Input type="number" placeholder="70" value={weight} onChange={(e) => setWeight(e.target.value)} />
               </div>
-            )}
-            <div className="space-y-1">
-              <Label className="text-xs">Weight ({useMetric ? "kg" : "lbs"})</Label>
-              <Input type="number" placeholder={useMetric ? "70" : "154"} value={weight} onChange={(e) => setWeight(e.target.value)} />
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Age</Label>
+                <Input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Height (ft)</Label>
+                <Input type="number" placeholder="5" value={heightFt} onChange={(e) => setHeightFt(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Height (in)</Label>
+                <Input type="number" placeholder="7" value={heightIn} onChange={(e) => setHeightIn(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Weight (lbs)</Label>
+                <Input type="number" placeholder="154" value={weight} onChange={(e) => setWeight(e.target.value)} />
+              </div>
+            </div>
+          )}
 
           <Button onClick={saveProfile} disabled={loading} className="w-full">
             <Save className="h-4 w-4 mr-1" />
