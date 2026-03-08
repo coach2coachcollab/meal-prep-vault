@@ -117,10 +117,10 @@ export default function Dashboard() {
         <div className="max-w-2xl mx-auto px-4 md:px-6 h-12 flex items-center justify-between">
           <button
             onClick={() => setActiveTab("streak")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 transition-all duration-300 hover:bg-primary/30 active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary border border-primary/50 transition-all duration-300 hover:bg-primary/90 active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
           >
-            <Zap className={`h-4 w-4 text-primary transition-transform duration-300 ${justIncreased ? "scale-125" : ""}`} />
-            <span className="text-sm font-extrabold text-foreground">{streak}🔥</span>
+            <Zap className={`h-4 w-4 text-primary-foreground transition-transform duration-300 ${justIncreased ? "scale-125" : ""}`} />
+            <span className="text-sm font-extrabold text-primary-foreground">{streak}🔥</span>
           </button>
           <div className="flex items-center gap-1">
             <NotificationBell
