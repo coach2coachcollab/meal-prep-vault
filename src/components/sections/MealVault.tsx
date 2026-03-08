@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import { r2 } from "@/lib/utils";
 import { MealDetailView } from "./MealDetailView";
 import { MealPlanView } from "./MealPlanView";
 import { GeneratePlanDialog } from "./GeneratePlanDialog";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Meal {
   id: string;
@@ -44,10 +46,8 @@ const MEAL_PAGE_SIZE = 24;
 
 export function MealVault() {
   const { user } = useAuth();
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
@@ -55,54 +55,60 @@ export function MealVault() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
-  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<"meals" | "plans">("meals");
   const [planRefreshKey, setPlanRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cuisineFilter, setCuisineFilter] = useState("all");
-  const [hasMoreMeals, setHasMoreMeals] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
     prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "",
   });
 
-  useEffect(() => {
-    loadMeals();
-    loadRatings();
-    loadCommentCounts();
-    if (user) loadFavorites();
-  }, [user]);
+  // Infinite query for meals
+  const {
+    data: mealsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: loading,
+  } = useInfiniteQuery({
+    queryKey: queryKeys.meals(),
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data, error } = await supabase
+        .from("meals")
+        .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
+        .order("created_at", { ascending: false })
+        .range(pageParam, pageParam + MEAL_PAGE_SIZE - 1);
+      if (error) console.error("Failed to load meals", error);
+      return {
+        meals: (data || []) as Meal[],
+        nextOffset: (data?.length || 0) === MEAL_PAGE_SIZE ? pageParam + MEAL_PAGE_SIZE : null,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
+  });
 
-  const loadMeals = async (append = false) => {
-    if (!append) setLoading(true);
-    else setLoadingMore(true);
-    const offset = append ? meals.length : 0;
-    const { data, error } = await supabase
-      .from("meals")
-      .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
-      .order("created_at", { ascending: false })
-      .range(offset, offset + MEAL_PAGE_SIZE - 1);
-    if (data) {
-      setMeals((prev) => append ? [...prev, ...data] : data);
-      setHasMoreMeals((data.length) === MEAL_PAGE_SIZE);
-    }
-    if (error) console.error("Failed to load meals", error);
-    setLoading(false);
-    setLoadingMore(false);
-  };
+  const meals = useMemo(() => mealsData?.pages.flatMap((p) => p.meals) || [], [mealsData]);
 
-  const loadFavorites = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("favorite_meals").select("meal_id").eq("user_id", user.id);
-    if (data) setFavorites(data.map((f) => f.meal_id));
-  };
+  // Favorites query
+  const { data: favorites = [] } = useQuery({
+    queryKey: queryKeys.favorites(user?.id),
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("favorite_meals").select("meal_id").eq("user_id", user.id);
+      return (data || []).map((f) => f.meal_id);
+    },
+    enabled: !!user,
+  });
 
-  const loadRatings = async () => {
-    const { data } = await supabase.from("meal_ratings").select("meal_id, rating");
-    if (data) {
+  // Ratings query
+  const { data: ratings = {} } = useQuery({
+    queryKey: queryKeys.mealRatings(),
+    queryFn: async () => {
+      const { data } = await supabase.from("meal_ratings").select("meal_id, rating");
+      if (!data) return {};
       const map: Record<string, number[]> = {};
       data.forEach((r) => {
         if (!map[r.meal_id]) map[r.meal_id] = [];
@@ -112,42 +118,45 @@ export function MealVault() {
       Object.entries(map).forEach(([id, vals]) => {
         result[id] = { avg: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10, count: vals.length };
       });
-      setRatings(result);
-    }
-  };
+      return result;
+    },
+  });
 
-  const loadCommentCounts = async () => {
-    const { data: posts } = await supabase
-      .from("community_posts")
-      .select("id, recipe_id")
-      .not("recipe_id", "is", null);
-    if (!posts || posts.length === 0) return;
-    const postIds = posts.map((p) => p.id);
-    const { data: comments } = await supabase
-      .from("post_comments")
-      .select("post_id")
-      .in("post_id", postIds);
-    if (!comments) return;
-    const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
-    const counts: Record<string, number> = {};
-    comments.forEach((c) => {
-      const recipeId = postToRecipe.get(c.post_id);
-      if (recipeId) counts[recipeId] = (counts[recipeId] || 0) + 1;
-    });
-    setCommentCounts(counts);
-  };
+  // Comment counts query
+  const { data: commentCounts = {} } = useQuery({
+    queryKey: queryKeys.mealCommentCounts(),
+    queryFn: async () => {
+      const { data: posts } = await supabase
+        .from("community_posts")
+        .select("id, recipe_id")
+        .not("recipe_id", "is", null);
+      if (!posts || posts.length === 0) return {};
+      const postIds = posts.map((p) => p.id);
+      const { data: comments } = await supabase
+        .from("post_comments")
+        .select("post_id")
+        .in("post_id", postIds);
+      if (!comments) return {};
+      const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
+      const counts: Record<string, number> = {};
+      comments.forEach((c) => {
+        const recipeId = postToRecipe.get(c.post_id);
+        if (recipeId) counts[recipeId] = (counts[recipeId] || 0) + 1;
+      });
+      return counts;
+    },
+  });
 
   const toggleFavorite = async (mealId: string) => {
     if (!user) return;
     if (favorites.includes(mealId)) {
       await supabase.from("favorite_meals").delete().eq("user_id", user.id).eq("meal_id", mealId);
-      setFavorites(favorites.filter((id) => id !== mealId));
       toast.success("Removed from favorites");
     } else {
       await supabase.from("favorite_meals").insert({ user_id: user.id, meal_id: mealId });
-      setFavorites([...favorites, mealId]);
       toast.success("Added to favorites");
     }
+    queryClient.invalidateQueries({ queryKey: queryKeys.favorites(user.id) });
   };
 
   const deleteMeal = async (mealId: string) => {
@@ -155,7 +164,7 @@ export function MealVault() {
     if (error) {
       toast.error("Failed to delete meal");
     } else {
-      setMeals(meals.filter((m) => m.id !== mealId));
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals() });
       toast.success("Meal deleted");
     }
   };
@@ -199,7 +208,7 @@ export function MealVault() {
       toast.success("Recipe created! 🎉");
       setForm({ title: "", description: "", calories: "", protein: "", carbs: "", fats: "", prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "" });
       setImageFile(null); setImagePreview(null); setShowCreate(false);
-      loadMeals();
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals() });
     }
     setSaving(false);
   };
@@ -431,10 +440,10 @@ export function MealVault() {
               })}
             </div>
           )}
-          {hasMoreMeals && filtered.length > 0 && (
+          {hasNextPage && meals.length > 0 && (
             <div className="flex justify-center pt-2">
-              <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => loadMeals(true)}>
-                {loadingMore ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More Meals"}
+              <Button variant="outline" size="sm" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
+                {isFetchingNextPage ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More Meals"}
               </Button>
             </div>
           )}
