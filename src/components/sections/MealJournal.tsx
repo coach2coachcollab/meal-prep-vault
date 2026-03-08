@@ -240,7 +240,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
         <Button variant="ghost" size="icon" onClick={() => shiftDate(-1)}><ChevronLeft className="h-5 w-5" /></Button>
         <div className="text-center">
           <p className="font-semibold">{new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</p>
-          {date === new Date().toISOString().split("T")[0] && <p className="text-xs text-primary-foreground">Today</p>}
+          {date === new Date().toISOString().split("T")[0] && <p className="text-xs text-primary">Today</p>}
         </div>
         <Button variant="ghost" size="icon" onClick={() => shiftDate(1)}><ChevronRight className="h-5 w-5" /></Button>
       </div>
