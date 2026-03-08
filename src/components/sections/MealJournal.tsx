@@ -73,6 +73,8 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const [dbMeals, setDbMeals] = useState<DbMeal[]>([]);
   const [recipeSearch, setRecipeSearch] = useState("");
   const [mode, setMode] = useState<"pick" | "manual">("pick");
+  const [selectedVaultMeal, setSelectedVaultMeal] = useState<DbMeal | null>(null);
+  const [vaultServings, setVaultServings] = useState(1);
 
   // Map recipe_id -> image for entries
   const [mealImages, setMealImages] = useState<Record<string, string>>({});
@@ -123,19 +125,25 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     setDate(d.toISOString().split("T")[0]);
   };
 
-  const logFromRecipe = async (meal: DbMeal) => {
+  const logFromRecipe = async (meal: DbMeal, servingCount: number = 1) => {
     if (!user) return;
+    const totalServings = meal.servings || 1;
+    const factor = servingCount / totalServings;
     const { error } = await supabase.from("journal_entries").insert({
       user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
-      calories: meal.calories || 0, protein_g: meal.protein || 0,
-      carbs_g: meal.carbs || 0, fat_g: meal.fats || 0,
-      recipe_id: meal.id, servings: meal.servings || 1
+      calories: Math.round((meal.calories || 0) * factor),
+      protein_g: Math.round((meal.protein || 0) * factor * 10) / 10,
+      carbs_g: Math.round((meal.carbs || 0) * factor * 10) / 10,
+      fat_g: Math.round((meal.fats || 0) * factor * 10) / 10,
+      recipe_id: meal.id, servings: servingCount
     });
     if (!error) {
       setDialogOpen(false);
       setRecipeSearch("");
+      setSelectedVaultMeal(null);
+      setVaultServings(1);
       loadData();
-      toast.success(`${meal.title} logged!`);
+      toast.success(`${meal.title} logged (${servingCount} serving${servingCount !== 1 ? "s" : ""})!`);
     }
   };
 
@@ -336,6 +344,77 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
 
           {mode === "pick" ?
           <div className="space-y-3 pt-1">
+              {selectedVaultMeal ? (
+                // Serving selector view
+                <div className="space-y-4">
+                  <div className="flex gap-3 items-center p-3 rounded-lg border bg-muted/30">
+                    {selectedVaultMeal.image_url ? (
+                      <img src={selectedVaultMeal.image_url} alt={selectedVaultMeal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{selectedVaultMeal.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Recipe total: {selectedVaultMeal.calories || 0} cal · {selectedVaultMeal.servings || 1} serving{(selectedVaultMeal.servings || 1) > 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="shrink-0 text-xs" onClick={() => setSelectedVaultMeal(null)}>Change</Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">How many servings?</Label>
+                    <div className="flex items-center gap-3">
+                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setVaultServings(Math.max(0.5, vaultServings - 0.5))}>
+                        <span className="text-lg">−</span>
+                      </Button>
+                      <Input
+                        type="number"
+                        min="0.25"
+                        step="0.25"
+                        value={vaultServings}
+                        onChange={(e) => setVaultServings(Math.max(0.25, parseFloat(e.target.value) || 1))}
+                        className="w-20 text-center font-semibold"
+                      />
+                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setVaultServings(vaultServings + 0.5)}>
+                        <span className="text-lg">+</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const total = selectedVaultMeal.servings || 1;
+                    const factor = vaultServings / total;
+                    return (
+                      <div className="grid grid-cols-4 gap-2 p-3 rounded-lg bg-muted/50">
+                        <div className="text-center">
+                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.calories || 0) * factor)}</p>
+                          <p className="text-[10px] text-muted-foreground">Cal</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.protein || 0) * factor * 10) / 10}g</p>
+                          <p className="text-[10px] text-muted-foreground">Protein</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.carbs || 0) * factor * 10) / 10}g</p>
+                          <p className="text-[10px] text-muted-foreground">Carbs</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-sm">{Math.round((selectedVaultMeal.fats || 0) * factor * 10) / 10}g</p>
+                          <p className="text-[10px] text-muted-foreground">Fat</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <Button className="w-full" onClick={() => logFromRecipe(selectedVaultMeal, vaultServings)}>
+                    Log {vaultServings} Serving{vaultServings !== 1 ? "s" : ""}
+                  </Button>
+                </div>
+              ) : (
+              <>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search recipes..." className="pl-10" value={recipeSearch} onChange={(e) => setRecipeSearch(e.target.value)} />
@@ -348,12 +427,10 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                   {filteredMeals.map((meal) =>
               <button
                 key={meal.id}
-                onClick={() => logFromRecipe(meal)}
+                onClick={() => { setSelectedVaultMeal(meal); setVaultServings(1); }}
                 className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center">
-                
                       {meal.image_url ?
                 <img src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" /> :
-
                 <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
                           <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
                         </div>
@@ -366,12 +443,15 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                           <span>{meal.protein || 0}g P</span>
                           <span>{meal.carbs || 0}g C</span>
                           <span>{meal.fats || 0}g F</span>
+                          {(meal.servings || 1) > 1 && <span>· {meal.servings} srv</span>}
                         </div>
                       </div>
                     </button>
               )}
                 </div>
             }
+              </>
+              )}
             </div> :
 
           <div className="space-y-3 pt-1">
