@@ -49,18 +49,21 @@ export type Database = {
           comment_id: string
           created_at: string
           id: string
+          reaction_type: string
           user_id: string
         }
         Insert: {
           comment_id: string
           created_at?: string
           id?: string
+          reaction_type?: string
           user_id: string
         }
         Update: {
           comment_id?: string
           created_at?: string
           id?: string
+          reaction_type?: string
           user_id?: string
         }
         Relationships: [
