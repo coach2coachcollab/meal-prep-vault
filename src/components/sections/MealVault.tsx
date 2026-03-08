@@ -431,6 +431,13 @@ export function MealVault() {
               })}
             </div>
           )}
+          {hasMoreMeals && filtered.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => loadMeals(true)}>
+                {loadingMore ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More Meals"}
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <MealPlanView
