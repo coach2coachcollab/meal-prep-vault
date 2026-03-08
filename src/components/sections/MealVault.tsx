@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
