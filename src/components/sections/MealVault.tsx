@@ -40,6 +40,8 @@ interface Meal {
   coach_notes?: string | null;
 }
 
+const MEAL_PAGE_SIZE = 24;
+
 export function MealVault() {
   const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -59,6 +61,8 @@ export function MealVault() {
   const [planRefreshKey, setPlanRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cuisineFilter, setCuisineFilter] = useState("all");
+  const [hasMoreMeals, setHasMoreMeals] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
