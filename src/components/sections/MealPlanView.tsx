@@ -3,9 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ChevronLeft, ChevronRight, Calendar, List, Trash2, Eye, Pencil, Heart,
-  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles,
+  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +38,16 @@ interface PlanEntry {
   };
 }
 
+interface DbMeal {
+  id: string;
+  title: string;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  image_url: string | null;
+}
+
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const mealTimeColors: Record<string, string> = {
   breakfast: "bg-macro-carbs/20 text-macro-carbs",
@@ -63,10 +74,16 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
   const [expandedDay, setExpandedDay] = useState<number | null>(0);
   const [targetMacros, setTargetMacros] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
 
+  // Swap meal state
+  const [swapEntry, setSwapEntry] = useState<PlanEntry | null>(null);
+  const [allMeals, setAllMeals] = useState<DbMeal[]>([]);
+  const [swapSearch, setSwapSearch] = useState("");
+
   useEffect(() => {
     if (user) {
       loadPlans();
       loadTargetMacros();
+      loadAllMeals();
     }
   }, [user, refreshKey]);
 
@@ -92,6 +109,17 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
     if (data) setTargetMacros(data);
   };
 
+  const loadAllMeals = async () => {
+    const { data } = await supabase
+      .from("meals")
+      .select("id, title, calories, protein, carbs, fats, image_url")
+      .order("title");
+    if (data) setAllMeals(data.map((m) => ({
+      id: m.id, title: m.title, calories: m.calories, protein: m.protein,
+      carbs: m.carbs, fats: m.fats, image_url: m.image_url,
+    })));
+  };
+
   const viewPlan = async (plan: SavedPlan) => {
     setViewingPlan(plan);
     const { data } = await supabase
@@ -99,6 +127,49 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
       .select("id, meal_plan_id, meal_id, day_of_week, meal_time, meal:meals(id, title, calories, protein, carbs, fats, image_url)")
       .eq("meal_plan_id", plan.id);
     if (data) setEntries(data.map((e: any) => ({ ...e, meal: e.meal })));
+  };
+
+  const swapMeal = async (newMeal: DbMeal) => {
+    if (!swapEntry) return;
+
+    // Update in database
+    const { error } = await supabase
+      .from("meal_plan_entries")
+      .update({ meal_id: newMeal.id })
+      .eq("id", swapEntry.id);
+
+    if (error) {
+      toast.error("Failed to swap meal");
+      return;
+    }
+
+    // Update local state
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === swapEntry.id
+          ? { ...e, meal_id: newMeal.id, meal: newMeal }
+          : e
+      )
+    );
+
+    setSwapEntry(null);
+    setSwapSearch("");
+    toast.success(`Swapped to "${newMeal.title}"`);
+  };
+
+  const removeEntry = async (entryId: string) => {
+    const { error } = await supabase
+      .from("meal_plan_entries")
+      .delete()
+      .eq("id", entryId);
+
+    if (error) {
+      toast.error("Failed to remove meal");
+      return;
+    }
+
+    setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    toast.success("Meal removed from plan");
   };
 
   const setAsActive = (planId: string) => {
@@ -115,7 +186,6 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
   };
 
   const getPlanStats = (plan: SavedPlan) => {
-    // Extract from description if available
     const desc = plan.description || "";
     const calMatch = desc.match(/(\d+)\s*calories/);
     return {
@@ -125,6 +195,10 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
 
   const filtered = plans.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredSwapMeals = allMeals.filter((m) =>
+    m.title.toLowerCase().includes(swapSearch.toLowerCase())
   );
 
   // --- VIEWING A PLAN ---
@@ -157,7 +231,6 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
       const firstDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      // Map plan days to calendar dates (start from plan start_date or created_at)
       const planStart = viewingPlan.start_date
         ? new Date(viewingPlan.start_date)
         : new Date(viewingPlan.created_at);
@@ -183,10 +256,14 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
               {totals && <span className="text-[10px] text-muted-foreground">{totals.cal} cal</span>}
             </div>
             {mapped && mapped.entries.slice(0, 3).map((e) => (
-              <div key={e.id} className={`text-[9px] px-1 py-0.5 rounded mb-0.5 truncate ${mealTimeColors[e.meal_time] || "bg-muted"}`}>
+              <button
+                key={e.id}
+                onClick={() => setSwapEntry(e)}
+                className={`w-full text-left text-[9px] px-1 py-0.5 rounded mb-0.5 truncate cursor-pointer hover:ring-1 hover:ring-primary transition-all ${mealTimeColors[e.meal_time] || "bg-muted"}`}
+              >
                 {e.meal?.title || "Unknown"}
                 <span className="ml-1 opacity-70">{e.meal?.calories || 0} cal</span>
-              </div>
+              </button>
             ))}
             {mapped && mapped.entries.length > 3 && (
               <span className="text-[9px] text-muted-foreground">+{mapped.entries.length - 3} more</span>
@@ -277,7 +354,22 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                           <span className="text-macro-protein">P:{e.meal?.protein || 0}</span>
                           <span className="text-macro-carbs">C:{e.meal?.carbs || 0}</span>
                           <span className="text-macro-fat">F:{e.meal?.fats || 0}</span>
-                          <Eye className="h-3.5 w-3.5 cursor-pointer hover:text-foreground" />
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => setSwapEntry(e)}
+                            className="h-7 w-7 rounded-md border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                            title="Swap meal"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => removeEntry(e.id)}
+                            className="h-7 w-7 rounded-md border border-border flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                            title="Remove meal"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -314,6 +406,79 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
         </div>
 
         {viewMode === "calendar" ? renderCalendar() : renderList()}
+
+        {/* Swap Meal Dialog */}
+        <Dialog open={!!swapEntry} onOpenChange={(open) => { if (!open) { setSwapEntry(null); setSwapSearch(""); } }}>
+          <DialogContent className="max-h-[85vh] overflow-hidden flex flex-col w-[95vw] max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Swap {swapEntry?.meal_time ? `${swapEntry.meal_time.charAt(0).toUpperCase()}${swapEntry.meal_time.slice(1)}` : "Meal"} — {swapEntry?.day_of_week}
+              </DialogTitle>
+            </DialogHeader>
+
+            {swapEntry?.meal && (
+              <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                <p className="text-xs text-muted-foreground mb-1">Current meal:</p>
+                <div className="flex items-center gap-2">
+                  {swapEntry.meal.image_url && (
+                    <img src={swapEntry.meal.image_url} alt="" className="h-8 w-8 rounded object-cover" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{swapEntry.meal.title}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {swapEntry.meal.calories || 0} cal · P:{swapEntry.meal.protein || 0}g · C:{swapEntry.meal.carbs || 0}g · F:{swapEntry.meal.fats || 0}g
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search meals..."
+                className="pl-10"
+                value={swapSearch}
+                onChange={(e) => setSwapSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0 max-h-[50vh]">
+              {filteredSwapMeals.map((meal) => (
+                <button
+                  key={meal.id}
+                  onClick={() => swapMeal(meal)}
+                  disabled={meal.id === swapEntry?.meal_id}
+                  className={`w-full text-left p-3 rounded-lg border transition-colors flex items-center gap-3 ${
+                    meal.id === swapEntry?.meal_id
+                      ? "border-border bg-muted/30 opacity-50 cursor-not-allowed"
+                      : "border-border hover:border-primary hover:bg-primary/5"
+                  }`}
+                >
+                  {meal.image_url && (
+                    <img src={meal.image_url} alt="" className="h-10 w-10 rounded object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{meal.title}</p>
+                    <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
+                      <span>{meal.calories || 0} cal</span>
+                      <span className="text-macro-protein">P:{meal.protein || 0}g</span>
+                      <span className="text-macro-carbs">C:{meal.carbs || 0}g</span>
+                      <span className="text-macro-fat">F:{meal.fats || 0}g</span>
+                    </div>
+                  </div>
+                  {meal.id === swapEntry?.meal_id && (
+                    <Badge variant="outline" className="text-[10px] shrink-0">Current</Badge>
+                  )}
+                </button>
+              ))}
+              {filteredSwapMeals.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No meals found</p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -363,7 +528,6 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
                 <p className="text-xs text-muted-foreground">{plan.description}</p>
               )}
 
-              {/* Target Macros */}
               {targetMacros && (
                 <div>
                   <p className="text-xs font-semibold mb-1.5">Target Macros:</p>
