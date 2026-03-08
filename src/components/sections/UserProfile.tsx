@@ -66,8 +66,7 @@ export function UserProfile() {
       if (data.name) setName(data.name);
       if (data.avatar_url) setAvatarUrl(data.avatar_url);
       if (data.age) setAge(String(data.age));
-      const savedUnits = localStorage.getItem(`preferred_units_${user.id}`);
-      if (savedUnits) setUseMetric(savedUnits === "metric");
+      if (data.preferred_units) setUseMetric(data.preferred_units !== "imperial");
       setProfileData(data);
     }
   };
