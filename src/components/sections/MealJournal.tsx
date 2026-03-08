@@ -131,10 +131,10 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     const factor = servingCount / totalServings;
     const { error } = await supabase.from("journal_entries").insert({
       user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
-      calories: Math.round((meal.calories || 0) * factor),
-      protein_g: Math.round((meal.protein || 0) * factor * 10) / 10,
-      carbs_g: Math.round((meal.carbs || 0) * factor * 10) / 10,
-      fat_g: Math.round((meal.fats || 0) * factor * 10) / 10,
+      calories: r2((meal.calories || 0) * factor),
+      protein_g: r2((meal.protein || 0) * factor),
+      carbs_g: r2((meal.carbs || 0) * factor),
+      fat_g: r2((meal.fats || 0) * factor),
       recipe_id: meal.id, servings: servingCount
     });
     if (!error) {
