@@ -40,6 +40,8 @@ interface Meal {
   coach_notes?: string | null;
 }
 
+const MEAL_PAGE_SIZE = 24;
+
 export function MealVault() {
   const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -59,6 +61,8 @@ export function MealVault() {
   const [planRefreshKey, setPlanRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cuisineFilter, setCuisineFilter] = useState("all");
+  const [hasMoreMeals, setHasMoreMeals] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
@@ -72,15 +76,22 @@ export function MealVault() {
     if (user) loadFavorites();
   }, [user]);
 
-  const loadMeals = async () => {
-    setLoading(true);
+  const loadMeals = async (append = false) => {
+    if (!append) setLoading(true);
+    else setLoadingMore(true);
+    const offset = append ? meals.length : 0;
     const { data, error } = await supabase
       .from("meals")
       .select("id, title, description, calories, protein, carbs, fats, prep_time, cook_time, servings, tags, is_public, user_id, ingredients, instructions, image_url, category, cuisine, diet_tags, health_tags, coach_notes")
-      .order("created_at", { ascending: false });
-    if (data) setMeals(data);
+      .order("created_at", { ascending: false })
+      .range(offset, offset + MEAL_PAGE_SIZE - 1);
+    if (data) {
+      setMeals((prev) => append ? [...prev, ...data] : data);
+      setHasMoreMeals((data.length) === MEAL_PAGE_SIZE);
+    }
     if (error) console.error("Failed to load meals", error);
     setLoading(false);
+    setLoadingMore(false);
   };
 
   const loadFavorites = async () => {
@@ -418,6 +429,13 @@ export function MealVault() {
                   </Card>
                 );
               })}
+            </div>
+          )}
+          {hasMoreMeals && filtered.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => loadMeals(true)}>
+                {loadingMore ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More Meals"}
+              </Button>
             </div>
           )}
         </>

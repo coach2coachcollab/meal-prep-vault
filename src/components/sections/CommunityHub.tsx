@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Bookmark } from "lucide-react";
+import { Plus, Bookmark, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -23,12 +23,16 @@ interface CommunityHubProps {
   onHighlightHandled?: () => void;
 }
 
+const PAGE_SIZE = 20;
+
 export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityHubProps) {
   const { user } = useAuth();
   const [activeChannel, setActiveChannel] = useState("wins");
   const [posts, setPosts] = useState<PostData[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -74,21 +78,25 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     if (data) setSavedPostIds(new Set(data.map((d) => d.post_id)));
   };
 
-  const loadPosts = async () => {
+  const loadPosts = async (append = false) => {
     if (!user) return;
+    if (append) setLoadingMore(true);
+    const offset = append ? posts.length : 0;
     let postData: any[] | null = null;
 
     if (activeChannel === "saved") {
       const { data: savedData } = await supabase.from("saved_posts").select("post_id").eq("user_id", user.id).order("saved_at", { ascending: false });
-      if (!savedData || savedData.length === 0) { setPosts([]); return; }
+      if (!savedData || savedData.length === 0) { setPosts([]); setHasMore(false); setLoadingMore(false); return; }
       const ids = savedData.map((s) => s.post_id);
       const { data } = await supabase.from("community_posts").select("*").in("id", ids);
       postData = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
+      setHasMore(false); // saved loads all at once
     } else {
-      const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).limit(50);
+      const { data } = await supabase.from("community_posts").select("*").eq("channel", activeChannel).order("created_at", { ascending: false }).range(offset, offset + PAGE_SIZE - 1);
       postData = data;
+      setHasMore((data?.length || 0) === PAGE_SIZE);
     }
-    if (!postData) return;
+    if (!postData) { setLoadingMore(false); return; }
 
     const userIds = [...new Set(postData.map((p) => p.user_id))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, name, avatar_url").in("user_id", userIds);
@@ -114,7 +122,8 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
         is_saved: savedPostIds.has(p.id),
       };
     });
-    setPosts(enriched);
+    setPosts((prev) => append ? [...prev, ...enriched] : enriched);
+    setLoadingMore(false);
   };
 
   const notify = async (targetUserId: string, type: string, postId?: string, commentId?: string) => {
@@ -311,6 +320,13 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
           />
           </div>
         ))}
+        {hasMore && posts.length > 0 && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" size="sm" disabled={loadingMore} onClick={() => loadPosts(true)}>
+              {loadingMore ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {user && (
