@@ -266,7 +266,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
             <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition:water")}>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="relative h-12 w-12 mb-1">
               <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
