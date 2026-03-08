@@ -248,7 +248,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Community</h2>
+          <h2 className="text-xl font-heading text-foreground">Community</h2>
           <p className="text-xs text-section-label font-semibold">
             {activeChannel === "saved" ? `${posts.length} favourites` : `${posts.length} posts in this channel`}
           </p>
