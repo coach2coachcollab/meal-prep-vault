@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ChevronLeft, ChevronRight, Calendar, List, Trash2, Eye, Pencil, Heart,
-  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw, ShoppingCart, Copy,
+  Flame, Search, Loader2, ArrowLeft, ChevronDown, ChevronUp, Sparkles, RefreshCw, ShoppingCart, Copy, Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
