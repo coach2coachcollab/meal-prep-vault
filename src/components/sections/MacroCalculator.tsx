@@ -201,8 +201,8 @@ export function MacroCalculator() {
                     <p className="text-xl font-bold">{result.calories}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10">
-                  <Beef className="h-5 w-5 text-destructive" />
+               <div className="flex items-center gap-3 p-3 rounded-lg bg-macro-protein/10 border border-border">
+                  <div className="h-9 w-9 rounded-full bg-icon-bg flex items-center justify-center shrink-0"><Beef className="h-5 w-5 text-macro-protein" /></div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Protein</p>
                     <p className="text-xl font-bold">{result.protein}g</p>
