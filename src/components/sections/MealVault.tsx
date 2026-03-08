@@ -49,6 +49,7 @@ export function MealVault() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
