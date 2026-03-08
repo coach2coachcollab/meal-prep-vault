@@ -1,24 +1,43 @@
-import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+const UNITS_KEY = ["preferred-units"] as const;
+
 export function usePreferredUnits() {
   const { user } = useAuth();
-  const [useMetric, setUseMetric] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    supabase
-      .from("profiles")
-      .select("preferred_units")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.preferred_units) setUseMetric(data.preferred_units !== "imperial");
-        setLoading(false);
-      });
-  }, [user]);
+  const { data: useMetric = true, isLoading: loading } = useQuery({
+    queryKey: UNITS_KEY,
+    queryFn: async () => {
+      if (!user) return true;
+      const { data } = await supabase
+        .from("profiles")
+        .select("preferred_units")
+        .eq("user_id", user.id)
+        .single();
+      return data?.preferred_units !== "imperial";
+    },
+    enabled: !!user,
+    staleTime: Infinity,
+  });
+
+  const setUseMetric = async (metric: boolean) => {
+    // Optimistic update — all consumers see the change instantly
+    queryClient.setQueryData(UNITS_KEY, metric);
+
+    if (user) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferred_units: metric ? "metric" : "imperial" } as any)
+        .eq("user_id", user.id);
+      if (error) {
+        // Revert on failure
+        queryClient.setQueryData(UNITS_KEY, !metric);
+      }
+    }
+  };
 
   const isImperial = !useMetric;
   const weightUnit = useMetric ? "kg" : "lbs";
