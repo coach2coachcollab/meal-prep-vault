@@ -174,16 +174,24 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     const nm = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
     const commentIds = data.map((c) => c.id);
     const { data: allLikes } = commentIds.length > 0
-      ? await supabase.from("comment_likes").select("comment_id, user_id").in("comment_id", commentIds)
+      ? await supabase.from("comment_likes").select("comment_id, user_id, reaction_type").in("comment_id", commentIds)
       : { data: [] };
     return data.map((c) => {
       const likes = (allLikes || []).filter((l) => l.comment_id === c.id);
+      const reactionCounts: Record<string, number> = {};
+      likes.forEach((l) => {
+        const rt = (l as any).reaction_type || "👍";
+        reactionCounts[rt] = (reactionCounts[rt] || 0) + 1;
+      });
+      const userLike = likes.find((l) => l.user_id === user!.id);
       return {
         ...c,
         parent_id: (c as any).parent_id || null,
         user_name: nm[c.user_id],
         like_count: likes.length,
-        is_liked: likes.some((l) => l.user_id === user!.id),
+        is_liked: !!userLike,
+        user_reaction: userLike ? ((userLike as any).reaction_type || "👍") : null,
+        reaction_counts: reactionCounts,
       };
     });
   };
