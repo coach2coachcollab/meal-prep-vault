@@ -277,7 +277,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
             <CardContent className="py-12 text-center">
               {activeChannel === "saved" ? (
                  <>
-                   <Bookmark className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                   <div className="h-14 w-14 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-2"><Bookmark className="h-7 w-7 text-foreground" /></div>
                    <p className="text-muted-foreground font-medium">No favourites yet</p>
                    <p className="text-sm text-muted-foreground mt-1">Tap the bookmark icon on posts to add them here</p>
                  </>
