@@ -196,10 +196,10 @@ export function UserProfile() {
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">Theme</Label>
             <div className="flex gap-1 bg-muted rounded-lg p-0.5 text-xs">
-              <button onClick={() => { setDarkMode(false); document.documentElement.classList.remove("dark"); localStorage.setItem("theme", "light"); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${!darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
+              <button onClick={() => { if (darkMode) toggleDarkMode(); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${!darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
                 <Sun className="h-3 w-3" /> Light
               </button>
-              <button onClick={() => { setDarkMode(true); document.documentElement.classList.add("dark"); localStorage.setItem("theme", "dark"); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
+              <button onClick={() => { if (!darkMode) toggleDarkMode(); }} className={`px-3 py-1 rounded-md transition-colors flex items-center gap-1 ${darkMode ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}>
                 <Moon className="h-3 w-3" /> Dark
               </button>
             </div>
