@@ -269,36 +269,92 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     setSharing(false);
   };
 
+  const handleGenerateStoryCard = async () => {
+    setGeneratingCard(true);
+    try {
+      const blob = await generateStoryCard({
+        title: meal.title,
+        imageUrl: sharePhoto ? sharePhotoPreview : meal.image_url,
+        calories: meal.calories || 0,
+        protein: meal.protein || 0,
+        carbs: meal.carbs || 0,
+        fats: meal.fats || 0,
+        prepTime: (meal.prep_time || 0) + (meal.cook_time || 0),
+        servings: meal.servings || 1,
+        caption: shareText.trim() || undefined,
+      });
+      setStoryCardBlob(blob);
+      setStoryCardUrl(URL.createObjectURL(blob));
+    } catch {
+      toast.error("Failed to generate story card");
+    }
+    setGeneratingCard(false);
+  };
+
+  const handleDownloadStoryCard = () => {
+    if (!storyCardUrl) return;
+    const a = document.createElement("a");
+    a.href = storyCardUrl;
+    a.download = `${meal.title.replace(/\s+/g, "-").toLowerCase()}-story.png`;
+    a.click();
+    toast.success("Story card downloaded!");
+  };
+
   const handleShareToSocial = async () => {
-    // Build a share-friendly canvas with recipe info
-    const title = meal.title;
-    const text = shareText.trim() || `Check out this recipe: "${title}" 🍽️`;
-    const url = window.location.href;
-
-    if (navigator.share) {
+    // Generate story card first if not already generated
+    let blob = storyCardBlob;
+    if (!blob) {
+      setGeneratingCard(true);
       try {
-        const shareData: ShareData = { title, text, url };
+        blob = await generateStoryCard({
+          title: meal.title,
+          imageUrl: sharePhoto ? sharePhotoPreview : meal.image_url,
+          calories: meal.calories || 0,
+          protein: meal.protein || 0,
+          carbs: meal.carbs || 0,
+          fats: meal.fats || 0,
+          prepTime: (meal.prep_time || 0) + (meal.cook_time || 0),
+          servings: meal.servings || 1,
+          caption: shareText.trim() || undefined,
+        });
+      } catch {
+        toast.error("Failed to generate story card");
+        setGeneratingCard(false);
+        return;
+      }
+      setGeneratingCard(false);
+    }
 
-        // If user attached a photo, include it
-        if (sharePhoto) {
-          const file = new File([sharePhoto], sharePhoto.name, { type: sharePhoto.type });
-          if (navigator.canShare?.({ files: [file] })) {
-            shareData.files = [file];
-          }
-        }
+    const file = new File([blob], "recipe-story.png", { type: "image/png" });
 
-        await navigator.share(shareData);
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: meal.title,
+          text: shareText.trim() || `Check out this recipe: "${meal.title}" 🍽️`,
+        });
         toast.success("Shared!");
         setShareText("");
         removeSharePhoto();
+        setStoryCardBlob(null);
+        setStoryCardUrl(null);
         setShowShareForm(false);
       } catch (err: any) {
-        if (err.name !== "AbortError") toast.error("Share failed");
+        if (err.name !== "AbortError") {
+          // Fallback to download
+          handleDownloadStoryCard();
+        }
       }
     } else {
-      // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(`${text}\n${url}`);
-      toast.success("Copied to clipboard! Paste into your story.");
+      // Fallback: download the story card
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${meal.title.replace(/\s+/g, "-").toLowerCase()}-story.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Story card downloaded! Share it to your favorite platform.");
       setShowShareForm(false);
     }
   };
