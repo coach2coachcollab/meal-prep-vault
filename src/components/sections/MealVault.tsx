@@ -210,7 +210,7 @@ export function MealVault() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
-          <ChefHat className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+          <div className="h-16 w-16 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-3"><ChefHat className="h-8 w-8 text-foreground" /></div>
           <p className="text-muted-foreground">
             {searchTerm ? "No meals match your search" : "No recipes yet. Add your first one!"}
           </p>
