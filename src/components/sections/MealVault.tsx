@@ -5,12 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star, MessageCircle } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star, MessageCircle, Sparkles, Trash2, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { MealDetailView } from "./MealDetailView";
+import { MealPlanView } from "./MealPlanView";
+import { GeneratePlanDialog } from "./GeneratePlanDialog";
 
 interface Meal {
   id: string;
@@ -44,12 +47,17 @@ export function MealVault() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState<"meals" | "plans">("meals");
+  const [planRefreshKey, setPlanRefreshKey] = useState(0);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [cuisineFilter, setCuisineFilter] = useState("all");
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
@@ -97,21 +105,17 @@ export function MealVault() {
   };
 
   const loadCommentCounts = async () => {
-    // Get all community posts that reference recipes
     const { data: posts } = await supabase
       .from("community_posts")
       .select("id, recipe_id")
       .not("recipe_id", "is", null);
     if (!posts || posts.length === 0) return;
-
     const postIds = posts.map((p) => p.id);
     const { data: comments } = await supabase
       .from("post_comments")
       .select("post_id")
       .in("post_id", postIds);
     if (!comments) return;
-
-    // Map post_id back to recipe_id and count
     const postToRecipe = new Map(posts.map((p) => [p.id, p.recipe_id!]));
     const counts: Record<string, number> = {};
     comments.forEach((c) => {
@@ -134,6 +138,16 @@ export function MealVault() {
     }
   };
 
+  const deleteMeal = async (mealId: string) => {
+    const { error } = await supabase.from("meals").delete().eq("id", mealId);
+    if (error) {
+      toast.error("Failed to delete meal");
+    } else {
+      setMeals(meals.filter((m) => m.id !== mealId));
+      toast.success("Meal deleted");
+    }
+  };
+
   const createRecipe = async () => {
     if (!user || !form.title.trim()) {
       toast.error("Please enter a recipe title");
@@ -151,11 +165,7 @@ export function MealVault() {
       const ext = imageFile.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("recipe-images").upload(fileName, imageFile);
-      if (uploadErr) {
-        toast.error("Image upload failed");
-        setSaving(false);
-        return;
-      }
+      if (uploadErr) { toast.error("Image upload failed"); setSaving(false); return; }
       const { data: urlData } = supabase.storage.from("recipe-images").getPublicUrl(fileName);
       image_url = urlData.publicUrl;
       image_filename = fileName;
@@ -176,20 +186,26 @@ export function MealVault() {
     } else {
       toast.success("Recipe created! 🎉");
       setForm({ title: "", description: "", calories: "", protein: "", carbs: "", fats: "", prep_time: "", cook_time: "", servings: "1", tags: "", ingredients: "", instructions: "" });
-      setImageFile(null);
-      setImagePreview(null);
-      setShowCreate(false);
+      setImageFile(null); setImagePreview(null); setShowCreate(false);
       loadMeals();
     }
     setSaving(false);
   };
 
+  const customMeals = meals.filter((m) => m.user_id === user?.id);
+
   const filtered = meals.filter((meal) => {
     const matchesSearch = meal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (meal.tags || []).some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
+      (meal.tags || []).some((t) => t.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (meal.ingredients && JSON.stringify(meal.ingredients).toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFavorite = !showFavoritesOnly || favorites.includes(meal.id);
-    return matchesSearch && matchesFavorite;
+    const matchesCategory = categoryFilter === "all" || meal.category === categoryFilter;
+    const matchesCuisine = cuisineFilter === "all" || meal.cuisine === cuisineFilter;
+    return matchesSearch && matchesFavorite && matchesCategory && matchesCuisine;
   });
+
+  const categories = [...new Set(meals.map((m) => m.category).filter(Boolean))];
+  const cuisines = [...new Set(meals.map((m) => m.cuisine).filter(Boolean))];
 
   // Detail view
   if (selectedMeal) {
@@ -206,149 +222,228 @@ export function MealVault() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-heading flex items-center gap-2 text-foreground">
-            <div className="h-10 w-10 rounded-full bg-icon-bg flex items-center justify-center"><Heart className="h-5 w-5 text-foreground" /></div>
             Meal Vault
+            {customMeals.length > 0 && (
+              <Badge className="bg-primary text-primary-foreground text-xs">{customMeals.length} Custom Meals</Badge>
+            )}
           </h2>
-          
+          <p className="text-sm text-muted-foreground">Browse, create, and organize meal ideas and plans</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Add Meal
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Create New Meal
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setShowGenerateDialog(true)}>
+            <Sparkles className="h-4 w-4" /> Generate Nutrition Plan
+          </Button>
+        </div>
       </div>
 
-      {/* Search + Filter */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search meals or tags..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      {/* Tabs */}
+      <div className="flex justify-center">
+        <div className="inline-flex w-full rounded-lg border border-border overflow-hidden">
+          <button
+            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === "meals" ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("meals")}
+          >
+            Individual Meals
+          </button>
+          <button
+            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === "plans" ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("plans")}
+          >
+            Meal Plans
+          </button>
         </div>
-        <Button variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
-          <Heart className="h-4 w-4 mr-1" /> Favorites
-        </Button>
       </div>
 
-      {/* Results */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="h-16 w-16 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-3"><ChefHat className="h-8 w-8 text-foreground" /></div>
-          <p className="text-section-label font-medium">
-            {searchTerm ? "No meals match your search" : "No recipes yet. Add your first one!"}
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {filtered.map((meal) => {
-            const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
-            const allTags = [...(meal.tags || []), ...(meal.diet_tags || []), ...(meal.health_tags || [])];
-            const mealRating = ratings[meal.id];
-
-            return (
-              <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                {/* Image banner */}
-                {meal.image_url && (
-                  <div className="relative h-40 overflow-hidden">
-                    <img src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleFavorite(meal.id); }}
-                      className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
-                    >
-                      <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
-                    </button>
-                  </div>
+      {activeTab === "meals" ? (
+        <>
+          {/* Search + Filters */}
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search meals, ingredients, or tags..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+                {categories.length > 0 && (
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="All categories" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {categories.map((c) => <SelectItem key={c} value={c!}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 )}
+                {cuisines.length > 0 && (
+                  <Select value={cuisineFilter} onValueChange={setCuisineFilter}>
+                    <SelectTrigger className="w-[130px]"><SelectValue placeholder="All cuisines" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All cuisines</SelectItem>
+                      {cuisines.map((c) => <SelectItem key={c} value={c!}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
+                  <Heart className="h-4 w-4 mr-1" /> Favorites
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-                <CardContent className={`${meal.image_url ? 'pt-3' : 'pt-4'} pb-3 px-4 space-y-2.5`}>
-                  {/* Title + desc */}
-                  <div>
-                    <h3 className="font-semibold text-sm truncate">{meal.title}</h3>
-                    {meal.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{meal.description}</p>
-                    )}
-                  </div>
+          {/* Results count */}
+          <p className="text-sm text-muted-foreground">
+            {filtered.length} meals found
+            {customMeals.length > 0 && <span className="text-primary ml-1">({customMeals.length} custom)</span>}
+          </p>
 
-                  {/* Per-serving macro badges */}
-                  {(() => {
-                    const s = meal.servings || 1;
-                    const cal = Math.round((meal.calories || 0) / s);
-                    const p = Math.round(((meal.protein || 0) / s) * 10) / 10;
-                    const c = Math.round(((meal.carbs || 0) / s) * 10) / 10;
-                    const f = Math.round(((meal.fats || 0) / s) * 10) / 10;
-                    return (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold">{cal}</span>
-                        <span className="text-[10px] text-muted-foreground">cal/serving</span>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-protein/15 text-macro-protein border-0 font-semibold">
-                          {p}g <span className="font-normal ml-0.5">protein</span>
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-carbs/15 text-macro-carbs border-0 font-semibold">
-                          {c}g <span className="font-normal ml-0.5">carbs</span>
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-fat/15 text-macro-fat border-0 font-semibold">
-                          {f}g <span className="font-normal ml-0.5">fat</span>
-                        </Badge>
+          {/* Meal Grid */}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="h-16 w-16 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-3"><ChefHat className="h-8 w-8 text-foreground" /></div>
+              <p className="text-muted-foreground">
+                {searchTerm ? "No meals match your search" : "No recipes yet. Add your first one!"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((meal) => {
+                const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
+                const allTags = [...(meal.tags || []), ...(meal.diet_tags || []), ...(meal.health_tags || [])];
+                const mealRating = ratings[meal.id];
+                const s = meal.servings || 1;
+                const cal = Math.round((meal.calories || 0) / s);
+                const p = Math.round(((meal.protein || 0) / s) * 10) / 10;
+                const c = Math.round(((meal.carbs || 0) / s) * 10) / 10;
+                const f = Math.round(((meal.fats || 0) / s) * 10) / 10;
+
+                return (
+                  <Card key={meal.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                    {/* Image */}
+                    {meal.image_url && (
+                      <div className="relative h-44 overflow-hidden">
+                        <img src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(meal.id); }}
+                          className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
+                        >
+                          <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                        </button>
+                        {/* Macro overlay on image */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-bold">{cal}</span>
+                            <span className="text-white/70 text-[10px]">cal</span>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-macro-protein/80 text-white border-0">{p}g <span className="font-normal">protein</span></Badge>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-macro-carbs/80 text-white border-0">{c}g <span className="font-normal">carbs</span></Badge>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-macro-fat/80 text-white border-0">{f}g <span className="font-normal">fat</span></Badge>
+                          </div>
+                        </div>
                       </div>
-                    );
-                  })()}
+                    )}
 
-                  {/* Time + servings + rating */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-3">
-                      {totalTime > 0 && (
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {totalTime} min</span>
-                      )}
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {mealRating && (
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-star text-star" />
-                          <span className="font-medium">{mealRating.avg}</span>
-                          <span>({mealRating.count})</span>
+                    {/* No image macro display */}
+                    {!meal.image_url && (
+                      <CardContent className="pt-3 pb-0 px-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold">{cal}</span>
+                          <span className="text-[10px] text-muted-foreground">cal/serving</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-protein/15 text-macro-protein border-0 font-semibold">{p}g protein</Badge>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-carbs/15 text-macro-carbs border-0 font-semibold">{c}g carbs</Badge>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-macro-fat/15 text-macro-fat border-0 font-semibold">{f}g fat</Badge>
+                        </div>
+                      </CardContent>
+                    )}
+
+                    <CardContent className={`${meal.image_url ? 'pt-3' : 'pt-2'} pb-3 px-4 space-y-2`}>
+                      <div>
+                        <h3 className="font-semibold text-sm truncate">{meal.title}</h3>
+                        {meal.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{meal.description}</p>}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3">
+                          {totalTime > 0 && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {totalTime} min</span>}
+                          <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {meal.servings || 1} serving{(meal.servings || 1) > 1 ? "s" : ""}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {mealRating && (
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-star text-star" />
+                              <span className="font-medium">{mealRating.avg}</span>
+                              <span>({mealRating.count})</span>
+                            </div>
+                          )}
+                          {(commentCounts[meal.id] || 0) > 0 && (
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{commentCounts[meal.id]}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {allTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {allTags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                          ))}
+                          {allTags.length > 3 && <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{allTags.length - 3} more</Badge>}
                         </div>
                       )}
-                      {(commentCounts[meal.id] || 0) > 0 && (
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3" />
-                          <span>{commentCounts[meal.id]}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Tags */}
-                  {allTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {allTags.slice(0, 3).map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">{tag}</Badge>
-                      ))}
-                      {allTags.length > 3 && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{allTags.length - 3} more</Badge>
-                      )}
-                    </div>
-                  )}
-
-                  {/* View button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-1.5 text-xs"
-                    onClick={() => setSelectedMeal(meal)}
-                  >
-                    <Eye className="h-3.5 w-3.5" /> View
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                      {/* Action buttons */}
+                      <div className="flex gap-1.5">
+                        <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={() => setSelectedMeal(meal)}>
+                          <Eye className="h-3.5 w-3.5" /> View
+                        </Button>
+                        {meal.user_id === user?.id && (
+                          <>
+                            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => deleteMeal(meal.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        <MealPlanView
+          searchTerm={searchTerm}
+          showFavoritesOnly={showFavoritesOnly}
+          refreshKey={planRefreshKey}
+        />
       )}
+
+      {/* Generate Plan Dialog */}
+      <GeneratePlanDialog
+        open={showGenerateDialog}
+        onOpenChange={setShowGenerateDialog}
+        onPlanGenerated={() => {
+          setPlanRefreshKey((k) => k + 1);
+          setActiveTab("plans");
+        }}
+      />
 
       {/* Create Recipe Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
