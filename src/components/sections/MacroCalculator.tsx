@@ -81,7 +81,6 @@ export function MacroCalculator() {
     const protein = wKg * 2.2; // 1g per lb
     const fats = (calories * 0.25) / 9;
     const carbs = (calories - protein * 4 - fats * 9) / 4;
-    const carbs = (calories - protein * 4 - fats * 9) / 4;
 
     const res: MacroResult = {
       bmr: Math.round(bmr),
