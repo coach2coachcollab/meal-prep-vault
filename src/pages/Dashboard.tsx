@@ -23,6 +23,7 @@ import { User, Zap, Moon, Sun } from "lucide-react";
 import { useStreak } from "@/hooks/useStreak";
 
 export default function Dashboard() {
+  const { isDark, toggle: toggleTheme } = useTheme();
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("journal");
