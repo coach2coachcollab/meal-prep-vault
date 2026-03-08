@@ -152,22 +152,44 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     if (!user) return;
     const totalServings = meal.servings || 1;
     const factor = servingCount / totalServings;
-    const { error } = await supabase.from("journal_entries").insert({
-      user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
+
+    const optimisticEntry: JournalEntry = {
+      id: `temp-${Date.now()}`,
+      meal_type: addMealType,
+      food_name: meal.title,
       calories: r2((meal.calories || 0) * factor),
       protein_g: r2((meal.protein || 0) * factor),
       carbs_g: r2((meal.carbs || 0) * factor),
       fat_g: r2((meal.fats || 0) * factor),
+      recipe_id: meal.id,
+      image_url: null,
+      servings: servingCount,
+    };
+
+    // Optimistic update
+    const qk = queryKeys.journalEntries(user.id, date);
+    const prev = queryClient.getQueryData<JournalEntry[]>(qk);
+    queryClient.setQueryData(qk, [...(prev || []), optimisticEntry]);
+
+    setDialogOpen(false);
+    setRecipeSearch("");
+    setSelectedVaultMeal(null);
+    setVaultServings(1);
+    toast.success(`${meal.title} logged (${servingCount} serving${servingCount !== 1 ? "s" : ""})!`);
+
+    const { error } = await supabase.from("journal_entries").insert({
+      user_id: user.id, date, meal_type: addMealType, food_name: meal.title,
+      calories: optimisticEntry.calories,
+      protein_g: optimisticEntry.protein_g,
+      carbs_g: optimisticEntry.carbs_g,
+      fat_g: optimisticEntry.fat_g,
       recipe_id: meal.id, servings: servingCount
     });
-    if (!error) {
-      setDialogOpen(false);
-      setRecipeSearch("");
-      setSelectedVaultMeal(null);
-      setVaultServings(1);
-      invalidateJournal();
-      toast.success(`${meal.title} logged (${servingCount} serving${servingCount !== 1 ? "s" : ""})!`);
+    if (error) {
+      queryClient.setQueryData(qk, prev); // rollback
+      toast.error("Failed to log meal");
     }
+    invalidateJournal();
   };
 
   const addFood = async () => {
@@ -206,25 +228,56 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       }
     }
 
+    const optimisticEntry: JournalEntry = {
+      id: `temp-${Date.now()}`,
+      meal_type: addMealType,
+      food_name: foodName.trim() || "Meal photo",
+      calories: parseFloat(foodCals) || 0,
+      protein_g: parseFloat(foodProtein) || 0,
+      carbs_g: parseFloat(foodCarbs) || 0,
+      fat_g: parseFloat(foodFat) || 0,
+      recipe_id,
+      image_url,
+      servings: 1,
+    };
+
+    // Optimistic update
+    const qk = queryKeys.journalEntries(user.id, date);
+    const prev = queryClient.getQueryData<JournalEntry[]>(qk);
+    queryClient.setQueryData(qk, [...(prev || []), optimisticEntry]);
+
+    setFoodName("");setFoodCals("");setFoodProtein("");setFoodCarbs("");setFoodFat("");
+    setMealPhoto(null);setMealPhotoPreview(null);setSaveToVault(false);
+    setDialogOpen(false);
+    toast.success(recipe_id ? "Food logged & saved to Vault! 🎉" : "Food logged!");
+
     const { error } = await supabase.from("journal_entries").insert({
-      user_id: user.id, date, meal_type: addMealType, food_name: foodName.trim() || "Meal photo",
-      calories: parseFloat(foodCals) || 0, protein_g: parseFloat(foodProtein) || 0,
-      carbs_g: parseFloat(foodCarbs) || 0, fat_g: parseFloat(foodFat) || 0,
+      user_id: user.id, date, meal_type: addMealType, food_name: optimisticEntry.food_name,
+      calories: optimisticEntry.calories, protein_g: optimisticEntry.protein_g,
+      carbs_g: optimisticEntry.carbs_g, fat_g: optimisticEntry.fat_g,
       image_url,
       ...(recipe_id ? { recipe_id } : {})
     });
-    if (!error) {
-      setFoodName("");setFoodCals("");setFoodProtein("");setFoodCarbs("");setFoodFat("");
-      setMealPhoto(null);setMealPhotoPreview(null);setSaveToVault(false);
-      setDialogOpen(false);
-      invalidateJournal();
-      if (recipe_id) queryClient.invalidateQueries({ queryKey: queryKeys.dbMeals() });
-      toast.success(recipe_id ? "Food logged & saved to Vault! 🎉" : "Food logged!");
+    if (error) {
+      queryClient.setQueryData(qk, prev); // rollback
+      toast.error("Failed to log food");
     }
+    invalidateJournal();
+    if (recipe_id) queryClient.invalidateQueries({ queryKey: queryKeys.dbMeals() });
   };
 
   const deleteEntry = async (id: string) => {
-    await supabase.from("journal_entries").delete().eq("id", id);
+    if (!user) return;
+    // Optimistic delete
+    const qk = queryKeys.journalEntries(user.id, date);
+    const prev = queryClient.getQueryData<JournalEntry[]>(qk);
+    queryClient.setQueryData(qk, (prev || []).filter((e) => e.id !== id));
+
+    const { error } = await supabase.from("journal_entries").delete().eq("id", id);
+    if (error) {
+      queryClient.setQueryData(qk, prev); // rollback
+      toast.error("Failed to delete entry");
+    }
     invalidateJournal();
   };
 
