@@ -186,7 +186,7 @@ export function WeeklySummaryCharts() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
-          <h3 className="font-bold text-lg">Summary</h3>
+          <h3 className="font-heading text-lg">Summary</h3>
         </div>
         {/* Toggle */}
         <div className="flex gap-1 bg-muted rounded-lg p-1">
