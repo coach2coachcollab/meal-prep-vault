@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Flame, Zap, Trophy, Target, Calendar, TrendingUp } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Flame, Zap, Trophy, Target, Calendar, TrendingUp, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStreakReminder } from "@/hooks/useStreakReminder";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 
@@ -15,6 +17,48 @@ const milestones = [
   { days: 60, icon: "⭐", title: "Two Month Hero", description: "60 day streak!" },
   { days: 100, icon: "👑", title: "Century Club", description: "100 day streak!" },
 ];
+
+function ReminderSettings() {
+  const { reminderEnabled, enableReminder, disableReminder, notificationPermission } = useStreakReminder();
+
+  const handleToggle = (checked: boolean) => {
+    if (checked) {
+      enableReminder("18:00");
+    } else {
+      disableReminder();
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary" />
+          Daily Reminder
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Streak Reminder</p>
+            <p className="text-xs text-muted-foreground">
+              Get notified if you haven't logged activity
+            </p>
+          </div>
+          <Switch
+            checked={reminderEnabled}
+            onCheckedChange={handleToggle}
+          />
+        </div>
+        {notificationPermission === "denied" && reminderEnabled && (
+          <p className="text-xs text-warning mt-2">
+            Browser notifications blocked. You'll still see in-app reminders.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 interface StreakDetailsProps {
   onBack: () => void;
@@ -234,6 +278,9 @@ export function StreakDetails({ onBack, streak }: StreakDetailsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Reminder Settings */}
+      <ReminderSettings />
 
       {/* Milestones */}
       <Card>
