@@ -79,6 +79,8 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
   const [allMeals, setAllMeals] = useState<DbMeal[]>([]);
   const [swapSearch, setSwapSearch] = useState("");
 
+  const [duplicating, setDuplicating] = useState<string | null>(null);
+
   // Shopping list generation
   const [generatingList, setGeneratingList] = useState(false);
 
