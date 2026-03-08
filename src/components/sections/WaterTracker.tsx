@@ -257,8 +257,8 @@ export function WaterTracker() {
       {/* Notes */}
       <Card>
         <CardContent className="pt-4 pb-4 space-y-2">
-          <p className="text-xs font-medium flex items-center gap-1">
-            <StickyNote className="h-3.5 w-3.5 text-primary" /> Daily Notes
+          <p className="text-xs font-semibold flex items-center gap-1 text-section-label">
+            <StickyNote className="h-3.5 w-3.5 text-section-label" /> Daily Notes
           </p>
           <Textarea
             placeholder="How are you feeling today? Any wins or struggles?"
