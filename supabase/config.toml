@@ -2,3 +2,6 @@ project_id = "yovtootzxrgfqkllqyxp"
 
 [functions.extract-recipe-from-image]
 verify_jwt = false
+
+[functions.send-streak-reminders]
+verify_jwt = false
