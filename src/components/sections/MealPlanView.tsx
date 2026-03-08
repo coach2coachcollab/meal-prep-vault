@@ -372,8 +372,36 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey }: Meal
 
                 {isExpanded && (
                   <div className="mt-3 space-y-2">
-                    {dayEntries.map((e) => (
-                      <div key={e.id} className={`flex items-center gap-3 p-3 rounded-lg ${mealTimeColors[e.meal_time]?.replace("text-", "bg-").split(" ")[0] || "bg-muted/50"}`}>
+                    {dayEntries
+                      .sort((a, b) => {
+                        const order = ["breakfast", "lunch", "dinner", "snack"];
+                        return order.indexOf(a.meal_time) - order.indexOf(b.meal_time);
+                      })
+                      .map((e) => (
+                      <div
+                        key={e.id}
+                        draggable
+                        onDragStart={() => setDragEntryId(e.id)}
+                        onDragEnd={() => { setDragEntryId(null); setDragOverEntryId(null); }}
+                        onDragOver={(ev) => { ev.preventDefault(); setDragOverEntryId(e.id); }}
+                        onDragLeave={() => setDragOverEntryId(null)}
+                        onDrop={(ev) => {
+                          ev.preventDefault();
+                          if (dragEntryId && dragEntryId !== e.id) reorderEntries(dragEntryId, e.id);
+                          setDragEntryId(null);
+                          setDragOverEntryId(null);
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-grab active:cursor-grabbing transition-all ${
+                          dragOverEntryId === e.id && dragEntryId !== e.id
+                            ? "ring-2 ring-primary ring-offset-2 scale-[1.02]"
+                            : ""
+                        } ${dragEntryId === e.id ? "opacity-50" : ""} ${mealTimeColors[e.meal_time]?.replace("text-", "bg-").split(" ")[0] || "bg-muted/50"}`}
+                      >
+                        <div className="flex flex-col gap-0.5 text-muted-foreground shrink-0 cursor-grab">
+                          <div className="w-4 h-0.5 bg-current rounded" />
+                          <div className="w-4 h-0.5 bg-current rounded" />
+                          <div className="w-4 h-0.5 bg-current rounded" />
+                        </div>
                         {e.meal?.image_url && (
                           <img src={e.meal.image_url} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
                         )}
