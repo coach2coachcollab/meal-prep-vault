@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Play, Square, Plus, Trash2, Dumbbell, Clock, Check, Search,
   ChevronDown, ChevronUp, Loader2, Trophy, RotateCcw, ArrowLeft, Weight, Crown,
-  Timer, X, Copy,
+  Timer, X, Copy, LayoutTemplate,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
