@@ -307,6 +307,7 @@ export function UserProfile() {
         </CardContent>
       </Card>
 
+      {profileData?.goal && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-section-label font-label uppercase">Your Profile</CardTitle>
