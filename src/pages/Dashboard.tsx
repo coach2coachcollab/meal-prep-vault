@@ -197,7 +197,7 @@ export default function Dashboard() {
             setNutritionSub(sub);
             if (sub === "journal") setAutoOpenLog(true);
           }
-          if (tab === "plan") setPlanSub(sub);
+          if (tab === "fitness") setFitnessSub(sub);
         }}
       />
     </div>
