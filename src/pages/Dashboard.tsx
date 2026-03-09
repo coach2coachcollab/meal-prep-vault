@@ -9,6 +9,7 @@ import { GroceryList } from "@/components/sections/GroceryList";
 import { RecipePlanner } from "@/components/sections/RecipePlanner";
 import { ExerciseLibrary } from "@/components/sections/ExerciseLibrary";
 import { WorkoutLogger } from "@/components/sections/WorkoutLogger";
+import { WorkoutTemplates } from "@/components/sections/WorkoutTemplates";
 import { CommunityHub } from "@/components/sections/CommunityHub";
 import { UserProfile } from "@/components/sections/UserProfile";
 import { HabitTracker } from "@/components/sections/HabitTracker";
