@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Heart, ArrowLeft, Clock, Users, Star, ShoppingCart, MessageCircle, Share2, Send, MoreHorizontal, Pencil, Trash2, X, Check, ImagePlus, Instagram, Globe, Download, Loader2, Lock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -566,24 +565,9 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
               </div>
             </div>
             {meal.user_id === user?.id && (
-              <div className="flex items-center gap-2 ml-auto">
-                {isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
-                <div className="flex flex-col">
-                  <Switch
-                    checked={isPublic}
-                    onCheckedChange={async (checked) => {
-                      setIsPublic(checked);
-                      const { error } = await supabase.from("meals").update({ is_public: checked }).eq("id", meal.id);
-                      if (error) {
-                        setIsPublic(!checked);
-                        toast.error("Failed to update visibility");
-                      } else {
-                        toast.success(checked ? "Recipe is now public" : "Recipe is now private");
-                      }
-                    }}
-                  />
-                  <p className="text-[10px] text-muted-foreground">{isPublic ? "Public" : "Private"}</p>
-                </div>
+              <div className="flex items-center gap-1.5 ml-auto">
+                {isPublic ? <Globe className="h-3.5 w-3.5 text-primary" /> : <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                <p className="text-[10px] text-muted-foreground">{isPublic ? "Public" : "Private"}</p>
               </div>
             )}
           </div>

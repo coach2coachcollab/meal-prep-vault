@@ -803,6 +803,7 @@ export type Database = {
           allergies: string[] | null
           avatar_url: string | null
           created_at: string
+          default_recipes_public: boolean
           diet_prefs: string[] | null
           goal: string | null
           goal_weight_kg: number | null
@@ -821,6 +822,7 @@ export type Database = {
           allergies?: string[] | null
           avatar_url?: string | null
           created_at?: string
+          default_recipes_public?: boolean
           diet_prefs?: string[] | null
           goal?: string | null
           goal_weight_kg?: number | null
@@ -839,6 +841,7 @@ export type Database = {
           allergies?: string[] | null
           avatar_url?: string | null
           created_at?: string
+          default_recipes_public?: boolean
           diet_prefs?: string[] | null
           goal?: string | null
           goal_weight_kg?: number | null

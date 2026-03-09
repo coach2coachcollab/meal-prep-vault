@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Save, LogOut, Moon, Sun, Camera } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Save, LogOut, Moon, Sun, Camera, Globe, Lock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +25,8 @@ export function UserProfile() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { isDark: darkMode, toggle: toggleDarkMode } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [defaultPublic, setDefaultPublic] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
@@ -37,7 +40,7 @@ export function UserProfile() {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg")
+        .select("name, avatar_url, goal, activity_level, diet_prefs, allergies, age, height_cm, weight_kg, default_recipes_public")
         .eq("user_id", user.id)
         .single();
       return data;
@@ -50,6 +53,7 @@ export function UserProfile() {
     if (profileData.name) setName(profileData.name);
     if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
     if (profileData.age) setAge(String(profileData.age));
+    setDefaultPublic(profileData.default_recipes_public ?? false);
   }, [profileData]);
 
   useEffect(() => {
@@ -99,6 +103,22 @@ export function UserProfile() {
     toast.success("Avatar updated!");
   };
 
+  const bulkUpdateVisibility = async (makePublic: boolean) => {
+    if (!user) return;
+    setBulkUpdating(true);
+    const { error, count } = await supabase
+      .from("meals")
+      .update({ is_public: makePublic })
+      .eq("user_id", user.id);
+    setBulkUpdating(false);
+    if (error) {
+      toast.error("Failed to update recipes");
+    } else {
+      toast.success(`All your recipes are now ${makePublic ? "public" : "private"}`);
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+    }
+  };
+
   const saveProfile = async () => {
     if (!user) return;
     setLoading(true);
@@ -121,6 +141,7 @@ export function UserProfile() {
         age: parseInt(age) || null,
         height_cm: height_cm || null,
         weight_kg: weight_kg || null,
+        default_recipes_public: defaultPublic,
       } as any)
       .eq("user_id", user.id);
     
@@ -243,6 +264,46 @@ export function UserProfile() {
             <Save className="h-4 w-4 mr-1" />
             {loading ? "Saving..." : "Save Changes"}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-section-label font-label uppercase">Recipe Visibility</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {defaultPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+              <div>
+                <p className="text-sm font-medium">Default new recipes to public</p>
+                <p className="text-xs text-muted-foreground">New recipes you create will be {defaultPublic ? "visible to everyone" : "private"}</p>
+              </div>
+            </div>
+            <Switch checked={defaultPublic} onCheckedChange={setDefaultPublic} />
+          </div>
+          <div className="border-t border-border pt-3 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              disabled={bulkUpdating}
+              onClick={() => bulkUpdateVisibility(true)}
+            >
+              {bulkUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Globe className="h-3 w-3 mr-1" />}
+              Make all public
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              disabled={bulkUpdating}
+              onClick={() => bulkUpdateVisibility(false)}
+            >
+              {bulkUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
+              Make all private
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

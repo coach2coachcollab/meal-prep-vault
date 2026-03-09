@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN default_recipes_public boolean NOT NULL DEFAULT false;
