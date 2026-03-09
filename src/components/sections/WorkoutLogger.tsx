@@ -969,7 +969,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
   }
 
   const totalSets = sets.length;
-  const totalVolume = sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+  const totalVolume = Math.round(sets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0));
 
   return (
     <div className="space-y-4">
