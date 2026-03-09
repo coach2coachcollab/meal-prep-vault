@@ -15,6 +15,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { WorkoutAnalytics } from "./WorkoutAnalytics";
 
 interface Exercise {
   id: string;
@@ -588,6 +589,9 @@ export function WorkoutLogger() {
           ))}
         </div>
       )}
+
+      {/* Analytics */}
+      <WorkoutAnalytics />
     </div>
   );
 }
