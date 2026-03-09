@@ -106,6 +106,45 @@ export type Database = {
         }
         Relationships: []
       }
+      exercises: {
+        Row: {
+          category: string | null
+          created_at: string
+          equipment: string | null
+          id: string
+          image_url: string | null
+          instructions: string | null
+          is_public: boolean | null
+          muscle_group: string | null
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          equipment?: string | null
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          is_public?: boolean | null
+          muscle_group?: string | null
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          equipment?: string | null
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          is_public?: boolean | null
+          muscle_group?: string | null
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       favorite_meals: {
         Row: {
           created_at: string
@@ -1099,6 +1138,96 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workout_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          name: string
+          notes: string | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_sets: {
+        Row: {
+          created_at: string
+          distance_meters: number | null
+          duration_seconds: number | null
+          exercise_id: string
+          id: string
+          notes: string | null
+          reps: number | null
+          rest_seconds: number | null
+          set_number: number
+          weight_kg: number | null
+          workout_log_id: string
+        }
+        Insert: {
+          created_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          exercise_id: string
+          id?: string
+          notes?: string | null
+          reps?: number | null
+          rest_seconds?: number | null
+          set_number?: number
+          weight_kg?: number | null
+          workout_log_id: string
+        }
+        Update: {
+          created_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          exercise_id?: string
+          id?: string
+          notes?: string | null
+          reps?: number | null
+          rest_seconds?: number | null
+          set_number?: number
+          weight_kg?: number | null
+          workout_log_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sets_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sets_workout_log_id_fkey"
+            columns: ["workout_log_id"]
+            isOneToOne: false
+            referencedRelation: "workout_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
