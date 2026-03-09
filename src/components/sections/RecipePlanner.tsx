@@ -176,9 +176,36 @@ export function RecipePlanner() {
             </div>
           </div>
 
+          {/* Servings */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Servings</Label>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setServings(Math.max(1, servings - 1))}
+                disabled={servings <= 1}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="text-lg font-semibold w-8 text-center">{servings}</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setServings(servings + 1)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
           {/* Macros */}
           <div>
-            <Label className="text-sm font-medium mb-3 block">Nutrition Info</Label>
+            <Label className="text-sm font-medium mb-1 block">Nutrition Info <span className="text-xs text-muted-foreground font-normal">(per 1 serving)</span></Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Calories</Label>
@@ -197,6 +224,20 @@ export function RecipePlanner() {
                 <Input type="number" placeholder="0" value={fats} onChange={(e) => setFats(e.target.value)} />
               </div>
             </div>
+            {servings > 1 && (
+              <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Total for {servings} servings:</p>
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <span className="font-semibold">{scaledMacros.calories} kcal</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>{scaledMacros.protein}g P</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>{scaledMacros.carbs}g C</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>{scaledMacros.fats}g F</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Ingredients & Instructions */}
