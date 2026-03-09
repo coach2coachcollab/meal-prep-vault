@@ -85,6 +85,29 @@ export function WorkoutAnalytics() {
     });
   }, [logs, sets]);
 
+  // Muscle group breakdown
+  const muscleData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    sets.forEach((s) => {
+      const mg = s.exercises?.muscle_group || "Other";
+      counts[mg] = (counts[mg] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, sets]) => ({ name, sets }))
+      .sort((a, b) => b.sets - a.sets);
+  }, [sets]);
+
+  const MUSCLE_COLORS = [
+    "hsl(var(--primary))",
+    "hsl(var(--primary) / 0.8)",
+    "hsl(var(--primary) / 0.6)",
+    "hsl(var(--primary) / 0.45)",
+    "hsl(var(--primary) / 0.3)",
+    "hsl(var(--primary) / 0.2)",
+    "hsl(var(--accent))",
+    "hsl(var(--secondary))",
+  ];
+
   // Summary stats
   const totalWorkouts = logs.length;
   const totalVolume = sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
