@@ -150,6 +150,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const profileName = dashData?.profileName || "";
   const macros = dashData?.macros || null;
   const todayJournal = dashData?.todayJournal || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  const loggedMealTypes = dashData?.loggedMealTypes || new Set<string>();
   const habitsToday = dashData?.habitsToday || { done: 0, total: 0 };
   const waterToday = dashData?.waterToday || { glasses: 0, goal: 8 };
 
@@ -172,6 +173,50 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   };
 
   const calPercent = macros ? Math.min(100, (todayJournal.calories / macros.calories) * 100) : 0;
+
+  const getWhatsNextNudge = () => {
+    if (!nudgeData) return null;
+
+    if (!loggedMealTypes.has("Lunch")) {
+      return {
+        title: "Lunch not logged yet",
+        description: "Quick add it now and stay on track.",
+        cta: "Log lunch",
+        icon: Utensils,
+        onClick: () => onNavigate("nutrition:today"),
+      };
+    }
+
+    if (streak > 0 && !nudgeData.hasLoggedToday) {
+      return {
+        title: `Keep your 🔥 ${streak}-day streak alive`,
+        description: "Log one meal or one habit to protect your streak.",
+        cta: "Log now",
+        icon: Zap,
+        onClick: () => onNavigate("nutrition:today"),
+      };
+    }
+
+    if (!nudgeData.hasWorkedOutToday && nudgeData.lastTemplateName) {
+      return {
+        title: `Looks like a ${nudgeData.lastTemplateCategory?.replace("_", " ") || "workout"} day`,
+        description: `${nudgeData.lastTemplateName} is ready when you are.",
+        cta: "Start workout",
+        icon: Dumbbell,
+        onClick: () => onNavigate("fitness"),
+      };
+    }
+
+    return {
+      title: "Great momentum today",
+      description: "Review your progress or share a win with the community.",
+      cta: "View progress",
+      icon: ChevronRight,
+      onClick: () => onNavigate("profile"),
+    };
+  };
+
+  const whatsNext = getWhatsNextNudge();
 
   if (isLoading) return <DashboardSkeleton />;
 
