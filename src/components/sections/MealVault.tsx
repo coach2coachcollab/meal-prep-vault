@@ -160,6 +160,16 @@ export function MealVault() {
     queryClient.invalidateQueries({ queryKey: queryKeys.favorites(user.id) });
   };
 
+  const togglePublic = async (mealId: string, currentValue: boolean) => {
+    const { error } = await supabase.from("meals").update({ is_public: !currentValue }).eq("id", mealId);
+    if (error) {
+      toast.error("Failed to update visibility");
+    } else {
+      toast.success(!currentValue ? "Recipe is now public" : "Recipe is now private");
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals() });
+    }
+  };
+
   const deleteMeal = async (mealId: string) => {
     const { error } = await supabase.from("meals").delete().eq("id", mealId);
     if (error) {
