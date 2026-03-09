@@ -9,20 +9,8 @@ import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
-const tips = [
-  "Protein at every meal helps maintain muscle mass and keeps you satisfied longer.",
-  "Staying hydrated improves energy, digestion, and hormone balance.",
-  "Strength training 2-3x per week supports bone density and metabolism.",
-  "Eating enough healthy fats is essential for hormone production.",
-  "Sleep is the #1 recovery tool — aim for 7-8 hours consistently.",
-  "Fiber-rich foods help maintain stable blood sugar levels throughout the day.",
-  "Managing stress is just as important as exercise for your overall health.",
-  "Eating colorful vegetables provides diverse micronutrients your body needs.",
-];
-
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
-  const [tip] = useState(() => tips[Math.floor(Math.random() * tips.length)]);
   const shownMilestones = useRef(new Set<string>());
 
   const { data: dashData, isLoading } = useQuery({
