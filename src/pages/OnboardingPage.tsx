@@ -71,13 +71,25 @@ export default function OnboardingPage() {
     });
   };
 
+  // Conversion constants
+  const LBS_TO_KG = 0.453592;
+  const IN_TO_CM = 2.54;
+
   const handleFinish = async () => {
     if (!user) return;
 
+    // Convert to metric if imperial
+    const weightKg = data.units === "imperial" 
+      ? parseFloat(data.weightKg) * LBS_TO_KG 
+      : parseFloat(data.weightKg);
+    const heightCm = data.units === "imperial" 
+      ? parseFloat(data.heightCm) * IN_TO_CM 
+      : parseFloat(data.heightCm);
+
     const r = calculateMacros({
       gender: data.gender,
-      weightKg: parseFloat(data.weightKg),
-      heightCm: parseFloat(data.heightCm),
+      weightKg,
+      heightCm,
       age: parseInt(data.age),
       activityLevel: data.activity,
       goal: GOAL_MAP[data.goal] || "maintain",
