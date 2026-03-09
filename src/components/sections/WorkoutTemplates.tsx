@@ -211,7 +211,7 @@ export function WorkoutTemplates({ onStartFromTemplate }: WorkoutTemplatesProps)
                         {te.sets || 3} × {te.reps || "—"}
                       </p>
                       {te.weight_kg && (
-                        <p className="text-[10px] text-muted-foreground">{te.weight_kg} kg</p>
+                        <p className="text-[10px] text-muted-foreground">{Math.round(convertWeight(te.weight_kg) * 10) / 10} {weightUnit}</p>
                       )}
                       {te.rest_seconds && (
                         <p className="text-[10px] text-muted-foreground">{te.rest_seconds}s rest</p>
