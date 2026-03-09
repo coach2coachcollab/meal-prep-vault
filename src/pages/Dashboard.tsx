@@ -25,7 +25,7 @@ export default function Dashboard() {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
-  const [nutritionSub, setNutritionSub] = useState("journal");
+  const [nutritionSub, setNutritionSub] = useState("today");
   const [fitnessSub, setFitnessSub] = useState("workouts");
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
