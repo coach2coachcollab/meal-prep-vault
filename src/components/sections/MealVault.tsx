@@ -60,6 +60,7 @@ export function MealVault() {
   const [planRefreshKey, setPlanRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cuisineFilter, setCuisineFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "mine" | "community">("all");
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
@@ -233,7 +234,10 @@ export function MealVault() {
     const matchesFavorite = !showFavoritesOnly || favorites.includes(meal.id);
     const matchesCategory = categoryFilter === "all" || meal.category === categoryFilter;
     const matchesCuisine = cuisineFilter === "all" || meal.cuisine === cuisineFilter;
-    return matchesSearch && matchesFavorite && matchesCategory && matchesCuisine;
+    const matchesSource = sourceFilter === "all" || 
+      (sourceFilter === "mine" && meal.user_id === user?.id) ||
+      (sourceFilter === "community" && meal.is_public && meal.user_id !== user?.id);
+    return matchesSearch && matchesFavorite && matchesCategory && matchesCuisine && matchesSource;
   });
 
   const categories = [...new Set(meals.map((m) => m.category).filter(Boolean))];
@@ -324,6 +328,14 @@ export function MealVault() {
                     </SelectContent>
                   </Select>
                 )}
+                <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as "all" | "mine" | "community")}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="All recipes" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Recipes</SelectItem>
+                    <SelectItem value="mine">My Recipes</SelectItem>
+                    <SelectItem value="community">Community Recipes</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
                   <Heart className="h-4 w-4 mr-1" /> Favorites
                 </Button>
