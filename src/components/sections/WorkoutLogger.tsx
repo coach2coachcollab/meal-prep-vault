@@ -16,6 +16,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { WorkoutAnalytics } from "./WorkoutAnalytics";
+import confetti from "canvas-confetti";
 
 interface Exercise {
   id: string;
