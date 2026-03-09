@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const [autoOpenLog, setAutoOpenLog] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
 
   const navigateToPost = (postId: string) => {
     setHighlightPostId(postId);
@@ -82,11 +83,16 @@ export default function Dashboard() {
                 <TabsTrigger value="templates">Templates</TabsTrigger>
                 <TabsTrigger value="exercises">Exercises</TabsTrigger>
               </TabsList>
-              <TabsContent value="workouts"><WorkoutLogger /></TabsContent>
+              <TabsContent value="workouts">
+                <WorkoutLogger 
+                  pendingTemplateId={pendingTemplateId} 
+                  onTemplateLoaded={() => setPendingTemplateId(null)} 
+                />
+              </TabsContent>
               <TabsContent value="templates">
                 <WorkoutTemplates onStartFromTemplate={(templateId) => {
+                  setPendingTemplateId(templateId);
                   setFitnessSub("workouts");
-                  window.dispatchEvent(new CustomEvent("start-from-template", { detail: { templateId } }));
                 }} />
               </TabsContent>
               <TabsContent value="exercises"><ExerciseLibrary /></TabsContent>

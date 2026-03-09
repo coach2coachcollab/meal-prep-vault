@@ -65,7 +65,12 @@ function formatTimer(seconds: number) {
 let tempIdCounter = 0;
 const nextTempId = () => `tmp-${++tempIdCounter}`;
 
-export function WorkoutLogger() {
+interface WorkoutLoggerProps {
+  pendingTemplateId?: string | null;
+  onTemplateLoaded?: () => void;
+}
+
+export function WorkoutLogger({ pendingTemplateId, onTemplateLoaded }: WorkoutLoggerProps = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { weightUnit, convertWeight, toKg, useMetric } = usePreferredUnits();
@@ -236,13 +241,11 @@ export function WorkoutLogger() {
   }, []);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const templateId = (e as CustomEvent).detail?.templateId;
-      if (templateId) startFromTemplate(templateId);
-    };
-    window.addEventListener("start-from-template", handler);
-    return () => window.removeEventListener("start-from-template", handler);
-  }, [startFromTemplate]);
+    if (pendingTemplateId && !isActive) {
+      startFromTemplate(pendingTemplateId);
+      onTemplateLoaded?.();
+    }
+  }, [pendingTemplateId, isActive, startFromTemplate, onTemplateLoaded]);
 
   const startRestTimer = (seconds: number) => {
     if (restRef.current) clearInterval(restRef.current);
