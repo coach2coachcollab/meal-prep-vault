@@ -117,21 +117,14 @@ export default function Dashboard() {
         return (
           <ErrorBoundary fallbackMessage="Profile section failed to load.">
             <Tabs value={profileSub} onValueChange={setProfileSub}>
-              <TabsList className="w-full grid grid-cols-4 mb-4">
+              <TabsList className="w-full grid grid-cols-3 mb-4">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="macros">Macros</TabsTrigger>
                 <TabsTrigger value="progress">Progress</TabsTrigger>
-                <TabsTrigger value="partners">Deals</TabsTrigger>
+                <TabsTrigger value="perks">Perks</TabsTrigger>
               </TabsList>
               <TabsContent value="profile"><UserProfile /></TabsContent>
-              <TabsContent value="macros">
-                <MacroCalculator onNavigateToMealVault={() => {
-                  setActiveTab("nutrition");
-                  setNutritionSub("vault");
-                }} />
-              </TabsContent>
               <TabsContent value="progress"><ProgressTracker /></TabsContent>
-              <TabsContent value="partners"><PartnerHub /></TabsContent>
+              <TabsContent value="perks"><PartnerHub /></TabsContent>
             </Tabs>
           </ErrorBoundary>
         );
