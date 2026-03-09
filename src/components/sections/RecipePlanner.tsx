@@ -85,6 +85,7 @@ export function RecipePlanner() {
         protein: parseFloat(protein) || 0,
         carbs: parseFloat(carbs) || 0,
         fats: parseFloat(fats) || 0,
+        servings,
         ingredients: ingredientList,
         instructions: instructionList,
         image_url: imageUrl,
