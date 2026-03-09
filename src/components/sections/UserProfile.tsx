@@ -267,7 +267,46 @@ export function UserProfile() {
         </CardContent>
       </Card>
 
-      {profileData?.goal && (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-section-label font-label uppercase">Recipe Visibility</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {defaultPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+              <div>
+                <p className="text-sm font-medium">Default new recipes to public</p>
+                <p className="text-xs text-muted-foreground">New recipes you create will be {defaultPublic ? "visible to everyone" : "private"}</p>
+              </div>
+            </div>
+            <Switch checked={defaultPublic} onCheckedChange={setDefaultPublic} />
+          </div>
+          <div className="border-t border-border pt-3 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              disabled={bulkUpdating}
+              onClick={() => bulkUpdateVisibility(true)}
+            >
+              {bulkUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Globe className="h-3 w-3 mr-1" />}
+              Make all public
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              disabled={bulkUpdating}
+              onClick={() => bulkUpdateVisibility(false)}
+            >
+              {bulkUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
+              Make all private
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-section-label font-label uppercase">Your Profile</CardTitle>
