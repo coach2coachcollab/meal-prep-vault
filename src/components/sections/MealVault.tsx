@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star, MessageCircle, Sparkles, Trash2, Pencil } from "lucide-react";
+import { Heart, Search, Plus, Clock, Users, Loader2, ChefHat, ImagePlus, Eye, Star, MessageCircle, Sparkles, Trash2, Pencil, Globe, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -157,6 +158,16 @@ export function MealVault() {
       toast.success("Added to favorites");
     }
     queryClient.invalidateQueries({ queryKey: queryKeys.favorites(user.id) });
+  };
+
+  const togglePublic = async (mealId: string, currentValue: boolean) => {
+    const { error } = await supabase.from("meals").update({ is_public: !currentValue }).eq("id", mealId);
+    if (error) {
+      toast.error("Failed to update visibility");
+    } else {
+      toast.success(!currentValue ? "Recipe is now public" : "Recipe is now private");
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals() });
+    }
   };
 
   const deleteMeal = async (mealId: string) => {
@@ -367,6 +378,11 @@ export function MealVault() {
                       >
                         <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                       </button>
+                      {meal.is_public && (
+                        <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground text-[10px] gap-1">
+                          <Globe className="h-3 w-3" /> Public
+                        </Badge>
+                      )}
                       {/* Macro overlay */}
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pb-2.5 pt-8">
                         <div className="flex items-baseline gap-1.5">
@@ -425,6 +441,15 @@ export function MealVault() {
                         </Button>
                         {meal.user_id === user?.id && (
                           <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 shrink-0"
+                              title={meal.is_public ? "Make private" : "Make public"}
+                              onClick={() => togglePublic(meal.id, !!meal.is_public)}
+                            >
+                              {meal.is_public ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                            </Button>
                             <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
                               <Pencil className="h-4 w-4" />
                             </Button>
