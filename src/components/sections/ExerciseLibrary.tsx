@@ -303,14 +303,6 @@ export function ExerciseLibrary() {
         </div>
       )}
 
-      {/* Load More */}
-      {hasNextPage && exercises.length > 0 && (
-        <div className="flex justify-center pt-2">
-          <Button variant="outline" size="sm" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
-            {isFetchingNextPage ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More Exercises"}
-          </Button>
-        </div>
-      )}
 
       {/* Create Exercise Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
