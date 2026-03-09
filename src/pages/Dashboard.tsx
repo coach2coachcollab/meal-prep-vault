@@ -29,7 +29,7 @@ export default function Dashboard() {
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("journal");
-  const [planSub, setPlanSub] = useState("plans");
+  const [fitnessSub, setFitnessSub] = useState("workouts");
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const [autoOpenLog, setAutoOpenLog] = useState(false);
