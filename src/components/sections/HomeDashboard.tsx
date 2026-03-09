@@ -198,17 +198,17 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:habits")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:today")}>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
               <CheckCircle2 className="h-4 w-4 text-foreground" />
             </div>
             <p className="text-lg font-bold text-foreground">{habitsToday.done}/{habitsToday.total}</p>
-            <p className="text-[10px] text-section-label font-label uppercase">Habits done</p>
+            <p className="text-[10px] text-section-label font-label uppercase">Today's Wins</p>
             <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:water")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:today")}>
           <CardContent className="pt-4 pb-4 flex flex-col items-center">
             <div className="relative h-12 w-12 mb-1">
               <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">

@@ -4,17 +4,13 @@ import { useTheme } from "@/hooks/useTheme";
 import { HomeDashboard } from "@/components/sections/HomeDashboard";
 import { MacroCalculator } from "@/components/sections/MacroCalculator";
 import { MealVault } from "@/components/sections/MealVault";
-import { MealJournal } from "@/components/sections/MealJournal";
-import { GroceryList } from "@/components/sections/GroceryList";
-import { RecipePlanner } from "@/components/sections/RecipePlanner";
+import { NutritionToday } from "@/components/sections/NutritionToday";
 import { ExerciseLibrary } from "@/components/sections/ExerciseLibrary";
 import { WorkoutLogger } from "@/components/sections/WorkoutLogger";
 import { WorkoutTemplates } from "@/components/sections/WorkoutTemplates";
 import { CommunityHub } from "@/components/sections/CommunityHub";
 import { UserProfile } from "@/components/sections/UserProfile";
-import { HabitTracker } from "@/components/sections/HabitTracker";
 import { PartnerHub } from "@/components/sections/PartnerHub";
-import { WaterTracker } from "@/components/sections/WaterTracker";
 import { ProgressTracker } from "@/components/sections/ProgressTracker";
 import { NotificationsPage } from "@/components/sections/NotificationsPage";
 import { StreakDetails } from "@/components/sections/StreakDetails";
@@ -29,7 +25,7 @@ export default function Dashboard() {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
-  const [nutritionSub, setNutritionSub] = useState("journal");
+  const [nutritionSub, setNutritionSub] = useState("today");
   const [fitnessSub, setFitnessSub] = useState("workouts");
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
@@ -61,15 +57,11 @@ export default function Dashboard() {
         return (
           <ErrorBoundary fallbackMessage="Nutrition section failed to load.">
             <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
-              <TabsList className="w-full grid grid-cols-4 mb-4">
-                <TabsTrigger value="journal">Journal</TabsTrigger>
-                <TabsTrigger value="water">Wellness</TabsTrigger>
-                <TabsTrigger value="habits">Habits</TabsTrigger>
+              <TabsList className="w-full grid grid-cols-2 mb-4">
+                <TabsTrigger value="today">Today</TabsTrigger>
                 <TabsTrigger value="vault">Vault</TabsTrigger>
               </TabsList>
-              <TabsContent value="journal"><MealJournal autoOpenLog={autoOpenLog} /></TabsContent>
-              <TabsContent value="water"><WaterTracker /></TabsContent>
-              <TabsContent value="habits"><HabitTracker /></TabsContent>
+              <TabsContent value="today"><NutritionToday autoOpenLog={autoOpenLog} /></TabsContent>
               <TabsContent value="vault"><MealVault /></TabsContent>
             </Tabs>
           </ErrorBoundary>
@@ -207,7 +199,7 @@ export default function Dashboard() {
           setActiveTab(tab);
           if (tab === "nutrition") {
             setNutritionSub(sub);
-            if (sub === "journal") setAutoOpenLog(true);
+            if (sub === "today") setAutoOpenLog(true);
           }
           if (tab === "fitness") setFitnessSub(sub);
         }}

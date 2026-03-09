@@ -11,10 +11,10 @@ const tabs = [
 ];
 
 const quickActions = [
-  { id: "log-food", label: "Log Food", icon: UtensilsCrossed, tab: "nutrition", sub: "journal" },
-  { id: "log-water", label: "Log Water", icon: Droplets, tab: "nutrition", sub: "water" },
+  { id: "log-food", label: "Log Food", icon: UtensilsCrossed, tab: "nutrition", sub: "today" },
+  { id: "log-water", label: "Log Water", icon: Droplets, tab: "nutrition", sub: "today" },
   { id: "start-workout", label: "Start Workout", icon: Dumbbell, tab: "fitness", sub: "workouts" },
-  { id: "add-habit", label: "Add Habit", icon: CheckSquare, tab: "nutrition", sub: "habits" },
+  { id: "add-habit", label: "Add Habit", icon: CheckSquare, tab: "nutrition", sub: "today" },
 ];
 
 interface BottomNavProps {
