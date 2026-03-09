@@ -101,6 +101,7 @@ export function RecipePlanner() {
       setProtein("");
       setCarbs("");
       setFats("");
+      setServings(1);
       setIngredients("");
       setInstructions("");
       removeImage();
