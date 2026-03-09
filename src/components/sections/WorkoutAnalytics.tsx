@@ -112,7 +112,7 @@ export function WorkoutAnalytics() {
 
   // Summary stats
   const totalWorkouts = logs.length;
-  const totalVolume = sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+  const totalVolume = Math.round(sets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0));
   const totalDuration = logs.reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
   const avgPerWeek = totalWorkouts > 0 ? (totalWorkouts / Math.min(8, weeklyData.length)).toFixed(1) : "0";
 
