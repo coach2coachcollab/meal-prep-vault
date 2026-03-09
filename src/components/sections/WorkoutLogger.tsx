@@ -79,6 +79,12 @@ export function WorkoutLogger() {
   const [saving, setSaving] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Rest timer
+  const [restSeconds, setRestSeconds] = useState(0);
+  const [restTarget, setRestTarget] = useState(60);
+  const [restActive, setRestActive] = useState(false);
+  const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Exercise picker
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
