@@ -921,6 +921,7 @@ export default function ImportRecipesPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
