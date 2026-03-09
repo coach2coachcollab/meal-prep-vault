@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const [autoOpenLog, setAutoOpenLog] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
 
   const navigateToPost = (postId: string) => {
     setHighlightPostId(postId);
