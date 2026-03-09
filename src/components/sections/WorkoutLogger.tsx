@@ -135,6 +135,19 @@ export function WorkoutLogger() {
     setWorkoutName("");
   };
 
+  const deleteWorkout = async (workoutId: string) => {
+    if (!user) return;
+    // Delete sets first (cascade won't help with RLS), then the log
+    await supabase.from("workout_sets").delete().eq("workout_log_id", workoutId);
+    const { error } = await supabase.from("workout_logs").delete().eq("id", workoutId);
+    if (error) {
+      toast.error("Failed to delete workout");
+    } else {
+      toast.success("Workout deleted");
+      queryClient.invalidateQueries({ queryKey: queryKeys.workoutLogs(user.id) });
+    }
+  };
+
   const discardWorkout = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
