@@ -17,6 +17,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { WorkoutAnalytics } from "./WorkoutAnalytics";
+import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 import confetti from "canvas-confetti";
 
 interface Exercise {
@@ -67,6 +68,7 @@ const nextTempId = () => `tmp-${++tempIdCounter}`;
 export function WorkoutLogger() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { weightUnit, convertWeight, toKg, useMetric } = usePreferredUnits();
 
   // Detail view
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
@@ -500,7 +502,7 @@ export function WorkoutLogger() {
 
       const previousBest = historicalMax?.weight_kg ?? 0;
       if (current.weight > (previousBest as number)) {
-        toast.success(`🏆 New PR! ${current.name}: ${current.weight} kg`, { duration: 5000 });
+        toast.success(`🏆 New PR! ${current.name}: ${Math.round(convertWeight(current.weight) * 10) / 10} ${weightUnit}`, { duration: 5000 });
         confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       }
     }
@@ -625,7 +627,7 @@ export function WorkoutLogger() {
                   {/* Header */}
                   <div className="grid grid-cols-[32px_1fr_1fr_1fr_40px] gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
                     <span>Set</span>
-                    <span>Weight (kg)</span>
+                    <span>Weight ({weightUnit})</span>
                     <span>Reps</span>
                     <span>Rest (s)</span>
                     <span></span>
@@ -643,8 +645,12 @@ export function WorkoutLogger() {
                         type="number"
                         className="h-8 text-sm text-center"
                         placeholder="0"
-                        value={set.weight_kg ?? ""}
-                        onChange={(e) => updateSet(exIdx, set.tempId, "weight_kg", e.target.value ? Number(e.target.value) : null)}
+                        value={set.weight_kg != null ? Math.round(convertWeight(set.weight_kg) * 10) / 10 : ""}
+                        onChange={(e) => {
+                          const displayVal = e.target.value ? Number(e.target.value) : null;
+                          const kgVal = displayVal != null ? Math.round(toKg(displayVal) * 100) / 100 : null;
+                          updateSet(exIdx, set.tempId, "weight_kg", kgVal);
+                        }}
                       />
                       <Input
                         type="number"
@@ -910,6 +916,7 @@ interface WorkoutSetRow {
 }
 
 function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
+  const { weightUnit, convertWeight } = usePreferredUnits();
   const { data: workout, isLoading: loadingWorkout } = useQuery({
     queryKey: ["workout-detail", workoutId],
     queryFn: async () => {
@@ -962,7 +969,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
   }
 
   const totalSets = sets.length;
-  const totalVolume = sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+  const totalVolume = Math.round(sets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0));
 
   return (
     <div className="space-y-4">
@@ -999,7 +1006,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
               <div className="flex items-center gap-1.5 text-sm">
                 <Weight className="h-4 w-4 text-primary" />
                 <span className="font-semibold">{totalVolume.toLocaleString()}</span>
-                <span className="text-muted-foreground">kg volume</span>
+                <span className="text-muted-foreground">{weightUnit} volume</span>
               </div>
             )}
           </div>
@@ -1026,14 +1033,14 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
             <div className="space-y-1.5">
               <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
                 <span>Set</span>
-                <span>Weight (kg)</span>
+                <span>Weight ({weightUnit})</span>
                 <span>Reps</span>
                 <span>Rest (s)</span>
               </div>
               {group.sets.map((s) => (
                 <div key={s.id} className="grid grid-cols-4 gap-2 items-center rounded-lg bg-muted/30 px-2 py-2 text-sm">
                   <span className="font-bold text-muted-foreground">{s.set_number}</span>
-                  <span className="font-medium">{s.weight_kg ?? "—"}</span>
+                  <span className="font-medium">{s.weight_kg != null ? Math.round(convertWeight(s.weight_kg) * 10) / 10 : "—"}</span>
                   <span className="font-medium">{s.reps ?? "—"}</span>
                   <span className="text-muted-foreground">{s.rest_seconds ?? "—"}</span>
                 </div>
@@ -1043,7 +1050,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
             {/* Exercise volume */}
             {group.sets.some((s) => s.weight_kg && s.reps) && (
               <p className="text-xs text-muted-foreground">
-                Volume: {group.sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0).toLocaleString()} kg
+                Volume: {Math.round(group.sets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0)).toLocaleString()} {weightUnit}
               </p>
             )}
           </CardContent>

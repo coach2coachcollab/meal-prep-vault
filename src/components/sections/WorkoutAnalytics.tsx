@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format, subWeeks, startOfWeek, endOfWeek, eachWeekOfInterval, isWithinInterval } from "date-fns";
+import { usePreferredUnits } from "@/hooks/usePreferredUnits";
 
 interface WorkoutLog {
   id: string;
@@ -24,6 +25,7 @@ interface WorkoutSetRow {
 
 export function WorkoutAnalytics() {
   const { user } = useAuth();
+  const { weightUnit, convertWeight } = usePreferredUnits();
 
   const { data: logs = [] } = useQuery({
     queryKey: ["workout-analytics-logs", user?.id],
@@ -72,7 +74,7 @@ export function WorkoutAnalytics() {
       const weekLogIds = new Set(weekLogs.map((l) => l.id));
       const weekSets = sets.filter((s) => weekLogIds.has(s.workout_log_id));
 
-      const volume = weekSets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+      const volume = Math.round(weekSets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0));
       const totalDuration = weekLogs.reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
 
       return {
@@ -110,7 +112,7 @@ export function WorkoutAnalytics() {
 
   // Summary stats
   const totalWorkouts = logs.length;
-  const totalVolume = sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+  const totalVolume = Math.round(sets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0));
   const totalDuration = logs.reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
   const avgPerWeek = totalWorkouts > 0 ? (totalWorkouts / Math.min(8, weeklyData.length)).toFixed(1) : "0";
 
@@ -151,7 +153,7 @@ export function WorkoutAnalytics() {
             </div>
             <div>
               <p className="text-lg font-bold leading-none">{(totalVolume / 1000).toFixed(1)}k</p>
-              <p className="text-[10px] text-muted-foreground">Total vol (kg)</p>
+              <p className="text-[10px] text-muted-foreground">Total vol ({weightUnit})</p>
             </div>
           </CardContent>
         </Card>
@@ -192,7 +194,7 @@ export function WorkoutAnalytics() {
       {/* Volume trend chart */}
       <Card>
         <CardContent className="p-4">
-          <h4 className="text-sm font-semibold mb-3">Weekly Volume (kg)</h4>
+          <h4 className="text-sm font-semibold mb-3">Weekly Volume ({weightUnit})</h4>
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData}>
@@ -201,7 +203,7 @@ export function WorkoutAnalytics() {
                 <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
                 <Tooltip
                   contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: number) => [`${value.toLocaleString()} kg`, "Volume"]}
+                  formatter={(value: number) => [`${value.toLocaleString()} ${weightUnit}`, "Volume"]}
                 />
                 <Line
                   type="monotone"
