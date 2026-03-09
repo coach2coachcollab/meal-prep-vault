@@ -290,13 +290,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </Card>
       )}
 
-      {/* Daily Tip */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="pt-5 pb-5">
-          <p className="text-xs font-label uppercase text-primary mb-1">💡 Daily Tip</p>
-          <p className="text-sm text-foreground">{tip}</p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
