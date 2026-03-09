@@ -916,6 +916,7 @@ interface WorkoutSetRow {
 }
 
 function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
+  const { weightUnit, convertWeight } = usePreferredUnits();
   const { data: workout, isLoading: loadingWorkout } = useQuery({
     queryKey: ["workout-detail", workoutId],
     queryFn: async () => {
