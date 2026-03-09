@@ -429,6 +429,39 @@ export function WorkoutLogger() {
           </CardContent>
         </Card>
 
+        {/* Rest Timer Bar */}
+        {restActive && (
+          <Card className="border-accent bg-accent/10 animate-in slide-in-from-top-2">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-accent/20 flex items-center justify-center">
+                    <Timer className="h-4 w-4 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Rest Timer</p>
+                    <p className="text-xl font-mono font-bold tabular-nums">
+                      {formatTimer(restTarget - restSeconds)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Progress bar */}
+                  <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-1000"
+                      style={{ width: `${(restSeconds / restTarget) * 100}%` }}
+                    />
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={stopRestTimer}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Exercise list */}
         {workoutExercises.map((we, exIdx) => (
           <Card key={exIdx}>
