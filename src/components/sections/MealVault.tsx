@@ -436,6 +436,15 @@ export function MealVault() {
                         </Button>
                         {meal.user_id === user?.id && (
                           <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 shrink-0"
+                              title={meal.is_public ? "Make private" : "Make public"}
+                              onClick={() => togglePublic(meal.id, !!meal.is_public)}
+                            >
+                              {meal.is_public ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                            </Button>
                             <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
                               <Pencil className="h-4 w-4" />
                             </Button>
