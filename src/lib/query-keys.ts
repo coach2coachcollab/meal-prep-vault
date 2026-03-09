@@ -23,4 +23,6 @@ export const queryKeys = {
   waterStreak: (userId?: string) => ['water-streak', userId] as const,
   progressSummary: (userId?: string) => ['progress-summary', userId] as const,
   userMealPlans: (userId?: string) => ['user-meal-plans', userId] as const,
+  exercises: () => ['exercises'] as const,
+  workoutLogs: (userId?: string) => ['workout-logs', userId] as const,
 };
