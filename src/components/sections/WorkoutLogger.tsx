@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Play, Square, Plus, Trash2, Dumbbell, Clock, Check, Search,
   ChevronDown, ChevronUp, Loader2, Trophy, RotateCcw, ArrowLeft, Weight, Crown,
+  Timer, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,6 +79,12 @@ export function WorkoutLogger() {
   const [saving, setSaving] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Rest timer
+  const [restSeconds, setRestSeconds] = useState(0);
+  const [restTarget, setRestTarget] = useState(60);
+  const [restActive, setRestActive] = useState(false);
+  const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Exercise picker
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
@@ -129,6 +136,40 @@ export function WorkoutLogger() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isActive]);
+
+  // Rest timer effect
+  useEffect(() => {
+    if (restActive) {
+      restRef.current = setInterval(() => {
+        setRestSeconds((s) => {
+          if (s + 1 >= restTarget) {
+            // Rest complete
+            if (restRef.current) clearInterval(restRef.current);
+            setRestActive(false);
+            toast.info("⏰ Rest over — next set!", { duration: 3000 });
+            return 0;
+          }
+          return s + 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (restRef.current) clearInterval(restRef.current);
+    };
+  }, [restActive, restTarget]);
+
+  const startRestTimer = (seconds: number) => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestTarget(seconds);
+    setRestSeconds(0);
+    setRestActive(true);
+  };
+
+  const stopRestTimer = () => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestActive(false);
+    setRestSeconds(0);
+  };
 
   const startWorkout = () => {
     setIsActive(true);
@@ -227,17 +268,30 @@ export function WorkoutLogger() {
   };
 
   const toggleSetComplete = (exerciseIdx: number, setTempId: string) => {
+    let justCompleted = false;
+    let restDuration = 60;
+
     setWorkoutExercises((prev) =>
       prev.map((we, i) => {
         if (i !== exerciseIdx) return we;
         return {
           ...we,
-          sets: we.sets.map((s) =>
-            s.tempId === setTempId ? { ...s, completed: !s.completed } : s
-          ),
+          sets: we.sets.map((s) => {
+            if (s.tempId !== setTempId) return s;
+            const newCompleted = !s.completed;
+            if (newCompleted) {
+              justCompleted = true;
+              restDuration = s.rest_seconds || 60;
+            }
+            return { ...s, completed: newCompleted };
+          }),
         };
       })
     );
+
+    if (justCompleted) {
+      startRestTimer(restDuration);
+    }
   };
 
   const finishWorkout = async () => {
@@ -374,6 +428,39 @@ export function WorkoutLogger() {
             )}
           </CardContent>
         </Card>
+
+        {/* Rest Timer Bar */}
+        {restActive && (
+          <Card className="border-accent bg-accent/10 animate-in slide-in-from-top-2">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-accent/20 flex items-center justify-center">
+                    <Timer className="h-4 w-4 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Rest Timer</p>
+                    <p className="text-xl font-mono font-bold tabular-nums">
+                      {formatTimer(restTarget - restSeconds)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Progress bar */}
+                  <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-1000"
+                      style={{ width: `${(restSeconds / restTarget) * 100}%` }}
+                    />
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={stopRestTimer}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Exercise list */}
         {workoutExercises.map((we, exIdx) => (
