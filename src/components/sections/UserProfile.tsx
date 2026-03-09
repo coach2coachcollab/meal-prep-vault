@@ -125,6 +125,7 @@ export function UserProfile() {
         age: parseInt(age) || null,
         height_cm: height_cm || null,
         weight_kg: weight_kg || null,
+        default_recipes_public: defaultPublic,
       } as any)
       .eq("user_id", user.id);
     
