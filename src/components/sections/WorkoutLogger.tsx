@@ -1033,7 +1033,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
             <div className="space-y-1.5">
               <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
                 <span>Set</span>
-                <span>Weight (kg)</span>
+                <span>Weight ({weightUnit})</span>
                 <span>Reps</span>
                 <span>Rest (s)</span>
               </div>
