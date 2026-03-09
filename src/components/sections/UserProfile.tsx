@@ -115,7 +115,7 @@ export function UserProfile() {
       toast.error("Failed to update recipes");
     } else {
       toast.success(`All your recipes are now ${makePublic ? "public" : "private"}`);
-      queryClient.invalidateQueries({ queryKey: queryKeys.meals(user.id) });
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
     }
   };
 
