@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { useStreak } from "@/hooks/useStreak";
+import { cn } from "@/lib/utils";
 
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
   const shownMilestones = useRef(new Set<string>());
+  const { streak } = useStreak();
 
   const { data: dashData, isLoading } = useQuery({
     queryKey: queryKeys.dashboard(user?.id),
@@ -29,7 +33,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       ] = await Promise.all([
         supabase.from("profiles").select("name").eq("user_id", user.id).single(),
         supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("journal_entries").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).eq("date", today),
+        supabase.from("journal_entries").select("calories, protein_g, carbs_g, fat_g, meal_type").eq("user_id", user.id).eq("date", today),
         supabase.from("user_habits").select("id").eq("user_id", user.id).eq("is_active", true),
         supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true),
         supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle(),
@@ -43,16 +47,53 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         fat: r(journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0)),
       } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
+      const loggedMealTypes = new Set((journal || []).map(j => j.meal_type));
+
       return {
         profileName: profile?.name || "",
         macros: macro || null,
         todayJournal,
+        loggedMealTypes,
         habitsToday: { done: logs?.length || 0, total: habits?.length || 0 },
         waterToday: water ? { glasses: water.glasses, goal: water.goal } : { glasses: 0, goal: 8 },
       };
     },
     enabled: !!user,
   });
+
+  // Nudge data — recent workout template
+  const { data: nudgeData } = useQuery({
+    queryKey: ["nudge", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const today = new Date().toISOString().split("T")[0];
+
+      const [
+        { data: recentWorkout },
+        { data: streakCheckJournal },
+        { data: streakCheckHabits },
+        { data: lastTemplate },
+      ] = await Promise.all([
+        supabase.from("workout_logs").select("id").eq("user_id", user.id).eq("completed_at", today).limit(1),
+        supabase.from("journal_entries").select("id").eq("user_id", user.id).eq("date", today).limit(1),
+        supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true).limit(1),
+        supabase.from("workout_templates").select("name, category").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      const hasLoggedToday = (streakCheckJournal?.length ?? 0) > 0 || (streakCheckHabits?.length ?? 0) > 0;
+      const hasWorkedOutToday = (recentWorkout?.length ?? 0) > 0;
+
+      return {
+        hasLoggedToday,
+        hasWorkedOutToday,
+        lastTemplateName: lastTemplate?.name || null,
+        lastTemplateCategory: lastTemplate?.category || null,
+      };
+    },
+    enabled: !!user,
+  });
+
+
 
   const { data: progressSummary } = useQuery({
     queryKey: queryKeys.progressSummary(user?.id),
@@ -109,6 +150,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const profileName = dashData?.profileName || "";
   const macros = dashData?.macros || null;
   const todayJournal = dashData?.todayJournal || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  const loggedMealTypes = dashData?.loggedMealTypes || new Set<string>();
   const habitsToday = dashData?.habitsToday || { done: 0, total: 0 };
   const waterToday = dashData?.waterToday || { glasses: 0, goal: 8 };
 
@@ -131,6 +173,50 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   };
 
   const calPercent = macros ? Math.min(100, (todayJournal.calories / macros.calories) * 100) : 0;
+
+  const getWhatsNextNudge = () => {
+    if (!nudgeData) return null;
+
+    if (!loggedMealTypes.has("Lunch")) {
+      return {
+        title: "Lunch not logged yet",
+        description: "Quick add it now and stay on track.",
+        cta: "Log lunch",
+        icon: Utensils,
+        onClick: () => onNavigate("nutrition:today"),
+      };
+    }
+
+    if (streak > 0 && !nudgeData.hasLoggedToday) {
+      return {
+        title: `Keep your 🔥 ${streak}-day streak alive`,
+        description: "Log one meal or one habit to protect your streak.",
+        cta: "Log now",
+        icon: Zap,
+        onClick: () => onNavigate("nutrition:today"),
+      };
+    }
+
+  if (!nudgeData.hasWorkedOutToday && nudgeData.lastTemplateName) {
+      return {
+        title: `Looks like a ${nudgeData.lastTemplateCategory?.replace("_", " ") || "workout"} day`,
+        description: `${nudgeData.lastTemplateName} is ready when you are.`,
+        cta: "Start workout",
+        icon: Dumbbell,
+        onClick: () => onNavigate("fitness"),
+      };
+    }
+
+    return {
+      title: "Great momentum today",
+      description: "Review your progress or share a win with the community.",
+      cta: "View progress",
+      icon: ChevronRight,
+      onClick: () => onNavigate("profile"),
+    };
+  };
+
+  const whatsNext = getWhatsNextNudge();
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -278,6 +364,26 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </Card>
       )}
 
+      {/* What's next */}
+      {whatsNext && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-[10px] font-label uppercase text-primary mb-1">What's next?</p>
+                <p className="text-sm font-semibold text-foreground">{whatsNext.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{whatsNext.description}</p>
+              </div>
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <whatsNext.icon className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <Button size="sm" className="w-full mt-3" onClick={whatsNext.onClick}>
+              {whatsNext.cta}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
