@@ -25,6 +25,8 @@ export function UserProfile() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { isDark: darkMode, toggle: toggleDarkMode } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [defaultPublic, setDefaultPublic] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
