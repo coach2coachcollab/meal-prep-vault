@@ -1,4 +1,4 @@
-import { Home, Utensils, Plus, Calendar, Users, X, UtensilsCrossed, BookOpen, Droplets } from "lucide-react";
+import { Home, Utensils, Plus, Dumbbell, Users, X, UtensilsCrossed, BookOpen, Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -6,7 +6,7 @@ const tabs = [
   { id: "home", label: "Home", icon: Home },
   { id: "nutrition", label: "Nutrition", icon: Utensils },
   { id: "quick-add", label: "", icon: Plus, isCenter: true },
-  { id: "plan", label: "Plan", icon: Calendar },
+  { id: "fitness", label: "Fitness", icon: Dumbbell },
   { id: "community", label: "Community", icon: Users },
 ];
 

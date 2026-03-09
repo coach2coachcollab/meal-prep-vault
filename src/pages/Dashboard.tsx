@@ -5,9 +5,10 @@ import { HomeDashboard } from "@/components/sections/HomeDashboard";
 import { MacroCalculator } from "@/components/sections/MacroCalculator";
 import { MealVault } from "@/components/sections/MealVault";
 import { MealJournal } from "@/components/sections/MealJournal";
-import { MealPlans } from "@/components/sections/MealPlans";
 import { GroceryList } from "@/components/sections/GroceryList";
 import { RecipePlanner } from "@/components/sections/RecipePlanner";
+import { ExerciseLibrary } from "@/components/sections/ExerciseLibrary";
+import { WorkoutLogger } from "@/components/sections/WorkoutLogger";
 import { CommunityHub } from "@/components/sections/CommunityHub";
 import { UserProfile } from "@/components/sections/UserProfile";
 import { HabitTracker } from "@/components/sections/HabitTracker";
@@ -28,7 +29,7 @@ export default function Dashboard() {
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("journal");
-  const [planSub, setPlanSub] = useState("plans");
+  const [fitnessSub, setFitnessSub] = useState("workouts");
   const [profileSub, setProfileSub] = useState("profile");
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const [autoOpenLog, setAutoOpenLog] = useState(false);
@@ -71,17 +72,19 @@ export default function Dashboard() {
             </Tabs>
           </ErrorBoundary>
         );
-      case "plan":
+      case "fitness":
         return (
-          <ErrorBoundary fallbackMessage="Plan section failed to load.">
-            <Tabs value={planSub} onValueChange={setPlanSub}>
-              <TabsList className="w-full grid grid-cols-3 mb-4">
+          <ErrorBoundary fallbackMessage="Fitness section failed to load.">
+            <Tabs value={fitnessSub} onValueChange={setFitnessSub}>
+              <TabsList className="w-full grid grid-cols-4 mb-4">
+                <TabsTrigger value="workouts">Workouts</TabsTrigger>
+                <TabsTrigger value="exercises">Exercises</TabsTrigger>
                 <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
-                <TabsTrigger value="grocery">Shopping</TabsTrigger>
                 <TabsTrigger value="macros">Macros</TabsTrigger>
               </TabsList>
+              <TabsContent value="workouts"><WorkoutLogger /></TabsContent>
+              <TabsContent value="exercises"><ExerciseLibrary /></TabsContent>
               <TabsContent value="recipe"><RecipePlanner /></TabsContent>
-              <TabsContent value="grocery"><GroceryList /></TabsContent>
               <TabsContent value="macros">
                 <MacroCalculator onNavigateToMealVault={() => {
                   setActiveTab("nutrition");
@@ -194,7 +197,7 @@ export default function Dashboard() {
             setNutritionSub(sub);
             if (sub === "journal") setAutoOpenLog(true);
           }
-          if (tab === "plan") setPlanSub(sub);
+          if (tab === "fitness") setFitnessSub(sub);
         }}
       />
     </div>
