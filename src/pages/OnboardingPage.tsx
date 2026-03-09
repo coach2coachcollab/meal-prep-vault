@@ -52,6 +52,7 @@ export default function OnboardingPage() {
     weightKg: "",
     diets: [] as string[],
     allergies: [] as string[],
+    units: "metric" as "metric" | "imperial",
   });
   const [results, setResults] = useState<{ calories: number; protein: number; carbs: number; fat: number } | null>(null);
   const [saving, setSaving] = useState(false);
