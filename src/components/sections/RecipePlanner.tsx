@@ -17,12 +17,21 @@ export function RecipePlanner() {
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fats, setFats] = useState("");
+  const [servings, setServings] = useState(1);
   const [ingredients, setIngredients] = useState("");
   const [instructions, setInstructions] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Scaled macros based on servings (base values are per 1 serving)
+  const scaledMacros = useMemo(() => ({
+    calories: Math.round((parseFloat(calories) || 0) * servings),
+    protein: Math.round((parseFloat(protein) || 0) * servings),
+    carbs: Math.round((parseFloat(carbs) || 0) * servings),
+    fats: Math.round((parseFloat(fats) || 0) * servings),
+  }), [calories, protein, carbs, fats, servings]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
