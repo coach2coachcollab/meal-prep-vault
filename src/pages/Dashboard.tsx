@@ -199,7 +199,7 @@ export default function Dashboard() {
           setActiveTab(tab);
           if (tab === "nutrition") {
             setNutritionSub(sub);
-            if (sub === "journal") setAutoOpenLog(true);
+            if (sub === "today") setAutoOpenLog(true);
           }
           if (tab === "fitness") setFitnessSub(sub);
         }}
