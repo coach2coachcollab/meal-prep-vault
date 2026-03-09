@@ -68,6 +68,7 @@ const nextTempId = () => `tmp-${++tempIdCounter}`;
 export function WorkoutLogger() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { weightUnit, convertWeight, toKg, useMetric } = usePreferredUnits();
 
   // Detail view
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
