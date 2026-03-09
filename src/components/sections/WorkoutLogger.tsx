@@ -645,8 +645,12 @@ export function WorkoutLogger() {
                         type="number"
                         className="h-8 text-sm text-center"
                         placeholder="0"
-                        value={set.weight_kg ?? ""}
-                        onChange={(e) => updateSet(exIdx, set.tempId, "weight_kg", e.target.value ? Number(e.target.value) : null)}
+                        value={set.weight_kg != null ? Math.round(convertWeight(set.weight_kg) * 10) / 10 : ""}
+                        onChange={(e) => {
+                          const displayVal = e.target.value ? Number(e.target.value) : null;
+                          const kgVal = displayVal != null ? Math.round(toKg(displayVal) * 100) / 100 : null;
+                          updateSet(exIdx, set.tempId, "weight_kg", kgVal);
+                        }}
                       />
                       <Input
                         type="number"
