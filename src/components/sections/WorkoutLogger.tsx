@@ -492,6 +492,11 @@ export function WorkoutLogger() {
     );
   }
 
+  // ─── Workout Detail View ───
+  if (selectedWorkoutId) {
+    return <WorkoutDetailView workoutId={selectedWorkoutId} onBack={() => setSelectedWorkoutId(null)} />;
+  }
+
   // ─── Idle View (History + Start) ───
   return (
     <div className="space-y-5">
@@ -527,7 +532,11 @@ export function WorkoutLogger() {
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recent Workouts</h3>
           {pastWorkouts.map((w) => (
-            <Card key={w.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={w.id}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => setSelectedWorkoutId(w.id)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -536,7 +545,7 @@ export function WorkoutLogger() {
                       {format(new Date(w.started_at), "MMM d, yyyy · h:mm a")}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex items-center gap-1">
                     {w.duration_minutes != null && (
                       <Badge variant="secondary" className="text-xs">
                         <Clock className="h-3 w-3 mr-1" />
@@ -544,7 +553,7 @@ export function WorkoutLogger() {
                       </Badge>
                     )}
                     {w.completed_at && (
-                      <Badge className="bg-primary/10 text-primary text-xs ml-1">
+                      <Badge className="bg-primary/10 text-primary text-xs">
                         <Check className="h-3 w-3 mr-1" /> Done
                       </Badge>
                     )}
@@ -554,6 +563,174 @@ export function WorkoutLogger() {
             </Card>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Workout Detail Sub-Component ───
+interface WorkoutDetailProps {
+  workoutId: string;
+  onBack: () => void;
+}
+
+interface WorkoutSetRow {
+  id: string;
+  set_number: number;
+  weight_kg: number | null;
+  reps: number | null;
+  rest_seconds: number | null;
+  exercise_id: string;
+  exercises: { name: string; muscle_group: string | null; equipment: string | null } | null;
+}
+
+function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
+  const { data: workout, isLoading: loadingWorkout } = useQuery({
+    queryKey: ["workout-detail", workoutId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("workout_logs")
+        .select("*")
+        .eq("id", workoutId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: sets = [], isLoading: loadingSets } = useQuery({
+    queryKey: ["workout-sets", workoutId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("workout_sets")
+        .select("id, set_number, weight_kg, reps, rest_seconds, exercise_id, exercises(name, muscle_group, equipment)")
+        .eq("workout_log_id", workoutId)
+        .order("exercise_id")
+        .order("set_number");
+      if (error) throw error;
+      return (data || []) as unknown as WorkoutSetRow[];
+    },
+  });
+
+  // Group sets by exercise
+  const exerciseGroups = sets.reduce<Record<string, { name: string; muscle_group: string | null; equipment: string | null; sets: WorkoutSetRow[] }>>((acc, s) => {
+    if (!acc[s.exercise_id]) {
+      acc[s.exercise_id] = {
+        name: s.exercises?.name || "Unknown",
+        muscle_group: s.exercises?.muscle_group || null,
+        equipment: s.exercises?.equipment || null,
+        sets: [],
+      };
+    }
+    acc[s.exercise_id].sets.push(s);
+    return acc;
+  }, {});
+
+  const loading = loadingWorkout || loadingSets;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const totalSets = sets.length;
+  const totalVolume = sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+
+  return (
+    <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={onBack}>
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Workouts
+      </Button>
+
+      {/* Summary card */}
+      <Card className="border-primary/20">
+        <CardContent className="p-5">
+          <h2 className="text-xl font-heading text-foreground">{workout?.name}</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            {workout?.started_at && format(new Date(workout.started_at), "EEEE, MMM d, yyyy · h:mm a")}
+          </p>
+          <div className="flex flex-wrap gap-3 mt-4">
+            {workout?.duration_minutes != null && (
+              <div className="flex items-center gap-1.5 text-sm">
+                <Clock className="h-4 w-4 text-primary" />
+                <span className="font-semibold">{workout.duration_minutes}</span>
+                <span className="text-muted-foreground">min</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-sm">
+              <Dumbbell className="h-4 w-4 text-primary" />
+              <span className="font-semibold">{Object.keys(exerciseGroups).length}</span>
+              <span className="text-muted-foreground">exercises</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm">
+              <Check className="h-4 w-4 text-primary" />
+              <span className="font-semibold">{totalSets}</span>
+              <span className="text-muted-foreground">sets</span>
+            </div>
+            {totalVolume > 0 && (
+              <div className="flex items-center gap-1.5 text-sm">
+                <Weight className="h-4 w-4 text-primary" />
+                <span className="font-semibold">{totalVolume.toLocaleString()}</span>
+                <span className="text-muted-foreground">kg volume</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Exercise breakdown */}
+      {Object.entries(exerciseGroups).map(([exId, group]) => (
+        <Card key={exId}>
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <h3 className="font-semibold text-sm">{group.name}</h3>
+              <div className="flex gap-1 mt-1">
+                {group.muscle_group && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.muscle_group}</Badge>
+                )}
+                {group.equipment && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{group.equipment}</Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Sets table */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
+                <span>Set</span>
+                <span>Weight (kg)</span>
+                <span>Reps</span>
+                <span>Rest (s)</span>
+              </div>
+              {group.sets.map((s) => (
+                <div key={s.id} className="grid grid-cols-4 gap-2 items-center rounded-lg bg-muted/30 px-2 py-2 text-sm">
+                  <span className="font-bold text-muted-foreground">{s.set_number}</span>
+                  <span className="font-medium">{s.weight_kg ?? "—"}</span>
+                  <span className="font-medium">{s.reps ?? "—"}</span>
+                  <span className="text-muted-foreground">{s.rest_seconds ?? "—"}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Exercise volume */}
+            {group.sets.some((s) => s.weight_kg && s.reps) && (
+              <p className="text-xs text-muted-foreground">
+                Volume: {group.sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0).toLocaleString()} kg
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+
+      {sets.length === 0 && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">No sets recorded for this workout</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
