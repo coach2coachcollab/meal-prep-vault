@@ -33,7 +33,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       ] = await Promise.all([
         supabase.from("profiles").select("name").eq("user_id", user.id).single(),
         supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("journal_entries").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).eq("date", today),
+        supabase.from("journal_entries").select("calories, protein_g, carbs_g, fat_g, meal_type").eq("user_id", user.id).eq("date", today),
         supabase.from("user_habits").select("id").eq("user_id", user.id).eq("is_active", true),
         supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true),
         supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle(),
@@ -47,16 +47,53 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         fat: r(journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0)),
       } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
+      const loggedMealTypes = new Set((journal || []).map(j => j.meal_type));
+
       return {
         profileName: profile?.name || "",
         macros: macro || null,
         todayJournal,
+        loggedMealTypes,
         habitsToday: { done: logs?.length || 0, total: habits?.length || 0 },
         waterToday: water ? { glasses: water.glasses, goal: water.goal } : { glasses: 0, goal: 8 },
       };
     },
     enabled: !!user,
   });
+
+  // Nudge data — recent workout template
+  const { data: nudgeData } = useQuery({
+    queryKey: ["nudge", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const today = new Date().toISOString().split("T")[0];
+
+      const [
+        { data: recentWorkout },
+        { data: streakCheckJournal },
+        { data: streakCheckHabits },
+        { data: lastTemplate },
+      ] = await Promise.all([
+        supabase.from("workout_logs").select("id").eq("user_id", user.id).eq("completed_at", today).limit(1),
+        supabase.from("journal_entries").select("id").eq("user_id", user.id).eq("date", today).limit(1),
+        supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true).limit(1),
+        supabase.from("workout_templates").select("name, category").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      const hasLoggedToday = (streakCheckJournal?.length ?? 0) > 0 || (streakCheckHabits?.length ?? 0) > 0;
+      const hasWorkedOutToday = (recentWorkout?.length ?? 0) > 0;
+
+      return {
+        hasLoggedToday,
+        hasWorkedOutToday,
+        lastTemplateName: lastTemplate?.name || null,
+        lastTemplateCategory: lastTemplate?.category || null,
+      };
+    },
+    enabled: !!user,
+  });
+
+
 
   const { data: progressSummary } = useQuery({
     queryKey: queryKeys.progressSummary(user?.id),
