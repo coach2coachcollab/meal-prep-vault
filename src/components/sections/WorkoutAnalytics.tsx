@@ -203,7 +203,7 @@ export function WorkoutAnalytics() {
                 <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
                 <Tooltip
                   contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: number) => [`${value.toLocaleString()} kg`, "Volume"]}
+                  formatter={(value: number) => [`${value.toLocaleString()} ${weightUnit}`, "Volume"]}
                 />
                 <Line
                   type="monotone"
