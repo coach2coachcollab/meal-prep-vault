@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -273,6 +273,16 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick action: Recalculate Macros */}
+      <Button 
+        variant="outline" 
+        className="w-full border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
+        onClick={() => onNavigate("nutrition:macros")}
+      >
+        <Calculator className="h-4 w-4 mr-2" />
+        Recalculate my macros
+      </Button>
 
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
