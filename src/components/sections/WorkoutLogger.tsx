@@ -1050,7 +1050,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
             {/* Exercise volume */}
             {group.sets.some((s) => s.weight_kg && s.reps) && (
               <p className="text-xs text-muted-foreground">
-                Volume: {group.sets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0).toLocaleString()} kg
+                Volume: {Math.round(group.sets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0)).toLocaleString()} {weightUnit}
               </p>
             )}
           </CardContent>
