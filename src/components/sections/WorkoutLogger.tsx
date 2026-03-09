@@ -1006,7 +1006,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
               <div className="flex items-center gap-1.5 text-sm">
                 <Weight className="h-4 w-4 text-primary" />
                 <span className="font-semibold">{totalVolume.toLocaleString()}</span>
-                <span className="text-muted-foreground">kg volume</span>
+                <span className="text-muted-foreground">{weightUnit} volume</span>
               </div>
             )}
           </div>
