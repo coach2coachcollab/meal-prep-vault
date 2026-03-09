@@ -241,13 +241,11 @@ export function WorkoutLogger({ pendingTemplateId, onTemplateLoaded }: WorkoutLo
   }, []);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const templateId = (e as CustomEvent).detail?.templateId;
-      if (templateId) startFromTemplate(templateId);
-    };
-    window.addEventListener("start-from-template", handler);
-    return () => window.removeEventListener("start-from-template", handler);
-  }, [startFromTemplate]);
+    if (pendingTemplateId && !isActive) {
+      startFromTemplate(pendingTemplateId);
+      onTemplateLoaded?.();
+    }
+  }, [pendingTemplateId, isActive, startFromTemplate, onTemplateLoaded]);
 
   const startRestTimer = (seconds: number) => {
     if (restRef.current) clearInterval(restRef.current);

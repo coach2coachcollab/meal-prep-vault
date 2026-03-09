@@ -83,11 +83,16 @@ export default function Dashboard() {
                 <TabsTrigger value="templates">Templates</TabsTrigger>
                 <TabsTrigger value="exercises">Exercises</TabsTrigger>
               </TabsList>
-              <TabsContent value="workouts"><WorkoutLogger /></TabsContent>
+              <TabsContent value="workouts">
+                <WorkoutLogger 
+                  pendingTemplateId={pendingTemplateId} 
+                  onTemplateLoaded={() => setPendingTemplateId(null)} 
+                />
+              </TabsContent>
               <TabsContent value="templates">
                 <WorkoutTemplates onStartFromTemplate={(templateId) => {
+                  setPendingTemplateId(templateId);
                   setFitnessSub("workouts");
-                  window.dispatchEvent(new CustomEvent("start-from-template", { detail: { templateId } }));
                 }} />
               </TabsContent>
               <TabsContent value="exercises"><ExerciseLibrary /></TabsContent>
