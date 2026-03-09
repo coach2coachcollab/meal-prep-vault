@@ -153,7 +153,7 @@ export function WorkoutAnalytics() {
             </div>
             <div>
               <p className="text-lg font-bold leading-none">{(totalVolume / 1000).toFixed(1)}k</p>
-              <p className="text-[10px] text-muted-foreground">Total vol (kg)</p>
+              <p className="text-[10px] text-muted-foreground">Total vol ({weightUnit})</p>
             </div>
           </CardContent>
         </Card>
