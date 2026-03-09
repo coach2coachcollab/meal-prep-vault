@@ -65,6 +65,7 @@ interface WorkoutTemplatesProps {
 
 export function WorkoutTemplates({ onStartFromTemplate }: WorkoutTemplatesProps) {
   const { user } = useAuth();
+  const { weightUnit, convertWeight } = usePreferredUnits();
   const [searchTerm, setSearchTerm] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
