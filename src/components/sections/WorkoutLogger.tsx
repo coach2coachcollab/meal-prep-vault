@@ -627,7 +627,7 @@ export function WorkoutLogger() {
                   {/* Header */}
                   <div className="grid grid-cols-[32px_1fr_1fr_1fr_40px] gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
                     <span>Set</span>
-                    <span>Weight (kg)</span>
+                    <span>Weight ({weightUnit})</span>
                     <span>Reps</span>
                     <span>Rest (s)</span>
                     <span></span>
