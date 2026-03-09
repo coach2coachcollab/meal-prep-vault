@@ -48,7 +48,7 @@ export function WorkoutAnalytics() {
       if (logIds.length === 0) return [];
       const { data } = await supabase
         .from("workout_sets")
-        .select("workout_log_id, weight_kg, reps")
+        .select("workout_log_id, weight_kg, reps, exercises(muscle_group)")
         .in("workout_log_id", logIds);
       return (data || []) as WorkoutSetRow[];
     },
