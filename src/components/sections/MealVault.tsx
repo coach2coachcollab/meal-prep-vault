@@ -378,6 +378,11 @@ export function MealVault() {
                       >
                         <Heart className={`h-4 w-4 ${favorites.includes(meal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                       </button>
+                      {meal.is_public && (
+                        <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground text-[10px] gap-1">
+                          <Globe className="h-3 w-3" /> Public
+                        </Badge>
+                      )}
                       {/* Macro overlay */}
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pb-2.5 pt-8">
                         <div className="flex items-baseline gap-1.5">
