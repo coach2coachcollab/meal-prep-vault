@@ -103,6 +103,14 @@ export default function OnboardingPage() {
     if (!user || !results) return;
     setSaving(true);
 
+    // Convert to metric if imperial
+    const weightKg = data.units === "imperial" 
+      ? parseFloat(data.weightKg) * LBS_TO_KG 
+      : parseFloat(data.weightKg);
+    const heightCm = data.units === "imperial" 
+      ? parseFloat(data.heightCm) * IN_TO_CM 
+      : parseFloat(data.heightCm);
+
     // Save profile
     const { error: profileError } = await supabase
       .from("profiles")
@@ -112,8 +120,9 @@ export default function OnboardingPage() {
         diet_prefs: data.diets.filter((d) => d !== "None"),
         allergies: data.allergies.filter((a) => a !== "None"),
         age: parseInt(data.age),
-        height_cm: parseFloat(data.heightCm),
-        weight_kg: parseFloat(data.weightKg),
+        height_cm: Math.round(heightCm * 10) / 10,
+        weight_kg: Math.round(weightKg * 10) / 10,
+        preferred_units: data.units,
         onboarding_completed: true,
       })
       .eq("user_id", user.id);
