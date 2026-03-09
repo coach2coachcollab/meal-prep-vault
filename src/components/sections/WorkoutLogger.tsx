@@ -1040,7 +1040,7 @@ function WorkoutDetailView({ workoutId, onBack }: WorkoutDetailProps) {
               {group.sets.map((s) => (
                 <div key={s.id} className="grid grid-cols-4 gap-2 items-center rounded-lg bg-muted/30 px-2 py-2 text-sm">
                   <span className="font-bold text-muted-foreground">{s.set_number}</span>
-                  <span className="font-medium">{s.weight_kg ?? "—"}</span>
+                  <span className="font-medium">{s.weight_kg != null ? Math.round(convertWeight(s.weight_kg) * 10) / 10 : "—"}</span>
                   <span className="font-medium">{s.reps ?? "—"}</span>
                   <span className="text-muted-foreground">{s.rest_seconds ?? "—"}</span>
                 </div>
