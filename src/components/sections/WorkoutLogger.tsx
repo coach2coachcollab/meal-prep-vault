@@ -148,7 +148,7 @@ export function WorkoutLogger() {
     enabled: !!user,
   });
 
-
+  const filteredExercises = allExercises.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(pickerSearch.toLowerCase());
     const matchMuscle = pickerMuscle === "all" || e.muscle_group === pickerMuscle;
     return matchSearch && matchMuscle;
