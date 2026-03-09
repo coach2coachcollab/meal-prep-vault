@@ -25,6 +25,7 @@ interface WorkoutSetRow {
 
 export function WorkoutAnalytics() {
   const { user } = useAuth();
+  const { weightUnit, convertWeight } = usePreferredUnits();
 
   const { data: logs = [] } = useQuery({
     queryKey: ["workout-analytics-logs", user?.id],
