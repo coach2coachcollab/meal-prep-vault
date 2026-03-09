@@ -589,7 +589,9 @@ export function WorkoutLogger() {
           ))}
         </div>
       )}
-    </div>
+
+      {/* Analytics */}
+      <WorkoutAnalytics />
   );
 }
 
