@@ -53,6 +53,7 @@ export function UserProfile() {
     if (profileData.name) setName(profileData.name);
     if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
     if (profileData.age) setAge(String(profileData.age));
+    setDefaultPublic(profileData.default_recipes_public ?? false);
   }, [profileData]);
 
   useEffect(() => {
