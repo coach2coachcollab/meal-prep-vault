@@ -58,32 +58,21 @@ export function ExerciseLibrary() {
     instructions: "",
   });
 
-  // Infinite query for exercises
+  // Query for exercises
   const {
-    data: exercisesData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    data: exercises = [],
     isLoading: loading,
-  } = useInfiniteQuery({
+  } = useQuery({
     queryKey: queryKeys.exercises(),
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("exercises")
         .select("id, name, muscle_group, equipment, category, instructions, image_url, is_public, user_id")
-        .order("name", { ascending: true })
-        .range(pageParam, pageParam + EXERCISE_PAGE_SIZE - 1);
+        .order("name", { ascending: true });
       if (error) console.error("Failed to load exercises", error);
-      return {
-        exercises: (data || []) as Exercise[],
-        nextOffset: (data?.length || 0) === EXERCISE_PAGE_SIZE ? pageParam + EXERCISE_PAGE_SIZE : undefined,
-      };
+      return (data || []) as Exercise[];
     },
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
-    initialPageParam: 0,
   });
-
-  const exercises = useMemo(() => exercisesData?.pages.flatMap((p) => p.exercises) || [], [exercisesData]);
 
   const customExercises = exercises.filter((e) => e.user_id === user?.id);
 
