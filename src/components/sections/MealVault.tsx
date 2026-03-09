@@ -328,6 +328,14 @@ export function MealVault() {
                     </SelectContent>
                   </Select>
                 )}
+                <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as "all" | "mine" | "community")}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="All recipes" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Recipes</SelectItem>
+                    <SelectItem value="mine">My Recipes</SelectItem>
+                    <SelectItem value="community">Community Recipes</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
                   <Heart className="h-4 w-4 mr-1" /> Favorites
                 </Button>
