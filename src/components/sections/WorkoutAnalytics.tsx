@@ -50,7 +50,7 @@ export function WorkoutAnalytics() {
         .from("workout_sets")
         .select("workout_log_id, weight_kg, reps, exercises(muscle_group)")
         .in("workout_log_id", logIds);
-      return (data || []) as WorkoutSetRow[];
+      return (data || []) as unknown as WorkoutSetRow[];
     },
     enabled: logIds.length > 0,
   });
