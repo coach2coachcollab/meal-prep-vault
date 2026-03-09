@@ -19,6 +19,7 @@ interface WorkoutSetRow {
   workout_log_id: string;
   weight_kg: number | null;
   reps: number | null;
+  exercises: { muscle_group: string | null } | null;
 }
 
 export function WorkoutAnalytics() {
