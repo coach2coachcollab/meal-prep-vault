@@ -154,42 +154,46 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
       </div>
 
-      {/* Macro Ring */}
+      {/* Macro Ring - Hero */}
       <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-6">
-            <div className="relative h-24 w-24 shrink-0">
+        <CardContent className="pt-6 pb-6">
+          <div className="flex flex-col items-center gap-4">
+            {/* Large ring centered */}
+            <div className="relative h-36 w-36">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                <circle cx="50" cy="50" r="42" fill="none" className="stroke-muted" strokeWidth="8" />
+                <circle cx="50" cy="50" r="42" fill="none" className="stroke-muted" strokeWidth="6" />
                 <circle
                   cx="50" cy="50" r="42" fill="none"
                   className="stroke-primary"
-                  strokeWidth="8"
+                  strokeWidth="6"
                   strokeLinecap="round"
                   strokeDasharray={`${calPercent * 2.64} ${264 - calPercent * 2.64}`}
+                  style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.4))" }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Flame className="h-4 w-4 text-primary" />
-                <span className="text-sm font-bold">{todayJournal.calories}</span>
+                <Flame className="h-5 w-5 text-primary mb-0.5" />
+                <span className="text-2xl font-bold">{todayJournal.calories}</span>
+                <span className="text-[10px] text-muted-foreground">of {macros?.calories || "—"} kcal</span>
               </div>
             </div>
-            <div className="flex-1 space-y-2">
-              <p className="text-sm font-medium">Daily Calories</p>
-              <p className="text-xs text-muted-foreground">{todayJournal.calories} / {macros?.calories || "—"} kcal</p>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="flex items-center gap-1">
-                  <Beef className="h-3 w-3 text-primary" />
-                  <span>{todayJournal.protein}g P</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Wheat className="h-3 w-3 text-accent-foreground" />
-                  <span>{todayJournal.carbs}g C</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Droplets className="h-3 w-3 text-secondary-foreground" />
-                  <span>{todayJournal.fat}g F</span>
-                </div>
+            
+            {/* Macro breakdown below */}
+            <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
+              <div className="flex flex-col items-center p-2 rounded-lg bg-macro-protein/10">
+                <Beef className="h-4 w-4 text-macro-protein mb-1" />
+                <span className="text-sm font-bold">{todayJournal.protein}g</span>
+                <span className="text-[10px] text-muted-foreground">protein</span>
+              </div>
+              <div className="flex flex-col items-center p-2 rounded-lg bg-macro-carbs/10">
+                <Wheat className="h-4 w-4 text-macro-carbs mb-1" />
+                <span className="text-sm font-bold">{todayJournal.carbs}g</span>
+                <span className="text-[10px] text-muted-foreground">carbs</span>
+              </div>
+              <div className="flex flex-col items-center p-2 rounded-lg bg-macro-fat/10">
+                <Droplets className="h-4 w-4 text-macro-fat mb-1" />
+                <span className="text-sm font-bold">{todayJournal.fat}g</span>
+                <span className="text-[10px] text-muted-foreground">fat</span>
               </div>
             </div>
           </div>
