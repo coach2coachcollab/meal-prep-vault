@@ -56,6 +56,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const [ratingCount, setRatingCount] = useState<number>(0);
   const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
   const [addingToList, setAddingToList] = useState(false);
+  const [isPublic, setIsPublic] = useState(!!meal.is_public);
 
   // Community state
   const [comments, setComments] = useState<any[]>([]);
