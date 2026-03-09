@@ -103,7 +103,22 @@ export function UserProfile() {
     toast.success("Avatar updated!");
   };
 
-  const saveProfile = async () => {
+  const bulkUpdateVisibility = async (makePublic: boolean) => {
+    if (!user) return;
+    setBulkUpdating(true);
+    const { error, count } = await supabase
+      .from("meals")
+      .update({ is_public: makePublic })
+      .eq("user_id", user.id);
+    setBulkUpdating(false);
+    if (error) {
+      toast.error("Failed to update recipes");
+    } else {
+      toast.success(`All your recipes are now ${makePublic ? "public" : "private"}`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals(user.id) });
+    }
+  };
+
     if (!user) return;
     setLoading(true);
 
