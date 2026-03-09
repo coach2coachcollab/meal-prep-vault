@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 
 interface Exercise {
@@ -58,32 +58,21 @@ export function ExerciseLibrary() {
     instructions: "",
   });
 
-  // Infinite query for exercises
+  // Query for exercises
   const {
-    data: exercisesData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    data: exercises = [],
     isLoading: loading,
-  } = useInfiniteQuery({
+  } = useQuery({
     queryKey: queryKeys.exercises(),
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("exercises")
         .select("id, name, muscle_group, equipment, category, instructions, image_url, is_public, user_id")
-        .order("name", { ascending: true })
-        .range(pageParam, pageParam + EXERCISE_PAGE_SIZE - 1);
+        .order("name", { ascending: true });
       if (error) console.error("Failed to load exercises", error);
-      return {
-        exercises: (data || []) as Exercise[],
-        nextOffset: (data?.length || 0) === EXERCISE_PAGE_SIZE ? pageParam + EXERCISE_PAGE_SIZE : null,
-      };
+      return (data || []) as Exercise[];
     },
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
-    initialPageParam: 0,
   });
-
-  const exercises = useMemo(() => exercisesData?.pages.flatMap((p) => p.exercises) || [], [exercisesData]);
 
   const customExercises = exercises.filter((e) => e.user_id === user?.id);
 
@@ -314,14 +303,6 @@ export function ExerciseLibrary() {
         </div>
       )}
 
-      {/* Load More */}
-      {hasNextPage && exercises.length > 0 && (
-        <div className="flex justify-center pt-2">
-          <Button variant="outline" size="sm" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
-            {isFetchingNextPage ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Loading...</> : "Load More Exercises"}
-          </Button>
-        </div>
-      )}
 
       {/* Create Exercise Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

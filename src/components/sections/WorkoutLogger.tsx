@@ -119,6 +119,35 @@ export function WorkoutLogger() {
     },
   });
 
+  // ─── Personal Records Query (must be before any early returns) ───
+  const { data: personalRecords = [] } = useQuery({
+    queryKey: ["personal-records", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("workout_sets")
+        .select("exercise_id, weight_kg, reps, exercises(name, muscle_group)")
+        .order("weight_kg", { ascending: false });
+      if (!data) return [];
+      const prMap: Record<string, { exercise_id: string; name: string; muscle_group: string | null; weight: number; reps: number }> = {};
+      for (const s of data as any[]) {
+        if (!s.weight_kg) continue;
+        const eid = s.exercise_id;
+        if (!prMap[eid] || s.weight_kg > prMap[eid].weight) {
+          prMap[eid] = {
+            exercise_id: eid,
+            name: s.exercises?.name || "Unknown",
+            muscle_group: s.exercises?.muscle_group || null,
+            weight: s.weight_kg,
+            reps: s.reps || 0,
+          };
+        }
+      }
+      return Object.values(prMap).sort((a, b) => b.weight - a.weight).slice(0, 10);
+    },
+    enabled: !!user,
+  });
+
   const filteredExercises = allExercises.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(pickerSearch.toLowerCase());
     const matchMuscle = pickerMuscle === "all" || e.muscle_group === pickerMuscle;
@@ -631,37 +660,6 @@ export function WorkoutLogger() {
     return <WorkoutDetailView workoutId={selectedWorkoutId} onBack={() => setSelectedWorkoutId(null)} />;
   }
 
-  // ─── Personal Records Query ───
-  const { data: personalRecords = [] } = useQuery({
-    queryKey: ["personal-records", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      // Get all user's sets with exercise info, find max weight per exercise
-      const { data } = await supabase
-        .from("workout_sets")
-        .select("exercise_id, weight_kg, reps, exercises(name, muscle_group)")
-        .order("weight_kg", { ascending: false });
-      if (!data) return [];
-
-      // Only keep sets belonging to this user's workouts
-      const prMap: Record<string, { exercise_id: string; name: string; muscle_group: string | null; weight: number; reps: number }> = {};
-      for (const s of data as any[]) {
-        if (!s.weight_kg) continue;
-        const eid = s.exercise_id;
-        if (!prMap[eid] || s.weight_kg > prMap[eid].weight) {
-          prMap[eid] = {
-            exercise_id: eid,
-            name: s.exercises?.name || "Unknown",
-            muscle_group: s.exercises?.muscle_group || null,
-            weight: s.weight_kg,
-            reps: s.reps || 0,
-          };
-        }
-      }
-      return Object.values(prMap).sort((a, b) => b.weight - a.weight).slice(0, 10);
-    },
-    enabled: !!user,
-  });
 
   // ─── Idle View (History + Start) ───
   return (
