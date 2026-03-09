@@ -60,6 +60,7 @@ export function MealVault() {
   const [planRefreshKey, setPlanRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cuisineFilter, setCuisineFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "mine" | "community">("all");
 
   const [form, setForm] = useState({
     title: "", description: "", calories: "", protein: "", carbs: "", fats: "",
