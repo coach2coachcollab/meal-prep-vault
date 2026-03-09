@@ -400,7 +400,8 @@ export default function ImportRecipesPage() {
   const aiErrorCount = aiRecipes.filter((r) => r.status === "error").length;
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-8 max-w-4xl mx-auto space-y-6 pb-24">
+    <div className="h-screen overflow-y-auto bg-background p-4 sm:p-8 pb-24">
+      <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
           <ArrowLeft className="h-5 w-5" />
