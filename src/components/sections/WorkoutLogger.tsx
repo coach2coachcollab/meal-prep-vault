@@ -207,6 +207,54 @@ export function WorkoutLogger() {
     setWorkoutName("");
   };
 
+  const repeatWorkout = async (workoutId: string, workoutNameStr: string) => {
+    const { data: sets, error } = await supabase
+      .from("workout_sets")
+      .select("exercise_id, set_number, weight_kg, reps, rest_seconds, exercises(id, name, muscle_group, equipment, category)")
+      .eq("workout_log_id", workoutId)
+      .order("exercise_id")
+      .order("set_number");
+
+    if (error || !sets || sets.length === 0) {
+      toast.error("Could not load workout template");
+      return;
+    }
+
+    // Group by exercise
+    const grouped: Record<string, WorkoutExercise> = {};
+    for (const s of sets as any[]) {
+      const eid = s.exercise_id;
+      if (!grouped[eid]) {
+        grouped[eid] = {
+          exercise: {
+            id: s.exercises?.id || eid,
+            name: s.exercises?.name || "Unknown",
+            muscle_group: s.exercises?.muscle_group || null,
+            equipment: s.exercises?.equipment || null,
+            category: s.exercises?.category || null,
+          },
+          sets: [],
+          collapsed: false,
+        };
+      }
+      grouped[eid].sets.push({
+        tempId: nextTempId(),
+        exercise_id: eid,
+        set_number: grouped[eid].sets.length + 1,
+        weight_kg: s.weight_kg,
+        reps: s.reps,
+        rest_seconds: s.rest_seconds,
+        completed: false,
+      });
+    }
+
+    setWorkoutExercises(Object.values(grouped));
+    setWorkoutName(workoutNameStr);
+    setElapsedSeconds(0);
+    setIsActive(true);
+    toast.success("Workout loaded — fill in your sets and go! 🔁");
+  };
+
   const deleteWorkout = async (workoutId: string) => {
     if (!user) return;
     // Delete sets first (cascade won't help with RLS), then the log
