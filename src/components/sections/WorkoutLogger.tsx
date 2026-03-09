@@ -288,7 +288,39 @@ export function WorkoutLogger() {
       toast.success(`Workout saved! 💪 ${completedSets.length} sets logged`);
     }
 
+    // ── PR Detection ──
+    // Group completed sets by exercise
+    const exerciseMaxes: Record<string, { weight: number; name: string }> = {};
+    for (const we of workoutExercises) {
+      for (const s of we.sets) {
+        if (!s.completed || !s.weight_kg) continue;
+        const prev = exerciseMaxes[s.exercise_id];
+        if (!prev || s.weight_kg > prev.weight) {
+          exerciseMaxes[s.exercise_id] = { weight: s.weight_kg, name: we.exercise.name };
+        }
+      }
+    }
+
+    // Check against historical PRs
+    for (const [exerciseId, current] of Object.entries(exerciseMaxes)) {
+      const { data: historicalMax } = await supabase
+        .from("workout_sets")
+        .select("weight_kg")
+        .eq("exercise_id", exerciseId)
+        .not("workout_log_id", "eq", log.id)
+        .order("weight_kg", { ascending: false })
+        .limit(1)
+        .single();
+
+      const previousBest = historicalMax?.weight_kg ?? 0;
+      if (current.weight > (previousBest as number)) {
+        toast.success(`🏆 New PR! ${current.name}: ${current.weight} kg`, { duration: 5000 });
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      }
+    }
+
     queryClient.invalidateQueries({ queryKey: queryKeys.workoutLogs(user.id) });
+    queryClient.invalidateQueries({ queryKey: ["personal-records", user.id] });
     setIsActive(false);
     setElapsedSeconds(0);
     setWorkoutExercises([]);
