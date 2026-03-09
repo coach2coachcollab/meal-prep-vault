@@ -592,6 +592,7 @@ export function WorkoutLogger() {
 
       {/* Analytics */}
       <WorkoutAnalytics />
+    </div>
   );
 }
 
