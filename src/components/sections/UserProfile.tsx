@@ -119,6 +119,7 @@ export function UserProfile() {
     }
   };
 
+  const saveProfile = async () => {
     if (!user) return;
     setLoading(true);
 
