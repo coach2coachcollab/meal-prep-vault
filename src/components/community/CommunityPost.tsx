@@ -448,10 +448,10 @@ export function CommunityPost({
             {post.image_url && (
               <>
                 <div
-                  className="mt-2 -mx-3 sm:mx-0 sm:rounded-lg overflow-hidden aspect-square cursor-pointer"
+                  className="mt-2 w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden cursor-pointer border border-border"
                   onClick={() => setImageOpen(true)}
                 >
-                  <img src={post.image_url} alt="Post" className="w-full h-full object-cover sm:rounded-lg" />
+                  <img src={post.image_url} alt="Post" className="w-full h-full object-cover" />
                 </div>
                 <Dialog open={imageOpen} onOpenChange={setImageOpen}>
                   <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
