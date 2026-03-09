@@ -544,6 +544,38 @@ export function WorkoutLogger() {
     return <WorkoutDetailView workoutId={selectedWorkoutId} onBack={() => setSelectedWorkoutId(null)} />;
   }
 
+  // ─── Personal Records Query ───
+  const { data: personalRecords = [] } = useQuery({
+    queryKey: ["personal-records", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      // Get all user's sets with exercise info, find max weight per exercise
+      const { data } = await supabase
+        .from("workout_sets")
+        .select("exercise_id, weight_kg, reps, exercises(name, muscle_group)")
+        .order("weight_kg", { ascending: false });
+      if (!data) return [];
+
+      // Only keep sets belonging to this user's workouts
+      const prMap: Record<string, { exercise_id: string; name: string; muscle_group: string | null; weight: number; reps: number }> = {};
+      for (const s of data as any[]) {
+        if (!s.weight_kg) continue;
+        const eid = s.exercise_id;
+        if (!prMap[eid] || s.weight_kg > prMap[eid].weight) {
+          prMap[eid] = {
+            exercise_id: eid,
+            name: s.exercises?.name || "Unknown",
+            muscle_group: s.exercises?.muscle_group || null,
+            weight: s.weight_kg,
+            reps: s.reps || 0,
+          };
+        }
+      }
+      return Object.values(prMap).sort((a, b) => b.weight - a.weight).slice(0, 10);
+    },
+    enabled: !!user,
+  });
+
   // ─── Idle View (History + Start) ───
   return (
     <div className="space-y-5">
@@ -556,6 +588,38 @@ export function WorkoutLogger() {
           <Play className="h-4 w-4" /> Start Workout
         </Button>
       </div>
+
+      {/* Personal Records */}
+      {personalRecords.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Crown className="h-4 w-4 text-yellow-500" /> Personal Records
+          </h3>
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+            {personalRecords.map((pr) => (
+              <Card key={pr.exercise_id} className="border-yellow-500/20 bg-yellow-500/[0.03]">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{pr.name}</p>
+                    {pr.muscle_group && (
+                      <p className="text-[10px] text-muted-foreground">{pr.muscle_group}</p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-foreground">{pr.weight} kg</p>
+                    {pr.reps > 0 && (
+                      <p className="text-[10px] text-muted-foreground">× {pr.reps} reps</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Past workouts */}
       {loadingHistory ? (
