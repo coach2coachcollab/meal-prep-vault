@@ -1,4 +1,4 @@
-import { Home, Utensils, Plus, Dumbbell, Users, X, UtensilsCrossed, BookOpen, Droplets } from "lucide-react";
+import { Home, Utensils, Plus, Dumbbell, Users, UtensilsCrossed, Droplets, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -11,9 +11,10 @@ const tabs = [
 ];
 
 const quickActions = [
-  { id: "log-meal", label: "Log Meal", icon: UtensilsCrossed, tab: "nutrition", sub: "journal" },
-  { id: "add-recipe", label: "Add Recipe", icon: BookOpen, tab: "plan", sub: "recipe" },
+  { id: "log-food", label: "Log Food", icon: UtensilsCrossed, tab: "nutrition", sub: "journal" },
   { id: "log-water", label: "Log Water", icon: Droplets, tab: "nutrition", sub: "water" },
+  { id: "start-workout", label: "Start Workout", icon: Dumbbell, tab: "fitness", sub: "workouts" },
+  { id: "add-habit", label: "Add Habit", icon: CheckSquare, tab: "nutrition", sub: "habits" },
 ];
 
 interface BottomNavProps {
