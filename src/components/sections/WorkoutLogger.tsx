@@ -135,6 +135,19 @@ export function WorkoutLogger() {
     setWorkoutName("");
   };
 
+  const deleteWorkout = async (workoutId: string) => {
+    if (!user) return;
+    // Delete sets first (cascade won't help with RLS), then the log
+    await supabase.from("workout_sets").delete().eq("workout_log_id", workoutId);
+    const { error } = await supabase.from("workout_logs").delete().eq("id", workoutId);
+    if (error) {
+      toast.error("Failed to delete workout");
+    } else {
+      toast.success("Workout deleted");
+      queryClient.invalidateQueries({ queryKey: queryKeys.workoutLogs(user.id) });
+    }
+  };
+
   const discardWorkout = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
@@ -539,13 +552,13 @@ export function WorkoutLogger() {
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h4 className="font-semibold text-sm">{w.name}</h4>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(w.started_at), "MMM d, yyyy · h:mm a")}
                     </p>
                   </div>
-                  <div className="text-right flex items-center gap-1">
+                  <div className="flex items-center gap-1">
                     {w.duration_minutes != null && (
                       <Badge variant="secondary" className="text-xs">
                         <Clock className="h-3 w-3 mr-1" />
@@ -557,6 +570,17 @@ export function WorkoutLogger() {
                         <Check className="h-3 w-3 mr-1" /> Done
                       </Badge>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 ml-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteWorkout(w.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
