@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Cell, PieChart, Pie } from "recharts";
 import { TrendingUp, Dumbbell, Flame, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ interface WorkoutSetRow {
   workout_log_id: string;
   weight_kg: number | null;
   reps: number | null;
+  exercises: { muscle_group: string | null } | null;
 }
 
 export function WorkoutAnalytics() {
@@ -47,9 +48,9 @@ export function WorkoutAnalytics() {
       if (logIds.length === 0) return [];
       const { data } = await supabase
         .from("workout_sets")
-        .select("workout_log_id, weight_kg, reps")
+        .select("workout_log_id, weight_kg, reps, exercises(muscle_group)")
         .in("workout_log_id", logIds);
-      return (data || []) as WorkoutSetRow[];
+      return (data || []) as unknown as WorkoutSetRow[];
     },
     enabled: logIds.length > 0,
   });
@@ -83,6 +84,29 @@ export function WorkoutAnalytics() {
       };
     });
   }, [logs, sets]);
+
+  // Muscle group breakdown
+  const muscleData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    sets.forEach((s) => {
+      const mg = s.exercises?.muscle_group || "Other";
+      counts[mg] = (counts[mg] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, sets]) => ({ name, sets }))
+      .sort((a, b) => b.sets - a.sets);
+  }, [sets]);
+
+  const MUSCLE_COLORS = [
+    "hsl(var(--primary))",
+    "hsl(var(--primary) / 0.8)",
+    "hsl(var(--primary) / 0.6)",
+    "hsl(var(--primary) / 0.45)",
+    "hsl(var(--primary) / 0.3)",
+    "hsl(var(--primary) / 0.2)",
+    "hsl(var(--accent))",
+    "hsl(var(--secondary))",
+  ];
 
   // Summary stats
   const totalWorkouts = logs.length;
@@ -192,6 +216,32 @@ export function WorkoutAnalytics() {
           </div>
         </CardContent>
       </Card>
+      {/* Muscle group breakdown */}
+      {muscleData.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h4 className="text-sm font-semibold mb-3">Muscle Group Breakdown</h4>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={muscleData} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                    formatter={(value: number) => [`${value} sets`, "Sets"]}
+                  />
+                  <Bar dataKey="sets" radius={[0, 4, 4, 0]}>
+                    {muscleData.map((_, i) => (
+                      <Cell key={i} fill={MUSCLE_COLORS[i % MUSCLE_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
