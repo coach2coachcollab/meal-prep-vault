@@ -54,25 +54,39 @@ export function HabitTracker() {
         if (!habitsData) return { habits: [] as Habit[], weekData: {} as Record<string, boolean[]> };
       }
 
-      const { data: todayLogs } = await supabase.from("habit_logs").select("habit_id, completed").eq("user_id", user.id).eq("date", today);
+      const habitIds = habitsData.map(h => h.id);
+
+      // Batch fetch: today's logs + last 30 days of completed logs for streaks
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+
+      const [{ data: todayLogs }, { data: streakLogs }] = await Promise.all([
+        supabase.from("habit_logs").select("habit_id, completed").eq("user_id", user.id).eq("date", today),
+        supabase.from("habit_logs").select("habit_id, date").in("habit_id", habitIds).eq("completed", true).gte("date", thirtyDaysAgoStr),
+      ]);
+
       const completedSet = new Set((todayLogs || []).filter((l) => l.completed).map((l) => l.habit_id));
 
-      const enriched: Habit[] = [];
-      for (const h of habitsData) {
-        const { data: streakData } = await supabase.from("habit_logs").select("date, completed").eq("habit_id", h.id).eq("completed", true).order("date", { ascending: false }).limit(30);
-        let streak = 0;
-        if (streakData) {
-          const dates = streakData.map((d) => d.date);
-          const check = new Date();
-          for (let i = 0; i < 30; i++) {
-            const ds = check.toISOString().split("T")[0];
-            if (dates.includes(ds)) { streak++; check.setDate(check.getDate() - 1); }
-            else if (i === 0) { check.setDate(check.getDate() - 1); continue; }
-            else break;
-          }
-        }
-        enriched.push({ id: h.id, name: h.name, icon: h.icon, completed: completedSet.has(h.id), streak });
+      // Group streak logs by habit_id
+      const logsByHabit: Record<string, Set<string>> = {};
+      for (const log of streakLogs || []) {
+        if (!logsByHabit[log.habit_id]) logsByHabit[log.habit_id] = new Set();
+        logsByHabit[log.habit_id].add(log.date);
       }
+
+      const enriched: Habit[] = habitsData.map((h) => {
+        const dates = logsByHabit[h.id] || new Set();
+        let streak = 0;
+        const check = new Date();
+        for (let i = 0; i < 30; i++) {
+          const ds = check.toISOString().split("T")[0];
+          if (dates.has(ds)) { streak++; check.setDate(check.getDate() - 1); }
+          else if (i === 0) { check.setDate(check.getDate() - 1); continue; }
+          else break;
+        }
+        return { id: h.id, name: h.name, icon: h.icon, completed: completedSet.has(h.id), streak };
+      });
 
       // Week data
       const weekStart = new Date();
@@ -87,7 +101,7 @@ export function HabitTracker() {
       }
       const { data: weekLogs } = await supabase.from("habit_logs").select("habit_id, date, completed").eq("user_id", user.id).in("date", dates).eq("completed", true);
       const weekMap: Record<string, boolean[]> = {};
-      for (const hid of habitsData.map(h => h.id)) {
+      for (const hid of habitIds) {
         weekMap[hid] = dates.map((d) => !!(weekLogs || []).find((l) => l.habit_id === hid && l.date === d));
       }
 
