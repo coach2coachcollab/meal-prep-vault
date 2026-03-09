@@ -216,6 +216,32 @@ export function WorkoutAnalytics() {
           </div>
         </CardContent>
       </Card>
+      {/* Muscle group breakdown */}
+      {muscleData.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h4 className="text-sm font-semibold mb-3">Muscle Group Breakdown</h4>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={muscleData} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                    formatter={(value: number) => [`${value} sets`, "Sets"]}
+                  />
+                  <Bar dataKey="sets" radius={[0, 4, 4, 0]}>
+                    {muscleData.map((_, i) => (
+                      <Cell key={i} fill={MUSCLE_COLORS[i % MUSCLE_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
