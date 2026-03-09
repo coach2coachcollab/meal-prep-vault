@@ -137,6 +137,40 @@ export function WorkoutLogger() {
     };
   }, [isActive]);
 
+  // Rest timer effect
+  useEffect(() => {
+    if (restActive) {
+      restRef.current = setInterval(() => {
+        setRestSeconds((s) => {
+          if (s + 1 >= restTarget) {
+            // Rest complete
+            if (restRef.current) clearInterval(restRef.current);
+            setRestActive(false);
+            toast.info("⏰ Rest over — next set!", { duration: 3000 });
+            return 0;
+          }
+          return s + 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (restRef.current) clearInterval(restRef.current);
+    };
+  }, [restActive, restTarget]);
+
+  const startRestTimer = (seconds: number) => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestTarget(seconds);
+    setRestSeconds(0);
+    setRestActive(true);
+  };
+
+  const stopRestTimer = () => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestActive(false);
+    setRestSeconds(0);
+  };
+
   const startWorkout = () => {
     setIsActive(true);
     setElapsedSeconds(0);
