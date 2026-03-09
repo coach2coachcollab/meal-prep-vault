@@ -57,12 +57,16 @@ export default function Dashboard() {
         return (
           <ErrorBoundary fallbackMessage="Nutrition section failed to load.">
             <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
-              <TabsList className="w-full grid grid-cols-2 mb-4">
+              <TabsList className="w-full grid grid-cols-3 mb-4">
                 <TabsTrigger value="today">Today</TabsTrigger>
                 <TabsTrigger value="vault">Vault</TabsTrigger>
+                <TabsTrigger value="macros">Macros</TabsTrigger>
               </TabsList>
               <TabsContent value="today"><NutritionToday autoOpenLog={autoOpenLog} /></TabsContent>
               <TabsContent value="vault"><MealVault /></TabsContent>
+              <TabsContent value="macros">
+                <MacroCalculator onNavigateToMealVault={() => setNutritionSub("vault")} />
+              </TabsContent>
             </Tabs>
           </ErrorBoundary>
         );
