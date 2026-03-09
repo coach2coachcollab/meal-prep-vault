@@ -502,7 +502,7 @@ export function WorkoutLogger() {
 
       const previousBest = historicalMax?.weight_kg ?? 0;
       if (current.weight > (previousBest as number)) {
-        toast.success(`🏆 New PR! ${current.name}: ${current.weight} kg`, { duration: 5000 });
+        toast.success(`🏆 New PR! ${current.name}: ${Math.round(convertWeight(current.weight) * 10) / 10} ${weightUnit}`, { duration: 5000 });
         confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       }
     }
