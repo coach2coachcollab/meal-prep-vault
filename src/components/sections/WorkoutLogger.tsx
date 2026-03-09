@@ -803,7 +803,7 @@ export function WorkoutLogger() {
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-foreground">{pr.weight} kg</p>
+                    <p className="text-sm font-bold text-foreground">{Math.round(convertWeight(pr.weight) * 10) / 10} {weightUnit}</p>
                     {pr.reps > 0 && (
                       <p className="text-[10px] text-muted-foreground">× {pr.reps} reps</p>
                     )}
