@@ -76,7 +76,7 @@ export function ExerciseLibrary() {
       if (error) console.error("Failed to load exercises", error);
       return {
         exercises: (data || []) as Exercise[],
-        nextOffset: (data?.length || 0) === EXERCISE_PAGE_SIZE ? pageParam + EXERCISE_PAGE_SIZE : null,
+        nextOffset: (data?.length || 0) === EXERCISE_PAGE_SIZE ? pageParam + EXERCISE_PAGE_SIZE : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage.nextOffset,
