@@ -65,6 +65,9 @@ export function WorkoutLogger() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Detail view
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
+
   // Workout state
   const [isActive, setIsActive] = useState(false);
   const [workoutName, setWorkoutName] = useState("");
