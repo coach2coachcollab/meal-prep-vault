@@ -268,17 +268,30 @@ export function WorkoutLogger() {
   };
 
   const toggleSetComplete = (exerciseIdx: number, setTempId: string) => {
+    let justCompleted = false;
+    let restDuration = 60;
+
     setWorkoutExercises((prev) =>
       prev.map((we, i) => {
         if (i !== exerciseIdx) return we;
         return {
           ...we,
-          sets: we.sets.map((s) =>
-            s.tempId === setTempId ? { ...s, completed: !s.completed } : s
-          ),
+          sets: we.sets.map((s) => {
+            if (s.tempId !== setTempId) return s;
+            const newCompleted = !s.completed;
+            if (newCompleted) {
+              justCompleted = true;
+              restDuration = s.rest_seconds || 60;
+            }
+            return { ...s, completed: newCompleted };
+          }),
         };
       })
     );
+
+    if (justCompleted) {
+      startRestTimer(restDuration);
+    }
   };
 
   const finishWorkout = async () => {
