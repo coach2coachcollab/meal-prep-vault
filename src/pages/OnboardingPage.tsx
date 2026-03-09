@@ -52,6 +52,7 @@ export default function OnboardingPage() {
     weightKg: "",
     diets: [] as string[],
     allergies: [] as string[],
+    units: "metric" as "metric" | "imperial",
   });
   const [results, setResults] = useState<{ calories: number; protein: number; carbs: number; fat: number } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -70,13 +71,25 @@ export default function OnboardingPage() {
     });
   };
 
+  // Conversion constants
+  const LBS_TO_KG = 0.453592;
+  const IN_TO_CM = 2.54;
+
   const handleFinish = async () => {
     if (!user) return;
 
+    // Convert to metric if imperial
+    const weightKg = data.units === "imperial" 
+      ? parseFloat(data.weightKg) * LBS_TO_KG 
+      : parseFloat(data.weightKg);
+    const heightCm = data.units === "imperial" 
+      ? parseFloat(data.heightCm) * IN_TO_CM 
+      : parseFloat(data.heightCm);
+
     const r = calculateMacros({
       gender: data.gender,
-      weightKg: parseFloat(data.weightKg),
-      heightCm: parseFloat(data.heightCm),
+      weightKg,
+      heightCm,
       age: parseInt(data.age),
       activityLevel: data.activity,
       goal: GOAL_MAP[data.goal] || "maintain",
@@ -90,6 +103,14 @@ export default function OnboardingPage() {
     if (!user || !results) return;
     setSaving(true);
 
+    // Convert to metric if imperial
+    const weightKg = data.units === "imperial" 
+      ? parseFloat(data.weightKg) * LBS_TO_KG 
+      : parseFloat(data.weightKg);
+    const heightCm = data.units === "imperial" 
+      ? parseFloat(data.heightCm) * IN_TO_CM 
+      : parseFloat(data.heightCm);
+
     // Save profile
     const { error: profileError } = await supabase
       .from("profiles")
@@ -99,8 +120,9 @@ export default function OnboardingPage() {
         diet_prefs: data.diets.filter((d) => d !== "None"),
         allergies: data.allergies.filter((a) => a !== "None"),
         age: parseInt(data.age),
-        height_cm: parseFloat(data.heightCm),
-        weight_kg: parseFloat(data.weightKg),
+        height_cm: Math.round(heightCm * 10) / 10,
+        weight_kg: Math.round(weightKg * 10) / 10,
+        preferred_units: data.units,
         onboarding_completed: true,
       })
       .eq("user_id", user.id);
@@ -295,26 +317,96 @@ export default function OnboardingPage() {
 
             <div className="h-px bg-border my-4" />
 
-            <div className="grid grid-cols-3 gap-2.5">
-              {[
-                { key: "age", label: "Age", placeholder: "e.g. 28" },
-                { key: "heightCm", label: "Height (cm)", placeholder: "e.g. 170" },
-                { key: "weightKg", label: "Weight (kg)", placeholder: "e.g. 75" },
-              ].map((f) => (
-                <div key={f.key} className="flex flex-col gap-1">
-                  <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
-                    {f.label}
-                  </label>
+            {/* Unit toggle */}
+            <div className="flex gap-2 mb-4">
+              {(["metric", "imperial"] as const).map((u) => (
+                <button
+                  key={u}
+                  onClick={() => setData((d) => ({ ...d, units: u, heightCm: "", weightKg: "" }))}
+                  className={`flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all border ${
+                    data.units === u
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-muted/30 text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {u === "metric" ? "📏 cm / kg" : "📐 ft & in / lbs"}
+                </button>
+              ))}
+            </div>
+
+            {data.units === "metric" ? (
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { key: "age", label: "Age", placeholder: "28" },
+                  { key: "heightCm", label: "Height (cm)", placeholder: "170" },
+                  { key: "weightKg", label: "Weight (kg)", placeholder: "75" },
+                ].map((f) => (
+                  <div key={f.key} className="flex flex-col gap-1">
+                    <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
+                      {f.label}
+                    </label>
+                    <input
+                      type="number"
+                      placeholder={f.placeholder}
+                      value={data[f.key as keyof typeof data] as string}
+                      onChange={(e) => setData((d) => ({ ...d, [f.key]: e.target.value }))}
+                      className="bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-foreground text-base font-semibold outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Age</label>
                   <input
                     type="number"
-                    placeholder={f.placeholder}
-                    value={data[f.key as keyof typeof data] as string}
-                    onChange={(e) => setData((d) => ({ ...d, [f.key]: e.target.value }))}
+                    placeholder="28"
+                    value={data.age}
+                    onChange={(e) => setData((d) => ({ ...d, age: e.target.value }))}
                     className="bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-foreground text-base font-semibold outline-none focus:border-primary transition-colors"
                   />
                 </div>
-              ))}
-            </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Feet</label>
+                  <input
+                    type="number"
+                    placeholder="5"
+                    value={data.heightCm ? Math.floor(parseFloat(data.heightCm) / 12).toString() : ""}
+                    onChange={(e) => {
+                      const feet = parseInt(e.target.value) || 0;
+                      const currentInches = data.heightCm ? parseFloat(data.heightCm) % 12 : 0;
+                      setData((d) => ({ ...d, heightCm: String(feet * 12 + currentInches) }));
+                    }}
+                    className="bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-foreground text-base font-semibold outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Inches</label>
+                  <input
+                    type="number"
+                    placeholder="8"
+                    value={data.heightCm ? Math.round(parseFloat(data.heightCm) % 12).toString() : ""}
+                    onChange={(e) => {
+                      const inches = parseInt(e.target.value) || 0;
+                      const currentFeet = data.heightCm ? Math.floor(parseFloat(data.heightCm) / 12) : 0;
+                      setData((d) => ({ ...d, heightCm: String(currentFeet * 12 + inches) }));
+                    }}
+                    className="bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-foreground text-base font-semibold outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Weight (lbs)</label>
+                  <input
+                    type="number"
+                    placeholder="165"
+                    value={data.weightKg}
+                    onChange={(e) => setData((d) => ({ ...d, weightKg: e.target.value }))}
+                    className="bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-foreground text-base font-semibold outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
