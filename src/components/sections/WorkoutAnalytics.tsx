@@ -74,7 +74,7 @@ export function WorkoutAnalytics() {
       const weekLogIds = new Set(weekLogs.map((l) => l.id));
       const weekSets = sets.filter((s) => weekLogIds.has(s.workout_log_id));
 
-      const volume = weekSets.reduce((sum, s) => sum + ((s.weight_kg || 0) * (s.reps || 0)), 0);
+      const volume = Math.round(weekSets.reduce((sum, s) => sum + (convertWeight(s.weight_kg || 0) * (s.reps || 0)), 0));
       const totalDuration = weekLogs.reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
 
       return {
