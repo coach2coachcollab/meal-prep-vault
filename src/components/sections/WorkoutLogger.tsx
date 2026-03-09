@@ -65,7 +65,12 @@ function formatTimer(seconds: number) {
 let tempIdCounter = 0;
 const nextTempId = () => `tmp-${++tempIdCounter}`;
 
-export function WorkoutLogger() {
+interface WorkoutLoggerProps {
+  pendingTemplateId?: string | null;
+  onTemplateLoaded?: () => void;
+}
+
+export function WorkoutLogger({ pendingTemplateId, onTemplateLoaded }: WorkoutLoggerProps = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { weightUnit, convertWeight, toKg, useMetric } = usePreferredUnits();
