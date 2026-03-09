@@ -194,7 +194,7 @@ export function WorkoutAnalytics() {
       {/* Volume trend chart */}
       <Card>
         <CardContent className="p-4">
-          <h4 className="text-sm font-semibold mb-3">Weekly Volume (kg)</h4>
+          <h4 className="text-sm font-semibold mb-3">Weekly Volume ({weightUnit})</h4>
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData}>
