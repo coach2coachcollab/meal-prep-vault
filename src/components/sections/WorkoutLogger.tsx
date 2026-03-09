@@ -804,7 +804,19 @@ export function WorkoutLogger() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0 ml-1"
+                      className="h-8 w-8 shrink-0"
+                      title="Repeat workout"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        repeatWorkout(w.id, w.name);
+                      }}
+                    >
+                      <Copy className="h-4 w-4 text-primary" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         deleteWorkout(w.id);
