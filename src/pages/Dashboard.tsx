@@ -77,29 +77,19 @@ export default function Dashboard() {
         return (
           <ErrorBoundary fallbackMessage="Fitness section failed to load.">
             <Tabs value={fitnessSub} onValueChange={setFitnessSub}>
-              <TabsList className="w-full grid grid-cols-5 mb-4">
+              <TabsList className="w-full grid grid-cols-3 mb-4">
                 <TabsTrigger value="workouts">Workouts</TabsTrigger>
                 <TabsTrigger value="templates">Templates</TabsTrigger>
                 <TabsTrigger value="exercises">Exercises</TabsTrigger>
-                <TabsTrigger value="recipe">Add Recipe</TabsTrigger>
-                <TabsTrigger value="macros">Macros</TabsTrigger>
               </TabsList>
               <TabsContent value="workouts"><WorkoutLogger /></TabsContent>
               <TabsContent value="templates">
                 <WorkoutTemplates onStartFromTemplate={(templateId) => {
                   setFitnessSub("workouts");
-                  // Pass template ID through a state mechanism
                   window.dispatchEvent(new CustomEvent("start-from-template", { detail: { templateId } }));
                 }} />
               </TabsContent>
               <TabsContent value="exercises"><ExerciseLibrary /></TabsContent>
-              <TabsContent value="recipe"><RecipePlanner /></TabsContent>
-              <TabsContent value="macros">
-                <MacroCalculator onNavigateToMealVault={() => {
-                  setActiveTab("nutrition");
-                  setNutritionSub("vault");
-                }} />
-              </TabsContent>
             </Tabs>
           </ErrorBoundary>
         );
