@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Play, Square, Plus, Trash2, Dumbbell, Clock, Check, Search,
   ChevronDown, ChevronUp, Loader2, Trophy, RotateCcw, ArrowLeft, Weight, Crown,
-  Timer, X, Copy,
+  Timer, X, Copy, LayoutTemplate,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -186,6 +186,61 @@ export function WorkoutLogger() {
       if (restRef.current) clearInterval(restRef.current);
     };
   }, [restActive, restTarget]);
+
+  // Listen for "start from template" events from the Templates tab
+  const startFromTemplate = useCallback(async (templateId: string) => {
+    const { data: template } = await supabase
+      .from("workout_templates")
+      .select("name")
+      .eq("id", templateId)
+      .single();
+
+    const { data: exercises } = await supabase
+      .from("workout_template_exercises")
+      .select("*, exercises(id, name, muscle_group, equipment, category)")
+      .eq("template_id", templateId)
+      .order("sort_order");
+
+    if (!exercises || exercises.length === 0) {
+      toast.error("Template has no exercises");
+      return;
+    }
+
+    const grouped: WorkoutExercise[] = (exercises as any[]).map((te) => ({
+      exercise: {
+        id: te.exercises?.id || te.exercise_id,
+        name: te.exercises?.name || "Unknown",
+        muscle_group: te.exercises?.muscle_group || null,
+        equipment: te.exercises?.equipment || null,
+        category: te.exercises?.category || null,
+      },
+      sets: Array.from({ length: te.sets || 3 }, (_, i) => ({
+        tempId: nextTempId(),
+        exercise_id: te.exercise_id,
+        set_number: i + 1,
+        weight_kg: te.weight_kg,
+        reps: te.reps,
+        rest_seconds: te.rest_seconds,
+        completed: false,
+      })),
+      collapsed: false,
+    }));
+
+    setWorkoutExercises(grouped);
+    setWorkoutName(template?.name || "Template Workout");
+    setElapsedSeconds(0);
+    setIsActive(true);
+    toast.success("Template loaded — let's go! 💪");
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const templateId = (e as CustomEvent).detail?.templateId;
+      if (templateId) startFromTemplate(templateId);
+    };
+    window.addEventListener("start-from-template", handler);
+    return () => window.removeEventListener("start-from-template", handler);
+  }, [startFromTemplate]);
 
   const startRestTimer = (seconds: number) => {
     if (restRef.current) clearInterval(restRef.current);

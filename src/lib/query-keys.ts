@@ -25,4 +25,6 @@ export const queryKeys = {
   userMealPlans: (userId?: string) => ['user-meal-plans', userId] as const,
   exercises: () => ['exercises'] as const,
   workoutLogs: (userId?: string) => ['workout-logs', userId] as const,
+  workoutTemplates: () => ['workout-templates'] as const,
+  workoutTemplateExercises: (templateId?: string) => ['workout-template-exercises', templateId] as const,
 };
