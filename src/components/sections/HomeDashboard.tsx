@@ -197,10 +197,10 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       };
     }
 
-    if (!nudgeData.hasWorkedOutToday && nudgeData.lastTemplateName) {
+  if (!nudgeData.hasWorkedOutToday && nudgeData.lastTemplateName) {
       return {
         title: `Looks like a ${nudgeData.lastTemplateCategory?.replace("_", " ") || "workout"} day`,
-        description: `${nudgeData.lastTemplateName} is ready when you are.",
+        description: `${nudgeData.lastTemplateName} is ready when you are.`,
         cta: "Start workout",
         icon: Dumbbell,
         onClick: () => onNavigate("fitness"),
@@ -364,6 +364,26 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </Card>
       )}
 
+      {/* What's next */}
+      {whatsNext && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-[10px] font-label uppercase text-primary mb-1">What's next?</p>
+                <p className="text-sm font-semibold text-foreground">{whatsNext.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{whatsNext.description}</p>
+              </div>
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <whatsNext.icon className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <Button size="sm" className="w-full mt-3" onClick={whatsNext.onClick}>
+              {whatsNext.cta}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
