@@ -547,7 +547,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         </CardContent>
       </Card>
 
-      {/* Recipe Details: Prep Time, Servings, Tags */}
+      {/* Recipe Details: Prep Time, Servings, Visibility, Tags */}
       <Card>
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center gap-6">
@@ -565,6 +565,27 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                 <p className="text-[10px] text-muted-foreground">Servings</p>
               </div>
             </div>
+            {meal.user_id === user?.id && (
+              <div className="flex items-center gap-2 ml-auto">
+                {isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                <div className="flex flex-col">
+                  <Switch
+                    checked={isPublic}
+                    onCheckedChange={async (checked) => {
+                      setIsPublic(checked);
+                      const { error } = await supabase.from("meals").update({ is_public: checked }).eq("id", meal.id);
+                      if (error) {
+                        setIsPublic(!checked);
+                        toast.error("Failed to update visibility");
+                      } else {
+                        toast.success(checked ? "Recipe is now public" : "Recipe is now private");
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-muted-foreground">{isPublic ? "Public" : "Private"}</p>
+                </div>
+              </div>
+            )}
           </div>
           {allTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
