@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -12,15 +12,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Cron-style auth: verify shared secret header
-    // Accepts either the service role key or the anon key in the Authorization header
-    // (pg_cron sends the anon key). This prevents random external callers.
-    const authHeader = req.headers.get("Authorization");
-    const expectedAnon = Deno.env.get("SUPABASE_ANON_KEY");
-    const expectedService = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token || (token !== expectedAnon && token !== expectedService)) {
+    // Cron-only auth: require x-cron-secret header matching CRON_SECRET env var.
+    // This function must NOT be callable by end users or with leaked anon/service keys.
+    const providedSecret = req.headers.get("x-cron-secret");
+    const expectedSecret = Deno.env.get("CRON_SECRET");
+    if (!expectedSecret || !providedSecret || providedSecret !== expectedSecret) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }

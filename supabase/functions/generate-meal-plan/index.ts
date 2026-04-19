@@ -36,7 +36,41 @@ serve(async (req) => {
       );
     }
 
-    const { meals, macros, dietPrefs, allergies } = await req.json();
+    const body = await req.json().catch(() => null);
+    const { meals, macros, dietPrefs, allergies } = body ?? {};
+
+    // Input validation — protect AI quota from abuse
+    const bad = (msg: string) =>
+      new Response(JSON.stringify({ error: msg }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    if (!Array.isArray(meals) || meals.length === 0 || meals.length > 500) {
+      return bad("meals must be an array of 1-500 items");
+    }
+    for (const m of meals) {
+      if (!m || typeof m !== "object") return bad("each meal must be an object");
+      if (typeof m.id !== "string" || m.id.length > 100) return bad("meal.id must be a string ≤100 chars");
+      if (typeof m.title !== "string" || m.title.length > 300) return bad("meal.title must be a string ≤300 chars");
+    }
+    if (!macros || typeof macros !== "object") return bad("macros required");
+    const numInRange = (v: unknown, max: number) =>
+      typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= max;
+    if (
+      !numInRange(macros.calories, 10000) ||
+      !numInRange(macros.protein_g, 1000) ||
+      !numInRange(macros.carbs_g, 2000) ||
+      !numInRange(macros.fat_g, 1000)
+    ) {
+      return bad("macros must be positive numbers within sane bounds");
+    }
+    const validStrArr = (v: unknown) =>
+      v === undefined ||
+      v === null ||
+      (Array.isArray(v) && v.length <= 20 && v.every((s) => typeof s === "string" && s.length <= 50));
+    if (!validStrArr(dietPrefs)) return bad("dietPrefs must be ≤20 strings of ≤50 chars");
+    if (!validStrArr(allergies)) return bad("allergies must be ≤20 strings of ≤50 chars");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");

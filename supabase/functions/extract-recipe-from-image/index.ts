@@ -36,9 +36,32 @@ serve(async (req) => {
       );
     }
 
-    const { imageBase64, mimeType } = await req.json();
+    const body = await req.json().catch(() => null);
+    const imageBase64 = body?.imageBase64;
+    const mimeType = body?.mimeType;
 
-    if (!imageBase64) throw new Error("No image data provided");
+    // Input validation
+    const ALLOWED_MIME = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const MAX_BASE64_CHARS = 11_000_000; // ~8MB decoded
+
+    if (typeof imageBase64 !== "string" || imageBase64.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "imageBase64 must be a non-empty string" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (imageBase64.length > MAX_BASE64_CHARS) {
+      return new Response(
+        JSON.stringify({ error: "Image too large. Max ~8MB." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (mimeType !== undefined && (typeof mimeType !== "string" || !ALLOWED_MIME.includes(mimeType))) {
+      return new Response(
+        JSON.stringify({ error: `mimeType must be one of: ${ALLOWED_MIME.join(", ")}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
