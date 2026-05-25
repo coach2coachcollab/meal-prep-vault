@@ -1,0 +1,11 @@
+# NutriCoach
+
+> NutriCoach is a personal nutrition coaching platform that helps you track meals, plan macros, build healthy habits, and reach your wellness goals.
+
+NutriCoach combines precision macro tracking (BMR, TDEE, custom ratios), AI-assisted meal planning with a recipe vault, workout logging, progress tracking, and a community feed.
+
+## Pages
+
+- [Home](/): Your personal nutrition and wellness dashboard.
+- [Sign In](/auth): Create an account or sign in to NutriCoach.
+- [Forgot Password](/forgot-password): Recover access to your account.

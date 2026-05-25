@@ -20,6 +20,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { User, Zap, Moon, Sun } from "lucide-react";
 import { useStreak } from "@/hooks/useStreak";
+import { useSeo } from "@/hooks/useSeo";
+
+const TAB_SEO: Record<string, { title: string; description: string }> = {
+  home: { title: "Home — NutriCoach", description: "Your nutrition overview, streak, macros, and daily progress." },
+  nutrition: { title: "Nutrition — NutriCoach", description: "Log meals, browse your vault, and tune your macro targets." },
+  fitness: { title: "Fitness — NutriCoach", description: "Track workouts, follow templates, and explore the exercise library." },
+  community: { title: "Community — NutriCoach", description: "Share progress and connect with other NutriCoach members." },
+  notifications: { title: "Notifications — NutriCoach", description: "Catch up on reactions, comments, and replies." },
+  streak: { title: "Streak — NutriCoach", description: "See your current streak and milestone history." },
+  profile: { title: "Profile — NutriCoach", description: "Manage your profile, progress, and partner perks." },
+};
 
 export default function Dashboard() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -31,6 +42,9 @@ export default function Dashboard() {
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const [autoOpenLog, setAutoOpenLog] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+
+  const seo = TAB_SEO[activeTab] || TAB_SEO.home;
+  useSeo({ title: seo.title, description: seo.description, canonicalPath: "/" });
 
   const navigateToPost = (postId: string) => {
     setHighlightPostId(postId);
