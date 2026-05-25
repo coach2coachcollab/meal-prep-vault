@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { ChefHat, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSeo } from "@/hooks/useSeo";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -16,6 +17,12 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [hasRecoveryToken, setHasRecoveryToken] = useState(false);
   const navigate = useNavigate();
+
+  useSeo({
+    title: "Set New Password — NutriCoach",
+    description: "Choose a new password for your NutriCoach account.",
+    canonicalPath: "/reset-password",
+  });
 
   useEffect(() => {
     // Check for recovery token in URL hash
@@ -62,6 +69,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6 bg-background">
+      <h1 className="sr-only">Set a new NutriCoach password</h1>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">

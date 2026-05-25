@@ -7,11 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { ChefHat, ArrowLeft, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSeo } from "@/hooks/useSeo";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+
+  useSeo({
+    title: "Reset Password — NutriCoach",
+    description: "Request a password reset link for your NutriCoach account.",
+    canonicalPath: "/forgot-password",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +39,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6 bg-background">
+      <h1 className="sr-only">Reset your NutriCoach password</h1>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">

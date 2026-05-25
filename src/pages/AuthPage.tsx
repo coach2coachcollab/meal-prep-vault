@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ChefHat, Target, Utensils, Eye, EyeOff } from "lucide-react";
+import { useSeo } from "@/hooks/useSeo";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +16,14 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useSeo({
+    title: isLogin ? "Sign In — NutriCoach" : "Create Account — NutriCoach",
+    description: isLogin
+      ? "Sign in to NutriCoach to track meals, plan macros, and reach your wellness goals."
+      : "Create your NutriCoach account and start your personalized nutrition coaching journey.",
+    canonicalPath: "/auth",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,13 +55,14 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen">
+      <h1 className="sr-only">NutriCoach — Personalized Nutrition Coaching</h1>
       {/* Left panel - branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-16 bg-background">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
             <ChefHat className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">NutriCoach</h1>
+          <h2 className="text-3xl font-bold text-foreground">NutriCoach</h2>
         </div>
         <p className="text-lg text-muted-foreground mb-2">
           Your comprehensive nutrition coaching platform
