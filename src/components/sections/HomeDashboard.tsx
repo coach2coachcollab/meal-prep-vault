@@ -222,6 +222,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
   return (
     <div className="space-y-5">
+      <h1 className="sr-only">Your nutrition overview</h1>
       {/* Header */}
       <div>
         <h2 className="text-2xl font-heading">{greeting()}, {profileName || "there"} 👋</h2>

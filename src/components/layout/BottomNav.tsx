@@ -69,6 +69,8 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
                 <button
                   key={tab.id}
                   onClick={() => setQuickOpen((o) => !o)}
+                  aria-label={quickOpen ? "Close quick actions" : "Open quick actions"}
+                  aria-expanded={quickOpen}
                   className={cn(
                     "flex items-center justify-center h-12 w-12 -mt-5 rounded-full bg-center-btn text-center-btn-foreground shadow-[0_0_14px_hsl(var(--center-btn)/0.4)] transition-all hover:scale-105 hover:shadow-[0_0_20px_hsl(var(--center-btn)/0.55)] active:scale-95",
                     quickOpen && "rotate-45"
@@ -82,6 +84,8 @@ export function BottomNav({ activeTab, onTabChange, onSubTabChange }: BottomNavP
               <button
                 key={tab.id}
                 onClick={() => { setQuickOpen(false); onTabChange(tab.id); }}
+                aria-label={tab.label}
+                aria-current={activeTab === tab.id ? "page" : undefined}
                 className={cn(
                   "relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 min-w-[60px]",
                   activeTab === tab.id
