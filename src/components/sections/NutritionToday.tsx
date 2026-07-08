@@ -574,6 +574,32 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
         </CardContent>
       </Card>
 
+      {/* One-tap recent meals */}
+      {recentMeals.length > 0 && (
+        <div>
+          <p className="text-[10px] font-label uppercase text-muted-foreground mb-2 pl-1">Recent · one tap to re-log</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {recentMeals.map((r: any, i: number) => (
+              <button
+                key={`${r.recipe_id || "m"}-${r.food_name}-${i}`}
+                onClick={() => relogRecent(r)}
+                className="shrink-0 w-32 text-left p-2 rounded-lg border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
+              >
+                {r.image_url ? (
+                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-14 w-full rounded-md object-cover mb-1.5" />
+                ) : (
+                  <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center mb-1.5">
+                    <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <p className="text-xs font-medium truncate">{r.food_name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{r.calories} kcal · {r.meal_type}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Meal sections */}
       {mealTypes.map((type) => {
         const typeEntries = entries.filter((e) => e.meal_type === type);
