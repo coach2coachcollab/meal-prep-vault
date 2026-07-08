@@ -129,10 +129,12 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const mealImages: Record<string, string> = {};
   dbMeals.forEach((m) => { if (m.image_url) mealImages[m.id] = m.image_url; });
 
+  // Targeted: entries list is updated optimistically, so only refresh the
+  // aggregated dashboard cache. Avoids a redundant refetch of journalEntries.
   const invalidateJournal = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries(user?.id, date) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
   };
+
 
   const r2 = (n: number) => Math.round(n * 100) / 100;
   const rawTotals = entries.reduce((s, e) => ({
