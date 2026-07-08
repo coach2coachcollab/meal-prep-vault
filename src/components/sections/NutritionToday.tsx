@@ -17,7 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getDefaultMealType } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { MealJournalSkeleton } from "@/components/skeletons/MealJournalSkeleton";
@@ -73,7 +73,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [addMealType, setAddMealType] = useState("Breakfast");
+  const [addMealType, setAddMealType] = useState<string>(() => getDefaultMealType());
   const [habitsExpanded, setHabitsExpanded] = useState(false);
   const [weekExpanded, setWeekExpanded] = useState(false);
 
@@ -222,13 +222,49 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
 
   const habits = habitData?.habits || [];
 
-  // DB meals query
+  // DB meals query — filtered to user + public, capped, server-side ilike search
   const { data: dbMeals = [] } = useQuery({
-    queryKey: queryKeys.dbMeals(),
+    queryKey: queryKeys.dbMeals(user?.id, recipeSearch.trim().toLowerCase()),
     queryFn: async () => {
-      const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
+      if (!user) return [];
+      let q = supabase
+        .from("meals")
+        .select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings")
+        .or(`is_public.eq.true,user_id.eq.${user.id}`)
+        .order("title")
+        .limit(200);
+      const s = recipeSearch.trim();
+      if (s) q = q.ilike("title", `%${s}%`);
+      const { data } = await q;
       return (data || []) as DbMeal[];
     },
+    enabled: !!user && dialogOpen,
+    refetchOnWindowFocus: false,
+  });
+
+  // Recent logged meals — powers one-tap re-log strip
+  const { data: recentMeals = [] } = useQuery({
+    queryKey: queryKeys.recentLoggedMeals(user?.id),
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("journal_entries")
+        .select("food_name, recipe_id, meal_type, servings, calories, protein_g, carbs_g, fat_g, image_url, logged_at")
+        .eq("user_id", user.id)
+        .order("logged_at", { ascending: false })
+        .limit(30);
+      const seen = new Set<string>();
+      const distinct: any[] = [];
+      for (const r of data || []) {
+        const k = `${r.recipe_id || ""}::${r.food_name}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        distinct.push(r);
+        if (distinct.length >= 5) break;
+      }
+      return distinct;
+    },
+    enabled: !!user,
     refetchOnWindowFocus: false,
   });
 
@@ -435,6 +471,35 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
     invalidateForJournal();
   };
 
+  // One-tap re-log: insert directly using previously-used meal_type + servings
+  const relogRecent = async (r: any) => {
+    if (!user) return;
+    const optimistic: JournalEntry = {
+      id: `temp-${Date.now()}`,
+      meal_type: r.meal_type,
+      food_name: r.food_name,
+      calories: Number(r.calories) || 0,
+      protein_g: Number(r.protein_g) || 0,
+      carbs_g: Number(r.carbs_g) || 0,
+      fat_g: Number(r.fat_g) || 0,
+      recipe_id: r.recipe_id,
+      image_url: r.image_url,
+      servings: Number(r.servings) || 1,
+    };
+    const qk = queryKeys.journalEntries(user.id, date);
+    const prev = queryClient.getQueryData<JournalEntry[]>(qk);
+    queryClient.setQueryData(qk, [...(prev || []), optimistic]);
+    toast.success(`${r.food_name} logged!`);
+    const { error } = await supabase.from("journal_entries").insert({
+      user_id: user.id, date, meal_type: optimistic.meal_type, food_name: optimistic.food_name,
+      calories: optimistic.calories, protein_g: optimistic.protein_g,
+      carbs_g: optimistic.carbs_g, fat_g: optimistic.fat_g,
+      recipe_id: optimistic.recipe_id, servings: optimistic.servings, image_url: optimistic.image_url,
+    });
+    if (error) { queryClient.setQueryData(qk, prev); toast.error("Failed to log"); }
+    invalidateForJournal();
+  };
+
   const saveDailyNote = async () => {
     if (!user) return;
     const { error } = await supabase.from("journal_daily_notes").upsert({ user_id: user.id, date, ...dailyNote }, { onConflict: "user_id,date" });
@@ -508,6 +573,32 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
           }
         </CardContent>
       </Card>
+
+      {/* One-tap recent meals */}
+      {recentMeals.length > 0 && (
+        <div>
+          <p className="text-[10px] font-label uppercase text-muted-foreground mb-2 pl-1">Recent · one tap to re-log</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {recentMeals.map((r: any, i: number) => (
+              <button
+                key={`${r.recipe_id || "m"}-${r.food_name}-${i}`}
+                onClick={() => relogRecent(r)}
+                className="shrink-0 w-32 text-left p-2 rounded-lg border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
+              >
+                {r.image_url ? (
+                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-14 w-full rounded-md object-cover mb-1.5" />
+                ) : (
+                  <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center mb-1.5">
+                    <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <p className="text-xs font-medium truncate">{r.food_name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{r.calories} kcal · {r.meal_type}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Meal sections */}
       {mealTypes.map((type) => {
@@ -799,8 +890,15 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
                   ) : (
                     <div className="space-y-2 flex-1 overflow-y-auto min-h-0 max-h-[40vh]">
                       {filteredMeals.map((meal) => (
-                        <button key={meal.id} onClick={() => { setSelectedVaultMeal(meal); setVaultServings(1); }}
+                        <button key={meal.id} onClick={() => {
+                          if ((meal.servings || 1) === 1) {
+                            logFromRecipe(meal, 1);
+                          } else {
+                            setSelectedVaultMeal(meal); setVaultServings(1);
+                          }
+                        }}
                           className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center">
+
                           {meal.image_url ? (
                             <img loading="lazy" decoding="async" src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
                           ) : (

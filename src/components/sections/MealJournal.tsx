@@ -12,7 +12,7 @@ import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Tr
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getDefaultMealType } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
@@ -52,7 +52,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [addMealType, setAddMealType] = useState("Breakfast");
+  const [addMealType, setAddMealType] = useState<string>(() => getDefaultMealType());
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
   useEffect(() => {
@@ -117,13 +117,23 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     if (dailyNoteData) setDailyNote(dailyNoteData);
   }, [dailyNoteData]);
 
-  // DB meals query
+  // DB meals query — filtered to user + public, capped, server-side ilike search
   const { data: dbMeals = [] } = useQuery({
-    queryKey: queryKeys.dbMeals(),
+    queryKey: queryKeys.dbMeals(user?.id, recipeSearch.trim().toLowerCase()),
     queryFn: async () => {
-      const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
+      if (!user) return [];
+      let q = supabase
+        .from("meals")
+        .select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings")
+        .or(`is_public.eq.true,user_id.eq.${user.id}`)
+        .order("title")
+        .limit(200);
+      const s = recipeSearch.trim();
+      if (s) q = q.ilike("title", `%${s}%`);
+      const { data } = await q;
       return (data || []) as DbMeal[];
     },
+    enabled: !!user && dialogOpen,
     refetchOnWindowFocus: false,
   });
 
@@ -268,7 +278,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       toast.error("Failed to log food");
     }
     invalidateJournal();
-    if (recipe_id) queryClient.invalidateQueries({ queryKey: queryKeys.dbMeals() });
+    if (recipe_id) queryClient.invalidateQueries({ queryKey: ["db-meals"] });
   };
 
   const deleteEntry = async (id: string) => {
@@ -532,7 +542,10 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                   {filteredMeals.map((meal) =>
               <button
                 key={meal.id}
-                onClick={() => { setSelectedVaultMeal(meal); setVaultServings(1); }}
+                onClick={() => {
+                  if ((meal.servings || 1) === 1) { logFromRecipe(meal, 1); }
+                  else { setSelectedVaultMeal(meal); setVaultServings(1); }
+                }}
                 className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center">
                       {meal.image_url ?
                 <img loading="lazy" decoding="async" src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" /> :
