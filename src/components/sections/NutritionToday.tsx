@@ -249,9 +249,9 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
       if (!user) return [];
       const { data } = await supabase
         .from("journal_entries")
-        .select("food_name, recipe_id, meal_type, servings, calories, protein_g, carbs_g, fat_g, image_url, created_at")
+        .select("food_name, recipe_id, meal_type, servings, calories, protein_g, carbs_g, fat_g, image_url, logged_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("logged_at", { ascending: false })
         .limit(30);
       const seen = new Set<string>();
       const distinct: any[] = [];
