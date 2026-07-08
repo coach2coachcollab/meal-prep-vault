@@ -97,6 +97,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       return data as { calories: number; protein_g: number; carbs_g: number; fat_g: number } | null;
     },
     enabled: !!user,
+    refetchOnWindowFocus: false,
   });
 
   // Daily note query
@@ -123,16 +124,19 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
       return (data || []) as DbMeal[];
     },
+    refetchOnWindowFocus: false,
   });
 
   // Derived meal images map
   const mealImages: Record<string, string> = {};
   dbMeals.forEach((m) => { if (m.image_url) mealImages[m.id] = m.image_url; });
 
+  // Targeted: entries list is updated optimistically, so only refresh the
+  // aggregated dashboard cache. Avoids a redundant refetch of journalEntries.
   const invalidateJournal = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries(user?.id, date) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
   };
+
 
   const r2 = (n: number) => Math.round(n * 100) / 100;
   const rawTotals = entries.reduce((s, e) => ({
