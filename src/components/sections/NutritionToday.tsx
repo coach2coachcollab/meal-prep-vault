@@ -233,12 +233,20 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
   const mealImages: Record<string, string> = {};
   dbMeals.forEach((m) => { if (m.image_url) mealImages[m.id] = m.image_url; });
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries(user?.id, date) });
+  // Targeted invalidators — only touch caches that actually changed.
+  // Optimistic setQueryData already updates the primary list; these keep
+  // aggregate/derived views (dashboard, streak) in sync without a 5-way refetch.
+  const invalidateForJournal = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.habits(user?.id) });
     queryClient.invalidateQueries({ queryKey: queryKeys.streak(user?.id) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.waterLog(user?.id, date) });
+  };
+  const invalidateForWater = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
+  };
+  const invalidateForHabit = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.habits(user?.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user?.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.streak(user?.id) });
   };
 
   const r2 = (n: number) => Math.round(n * 100) / 100;
