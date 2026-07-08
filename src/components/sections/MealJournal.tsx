@@ -278,7 +278,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       toast.error("Failed to log food");
     }
     invalidateJournal();
-    if (recipe_id) queryClient.invalidateQueries({ queryKey: queryKeys.dbMeals() });
+    if (recipe_id) queryClient.invalidateQueries({ queryKey: ["db-meals"] });
   };
 
   const deleteEntry = async (id: string) => {
