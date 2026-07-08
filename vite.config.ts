@@ -18,4 +18,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ["recharts"],
+          jspdf: ["jspdf"],
+          "embla-carousel": ["embla-carousel-react"],
+          "canvas-confetti": ["canvas-confetti"],
+        },
+      },
+    },
+  },
 }));

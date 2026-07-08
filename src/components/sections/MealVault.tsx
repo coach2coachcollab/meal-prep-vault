@@ -378,7 +378,7 @@ export function MealVault() {
                     {/* Image or placeholder */}
                     <div className="relative h-48 overflow-hidden">
                       {meal.image_url ? (
-                        <img src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={meal.image_url} alt={meal.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-primary/10 via-accent/10 to-secondary flex items-center justify-center">
                           <ChefHat className="h-12 w-12 text-muted-foreground/40" />
@@ -537,7 +537,7 @@ export function MealVault() {
               <Label>Photo</Label>
               <label className="flex flex-col items-center justify-center w-full h-32 sm:h-40 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
                 {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center text-muted-foreground">
                     <ImagePlus className="h-8 w-8 mb-1" />
