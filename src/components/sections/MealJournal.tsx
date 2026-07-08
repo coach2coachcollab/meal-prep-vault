@@ -117,13 +117,23 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
     if (dailyNoteData) setDailyNote(dailyNoteData);
   }, [dailyNoteData]);
 
-  // DB meals query
+  // DB meals query — filtered to user + public, capped, server-side ilike search
   const { data: dbMeals = [] } = useQuery({
-    queryKey: queryKeys.dbMeals(),
+    queryKey: queryKeys.dbMeals(user?.id, recipeSearch.trim().toLowerCase()),
     queryFn: async () => {
-      const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
+      if (!user) return [];
+      let q = supabase
+        .from("meals")
+        .select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings")
+        .or(`is_public.eq.true,user_id.eq.${user.id}`)
+        .order("title")
+        .limit(200);
+      const s = recipeSearch.trim();
+      if (s) q = q.ilike("title", `%${s}%`);
+      const { data } = await q;
       return (data || []) as DbMeal[];
     },
+    enabled: !!user && dialogOpen,
     refetchOnWindowFocus: false,
   });
 
