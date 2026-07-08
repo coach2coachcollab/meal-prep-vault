@@ -471,6 +471,35 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
     invalidateForJournal();
   };
 
+  // One-tap re-log: insert directly using previously-used meal_type + servings
+  const relogRecent = async (r: any) => {
+    if (!user) return;
+    const optimistic: JournalEntry = {
+      id: `temp-${Date.now()}`,
+      meal_type: r.meal_type,
+      food_name: r.food_name,
+      calories: Number(r.calories) || 0,
+      protein_g: Number(r.protein_g) || 0,
+      carbs_g: Number(r.carbs_g) || 0,
+      fat_g: Number(r.fat_g) || 0,
+      recipe_id: r.recipe_id,
+      image_url: r.image_url,
+      servings: Number(r.servings) || 1,
+    };
+    const qk = queryKeys.journalEntries(user.id, date);
+    const prev = queryClient.getQueryData<JournalEntry[]>(qk);
+    queryClient.setQueryData(qk, [...(prev || []), optimistic]);
+    toast.success(`${r.food_name} logged!`);
+    const { error } = await supabase.from("journal_entries").insert({
+      user_id: user.id, date, meal_type: optimistic.meal_type, food_name: optimistic.food_name,
+      calories: optimistic.calories, protein_g: optimistic.protein_g,
+      carbs_g: optimistic.carbs_g, fat_g: optimistic.fat_g,
+      recipe_id: optimistic.recipe_id, servings: optimistic.servings, image_url: optimistic.image_url,
+    });
+    if (error) { queryClient.setQueryData(qk, prev); toast.error("Failed to log"); }
+    invalidateForJournal();
+  };
+
   const saveDailyNote = async () => {
     if (!user) return;
     const { error } = await supabase.from("journal_daily_notes").upsert({ user_id: user.id, date, ...dailyNote }, { onConflict: "user_id,date" });
