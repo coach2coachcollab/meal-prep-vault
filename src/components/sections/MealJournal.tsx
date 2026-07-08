@@ -542,7 +542,10 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                   {filteredMeals.map((meal) =>
               <button
                 key={meal.id}
-                onClick={() => { setSelectedVaultMeal(meal); setVaultServings(1); }}
+                onClick={() => {
+                  if ((meal.servings || 1) === 1) { logFromRecipe(meal, 1); }
+                  else { setSelectedVaultMeal(meal); setVaultServings(1); }
+                }}
                 className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center">
                       {meal.image_url ?
                 <img loading="lazy" decoding="async" src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" /> :
