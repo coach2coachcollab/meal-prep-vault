@@ -1,19 +1,6 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useTheme } from "@/hooks/useTheme";
-import { HomeDashboard } from "@/components/sections/HomeDashboard";
-import { MacroCalculator } from "@/components/sections/MacroCalculator";
-import { MealVault } from "@/components/sections/MealVault";
-import { NutritionToday } from "@/components/sections/NutritionToday";
-import { ExerciseLibrary } from "@/components/sections/ExerciseLibrary";
-import { WorkoutLogger } from "@/components/sections/WorkoutLogger";
-import { WorkoutTemplates } from "@/components/sections/WorkoutTemplates";
-import { CommunityHub } from "@/components/sections/CommunityHub";
-import { UserProfile } from "@/components/sections/UserProfile";
-import { PartnerHub } from "@/components/sections/PartnerHub";
-import { ProgressTracker } from "@/components/sections/ProgressTracker";
-import { NotificationsPage } from "@/components/sections/NotificationsPage";
-import { StreakDetails } from "@/components/sections/StreakDetails";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +8,26 @@ import { Button } from "@/components/ui/button";
 import { User, Zap, Moon, Sun } from "lucide-react";
 import { useStreak } from "@/hooks/useStreak";
 import { useSeo } from "@/hooks/useSeo";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+
+// Lazy-load heavy tab sections so recharts/jspdf/confetti/embla stay out of the
+// initial bundle. Each section is only fetched when the user opens its tab.
+const HomeDashboard = lazy(() => import("@/components/sections/HomeDashboard").then(m => ({ default: m.HomeDashboard })));
+const MacroCalculator = lazy(() => import("@/components/sections/MacroCalculator").then(m => ({ default: m.MacroCalculator })));
+const MealVault = lazy(() => import("@/components/sections/MealVault").then(m => ({ default: m.MealVault })));
+const NutritionToday = lazy(() => import("@/components/sections/NutritionToday").then(m => ({ default: m.NutritionToday })));
+const ExerciseLibrary = lazy(() => import("@/components/sections/ExerciseLibrary").then(m => ({ default: m.ExerciseLibrary })));
+const WorkoutLogger = lazy(() => import("@/components/sections/WorkoutLogger").then(m => ({ default: m.WorkoutLogger })));
+const WorkoutTemplates = lazy(() => import("@/components/sections/WorkoutTemplates").then(m => ({ default: m.WorkoutTemplates })));
+const CommunityHub = lazy(() => import("@/components/sections/CommunityHub").then(m => ({ default: m.CommunityHub })));
+const UserProfile = lazy(() => import("@/components/sections/UserProfile").then(m => ({ default: m.UserProfile })));
+const PartnerHub = lazy(() => import("@/components/sections/PartnerHub").then(m => ({ default: m.PartnerHub })));
+const ProgressTracker = lazy(() => import("@/components/sections/ProgressTracker").then(m => ({ default: m.ProgressTracker })));
+const NotificationsPage = lazy(() => import("@/components/sections/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
+const StreakDetails = lazy(() => import("@/components/sections/StreakDetails").then(m => ({ default: m.StreakDetails })));
+
+const SectionFallback = () => <DashboardSkeleton />;
+
 
 const TAB_SEO: Record<string, { title: string; description: string }> = {
   home: { title: "Home — NutriCoach", description: "Your nutrition overview, streak, macros, and daily progress." },
