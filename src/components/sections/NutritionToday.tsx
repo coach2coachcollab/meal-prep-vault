@@ -73,7 +73,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [addMealType, setAddMealType] = useState("Breakfast");
+  const [addMealType, setAddMealType] = useState<string>(() => getDefaultMealType());
   const [habitsExpanded, setHabitsExpanded] = useState(false);
   const [weekExpanded, setWeekExpanded] = useState(false);
 
