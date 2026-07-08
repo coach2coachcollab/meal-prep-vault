@@ -97,6 +97,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       return data as { calories: number; protein_g: number; carbs_g: number; fat_g: number } | null;
     },
     enabled: !!user,
+    refetchOnWindowFocus: false,
   });
 
   // Daily note query
