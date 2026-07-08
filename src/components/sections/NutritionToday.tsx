@@ -222,13 +222,49 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
 
   const habits = habitData?.habits || [];
 
-  // DB meals query
+  // DB meals query — filtered to user + public, capped, server-side ilike search
   const { data: dbMeals = [] } = useQuery({
-    queryKey: queryKeys.dbMeals(),
+    queryKey: queryKeys.dbMeals(user?.id, recipeSearch.trim().toLowerCase()),
     queryFn: async () => {
-      const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
+      if (!user) return [];
+      let q = supabase
+        .from("meals")
+        .select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings")
+        .or(`is_public.eq.true,user_id.eq.${user.id}`)
+        .order("title")
+        .limit(200);
+      const s = recipeSearch.trim();
+      if (s) q = q.ilike("title", `%${s}%`);
+      const { data } = await q;
       return (data || []) as DbMeal[];
     },
+    enabled: !!user && dialogOpen,
+    refetchOnWindowFocus: false,
+  });
+
+  // Recent logged meals — powers one-tap re-log strip
+  const { data: recentMeals = [] } = useQuery({
+    queryKey: queryKeys.recentLoggedMeals(user?.id),
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("journal_entries")
+        .select("food_name, recipe_id, meal_type, servings, calories, protein_g, carbs_g, fat_g, image_url, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      const seen = new Set<string>();
+      const distinct: any[] = [];
+      for (const r of data || []) {
+        const k = `${r.recipe_id || ""}::${r.food_name}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        distinct.push(r);
+        if (distinct.length >= 5) break;
+      }
+      return distinct;
+    },
+    enabled: !!user,
     refetchOnWindowFocus: false,
   });
 
