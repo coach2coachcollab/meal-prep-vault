@@ -12,7 +12,7 @@ import { Plus, ChevronLeft, ChevronRight, Flame, Beef, Wheat, Droplets, Star, Tr
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getDefaultMealType } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
