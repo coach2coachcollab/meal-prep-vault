@@ -52,7 +52,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [addMealType, setAddMealType] = useState("Breakfast");
+  const [addMealType, setAddMealType] = useState<string>(() => getDefaultMealType());
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
   useEffect(() => {
