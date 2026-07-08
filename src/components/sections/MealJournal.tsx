@@ -124,6 +124,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
       const { data } = await supabase.from("meals").select("id, title, description, calories, protein, carbs, fats, image_url, tags, servings").order("title");
       return (data || []) as DbMeal[];
     },
+    refetchOnWindowFocus: false,
   });
 
   // Derived meal images map
