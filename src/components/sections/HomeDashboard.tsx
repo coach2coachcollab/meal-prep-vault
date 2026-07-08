@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight, Calculator } from "lucide-react";
+import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight, Calculator, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
@@ -14,9 +14,11 @@ import { cn } from "@/lib/utils";
 
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const shownMilestones = useRef(new Set<string>());
   const { streak } = useStreak();
 
+  // MERGED: dashboard + nudge in a single round-trip block
   const { data: dashData, isLoading } = useQuery({
     queryKey: queryKeys.dashboard(user?.id),
     queryFn: async () => {
@@ -26,28 +28,48 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       const [
         { data: profile },
         { data: macro },
-        { data: journal },
+        { data: recentJournal },
         { data: habits },
         { data: logs },
         { data: water },
+        { data: recentWorkout },
+        { data: lastTemplate },
       ] = await Promise.all([
         supabase.from("profiles").select("name").eq("user_id", user.id).single(),
         supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("journal_entries").select("calories, protein_g, carbs_g, fat_g, meal_type").eq("user_id", user.id).eq("date", today),
+        // Fetch a bounded recent slice → powers today's totals + recent-meals strip + hasLoggedToday
+        supabase.from("journal_entries")
+          .select("food_name, recipe_id, meal_type, servings, calories, protein_g, carbs_g, fat_g, image_url, date, logged_at")
+          .eq("user_id", user.id)
+          .order("logged_at", { ascending: false })
+          .limit(60),
         supabase.from("user_habits").select("id").eq("user_id", user.id).eq("is_active", true),
         supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true),
         supabase.from("water_logs").select("glasses, goal").eq("user_id", user.id).eq("date", today).maybeSingle(),
+        supabase.from("workout_logs").select("id").eq("user_id", user.id).eq("completed_at", today).limit(1),
+        supabase.from("workout_templates").select("name, category").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
       const r = (n: number) => Math.round(n * 100) / 100;
-      const todayJournal = journal ? {
-        calories: r(journal.reduce((s, j) => s + (Number(j.calories) || 0), 0)),
-        protein: r(journal.reduce((s, j) => s + (Number(j.protein_g) || 0), 0)),
-        carbs: r(journal.reduce((s, j) => s + (Number(j.carbs_g) || 0), 0)),
-        fat: r(journal.reduce((s, j) => s + (Number(j.fat_g) || 0), 0)),
-      } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+      const todaysEntries = (recentJournal || []).filter((j: any) => j.date === today);
+      const todayJournal = {
+        calories: r(todaysEntries.reduce((s: number, j: any) => s + (Number(j.calories) || 0), 0)),
+        protein: r(todaysEntries.reduce((s: number, j: any) => s + (Number(j.protein_g) || 0), 0)),
+        carbs: r(todaysEntries.reduce((s: number, j: any) => s + (Number(j.carbs_g) || 0), 0)),
+        fat: r(todaysEntries.reduce((s: number, j: any) => s + (Number(j.fat_g) || 0), 0)),
+      };
+      const loggedMealTypes = new Set(todaysEntries.map((j: any) => j.meal_type));
 
-      const loggedMealTypes = new Set((journal || []).map(j => j.meal_type));
+      // Distinct recent (last 5) by (recipe_id + food_name)
+      const seen = new Set<string>();
+      const recent: any[] = [];
+      for (const rr of recentJournal || []) {
+        const k = `${(rr as any).recipe_id || ""}::${(rr as any).food_name}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        recent.push(rr);
+        if (recent.length >= 5) break;
+      }
 
       return {
         profileName: profile?.name || "",
@@ -56,44 +78,16 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         loggedMealTypes,
         habitsToday: { done: logs?.length || 0, total: habits?.length || 0 },
         waterToday: water ? { glasses: water.glasses, goal: water.goal } : { glasses: 0, goal: 8 },
-      };
-    },
-    enabled: !!user,
-  });
-
-  // Nudge data — recent workout template
-  const { data: nudgeData } = useQuery({
-    queryKey: ["nudge", user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const today = new Date().toISOString().split("T")[0];
-
-      const [
-        { data: recentWorkout },
-        { data: streakCheckJournal },
-        { data: streakCheckHabits },
-        { data: lastTemplate },
-      ] = await Promise.all([
-        supabase.from("workout_logs").select("id").eq("user_id", user.id).eq("completed_at", today).limit(1),
-        supabase.from("journal_entries").select("id").eq("user_id", user.id).eq("date", today).limit(1),
-        supabase.from("habit_logs").select("id").eq("user_id", user.id).eq("date", today).eq("completed", true).limit(1),
-        supabase.from("workout_templates").select("name, category").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-      ]);
-
-      const hasLoggedToday = (streakCheckJournal?.length ?? 0) > 0 || (streakCheckHabits?.length ?? 0) > 0;
-      const hasWorkedOutToday = (recentWorkout?.length ?? 0) > 0;
-
-      return {
-        hasLoggedToday,
-        hasWorkedOutToday,
+        recentMeals: recent,
+        hasLoggedToday: todaysEntries.length > 0 || (logs?.length ?? 0) > 0,
+        hasWorkedOutToday: (recentWorkout?.length ?? 0) > 0,
         lastTemplateName: lastTemplate?.name || null,
         lastTemplateCategory: lastTemplate?.category || null,
       };
     },
     enabled: !!user,
+    refetchOnWindowFocus: false,
   });
-
-
 
   const { data: progressSummary } = useQuery({
     queryKey: queryKeys.progressSummary(user?.id),
@@ -145,6 +139,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       return { period, weightChange, waistChange, currentWeight, entries: useLogs.length, useMetric: isMetric };
     },
     enabled: !!user,
+    refetchOnWindowFocus: false,
   });
 
   const profileName = dashData?.profileName || "";
@@ -153,17 +148,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const loggedMealTypes = dashData?.loggedMealTypes || new Set<string>();
   const habitsToday = dashData?.habitsToday || { done: 0, total: 0 };
   const waterToday = dashData?.waterToday || { glasses: 0, goal: 8 };
-
-  const showMilestone = (key: string, icon: string, title: string, description: string) => {
-    const storageKey = `milestone_${user?.id}_${key}`;
-    if (shownMilestones.current.has(key)) return;
-    if (localStorage.getItem(storageKey)) return;
-    shownMilestones.current.add(key);
-    localStorage.setItem(storageKey, new Date().toISOString());
-    setTimeout(() => {
-      toast(title, { description, icon, duration: 6000 });
-    }, 1500);
-  };
+  const recentMeals = dashData?.recentMeals || [];
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -174,8 +159,28 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
   const calPercent = macros ? Math.min(100, (todayJournal.calories / macros.calories) * 100) : 0;
 
+  // One-tap re-log directly from Home
+  const relogRecent = async (r: any) => {
+    if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
+    const { error } = await supabase.from("journal_entries").insert({
+      user_id: user.id, date: today,
+      meal_type: r.meal_type, food_name: r.food_name,
+      calories: Number(r.calories) || 0,
+      protein_g: Number(r.protein_g) || 0,
+      carbs_g: Number(r.carbs_g) || 0,
+      fat_g: Number(r.fat_g) || 0,
+      recipe_id: r.recipe_id, servings: Number(r.servings) || 1, image_url: r.image_url,
+    });
+    if (error) { toast.error("Failed to log"); return; }
+    toast.success(`${r.food_name} logged!`);
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.journalEntries(user.id, today) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.streak(user.id) });
+  };
+
   const getWhatsNextNudge = () => {
-    if (!nudgeData) return null;
+    if (!dashData) return null;
 
     if (!loggedMealTypes.has("Lunch")) {
       return {
@@ -187,7 +192,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       };
     }
 
-    if (streak > 0 && !nudgeData.hasLoggedToday) {
+    if (streak > 0 && !dashData.hasLoggedToday) {
       return {
         title: `Keep your 🔥 ${streak}-day streak alive`,
         description: "Log one meal or one habit to protect your streak.",
@@ -197,10 +202,10 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       };
     }
 
-  if (!nudgeData.hasWorkedOutToday && nudgeData.lastTemplateName) {
+    if (!dashData.hasWorkedOutToday && dashData.lastTemplateName) {
       return {
-        title: `Looks like a ${nudgeData.lastTemplateCategory?.replace("_", " ") || "workout"} day`,
-        description: `${nudgeData.lastTemplateName} is ready when you are.`,
+        title: `Looks like a ${dashData.lastTemplateCategory?.replace("_", " ") || "workout"} day`,
+        description: `${dashData.lastTemplateName} is ready when you are.`,
         cta: "Start workout",
         icon: Dumbbell,
         onClick: () => onNavigate("fitness"),
@@ -233,7 +238,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
         <CardContent className="pt-6 pb-6">
           <div className="flex flex-col items-center gap-4">
-            {/* Large ring centered */}
             <div className="relative h-36 w-36">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
                 <circle cx="50" cy="50" r="42" fill="none" className="stroke-muted" strokeWidth="6" />
@@ -252,8 +256,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
                 <span className="text-[10px] text-muted-foreground">of {macros?.calories || "—"} kcal</span>
               </div>
             </div>
-            
-            {/* Macro breakdown below */}
+
             <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
               <div className="flex flex-col items-center p-2 rounded-lg bg-macro-protein/10">
                 <Beef className="h-4 w-4 text-macro-protein mb-1" />
@@ -274,6 +277,32 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
           </div>
         </CardContent>
       </Card>
+
+      {/* One-tap recent meals */}
+      {recentMeals.length > 0 && (
+        <div>
+          <p className="text-[10px] font-label uppercase text-muted-foreground mb-2 pl-1">Recent · one tap to re-log</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {recentMeals.map((r: any, i: number) => (
+              <button
+                key={`${r.recipe_id || "m"}-${r.food_name}-${i}`}
+                onClick={() => relogRecent(r)}
+                className="shrink-0 w-32 text-left p-2 rounded-lg border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
+              >
+                {r.image_url ? (
+                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-14 w-full rounded-md object-cover mb-1.5" />
+                ) : (
+                  <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center mb-1.5">
+                    <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <p className="text-xs font-medium truncate">{r.food_name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{r.calories} kcal · {r.meal_type}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Habits & Water */}
       <div className="grid grid-cols-2 gap-3">
