@@ -377,9 +377,9 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                     <CardContent className="py-3 px-4 flex items-center gap-3">
                       {/* Meal photo */}
                       {e.recipe_id && mealImages[e.recipe_id] ?
-                  <img src={mealImages[e.recipe_id]} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" /> :
+                  <img loading="lazy" decoding="async" src={mealImages[e.recipe_id]} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" /> :
                   (e as any).image_url ?
-                  <img src={(e as any).image_url} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" /> :
+                  <img loading="lazy" decoding="async" src={(e as any).image_url} alt={e.food_name} className="h-12 w-12 rounded-lg object-cover shrink-0" /> :
 
                   <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
                           <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
@@ -454,7 +454,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                 <div className="space-y-4">
                   <div className="flex gap-3 items-center p-3 rounded-lg border bg-muted/30">
                     {selectedVaultMeal.image_url ? (
-                      <img src={selectedVaultMeal.image_url} alt={selectedVaultMeal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
+                      <img loading="lazy" decoding="async" src={selectedVaultMeal.image_url} alt={selectedVaultMeal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
                     ) : (
                       <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
                         <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
@@ -535,7 +535,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                 onClick={() => { setSelectedVaultMeal(meal); setVaultServings(1); }}
                 className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors flex gap-3 items-center">
                       {meal.image_url ?
-                <img src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" /> :
+                <img loading="lazy" decoding="async" src={meal.image_url} alt={meal.title} className="h-14 w-14 rounded-lg object-cover shrink-0" /> :
                 <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
                           <UtensilsCrossed className="h-6 w-6 text-muted-foreground" />
                         </div>
@@ -565,7 +565,7 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                 <Label>Meal Photo</Label>
                 <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors overflow-hidden">
                   {mealPhotoPreview ?
-                <img src={mealPhotoPreview} alt="Preview" className="w-full h-full object-cover" /> :
+                <img loading="lazy" decoding="async" src={mealPhotoPreview} alt="Preview" className="w-full h-full object-cover" /> :
 
                 <div className="flex flex-col items-center text-muted-foreground">
                       <ImagePlus className="h-8 w-8 mb-1" />

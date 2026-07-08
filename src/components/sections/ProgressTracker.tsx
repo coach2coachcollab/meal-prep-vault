@@ -586,7 +586,7 @@ export function ProgressTracker() {
                 return (
                   <button key={log.id} onClick={() => openLogPhotos(log.id)} className="shrink-0 w-16 space-y-1">
                     <AspectRatio ratio={3 / 4} className="rounded-md overflow-hidden bg-muted relative">
-                      <img src={firstPhoto?.photo_url} alt={`Progress ${log.date}`} className="object-cover w-full h-full" />
+                      <img loading="lazy" decoding="async" src={firstPhoto?.photo_url} alt={`Progress ${log.date}`} className="object-cover w-full h-full" />
                       {photos.length > 1 && (
                         <span className="absolute bottom-0.5 right-0.5 bg-background/80 text-[8px] font-medium px-1 rounded">{photos.length}</span>
                       )}
@@ -645,7 +645,7 @@ export function ProgressTracker() {
                       <div className="shrink-0 flex gap-1">
                         {photos.map((p) => (
                           <button key={p.id} onClick={() => openLogPhotos(log.id, p.angle)} className="w-10 h-14 rounded-md overflow-hidden bg-muted relative">
-                            <img src={p.photo_url} alt={p.angle} className="object-cover w-full h-full" />
+                            <img loading="lazy" decoding="async" src={p.photo_url} alt={p.angle} className="object-cover w-full h-full" />
                             <span className="absolute bottom-0 inset-x-0 bg-background/70 text-[7px] text-center capitalize">{p.angle[0]}</span>
                           </button>
                         ))}
@@ -653,7 +653,7 @@ export function ProgressTracker() {
                     )}
                     {!photos.length && log.photo_url && (
                       <button onClick={() => openPhotoViewer([{ url: log.photo_url!, label: "Photo" }])} className="shrink-0 w-12 h-16 rounded-md overflow-hidden bg-muted">
-                        <img src={log.photo_url} alt="Progress" className="object-cover w-full h-full" />
+                        <img loading="lazy" decoding="async" src={log.photo_url} alt="Progress" className="object-cover w-full h-full" />
                       </button>
                     )}
                     <div className="flex-1 min-w-0">
@@ -715,7 +715,7 @@ export function ProgressTracker() {
                     {anglePreviews[angle] ? (
                       <div className="relative">
                         <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden bg-muted border">
-                          <img src={anglePreviews[angle]!} alt={angle} className="object-cover w-full h-full" />
+                          <img loading="lazy" decoding="async" src={anglePreviews[angle]!} alt={angle} className="object-cover w-full h-full" />
                         </AspectRatio>
                         <button
                           onClick={() => {
@@ -800,7 +800,7 @@ export function ProgressTracker() {
               }}
             >
               <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden">
-                <img src={viewPhotoList[viewPhotoIndex]?.url} alt="Progress photo" className="object-cover w-full h-full" />
+                <img loading="lazy" decoding="async" src={viewPhotoList[viewPhotoIndex]?.url} alt="Progress photo" className="object-cover w-full h-full" />
               </AspectRatio>
               {/* Angle label */}
               <span className="absolute top-2 left-2 bg-background/80 text-xs font-medium px-2 py-0.5 rounded-md">
@@ -877,7 +877,7 @@ export function ProgressTracker() {
                         {new Date(first.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                       <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden bg-muted">
-                        <img src={getPhotoUrl(first.id, compareAngle)!} alt="First" className="object-cover w-full h-full" />
+                        <img loading="lazy" decoding="async" src={getPhotoUrl(first.id, compareAngle)!} alt="First" className="object-cover w-full h-full" />
                       </AspectRatio>
                       {first.weight_kg != null && <p className="text-xs text-center font-medium">{displayWeight(first.weight_kg)}</p>}
                     </div>
@@ -886,7 +886,7 @@ export function ProgressTracker() {
                         {new Date(last.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                       <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden bg-muted">
-                        <img src={getPhotoUrl(last.id, compareAngle)!} alt="Latest" className="object-cover w-full h-full" />
+                        <img loading="lazy" decoding="async" src={getPhotoUrl(last.id, compareAngle)!} alt="Latest" className="object-cover w-full h-full" />
                       </AspectRatio>
                       {last.weight_kg != null && <p className="text-xs text-center font-medium">{displayWeight(last.weight_kg)}</p>}
                     </div>
