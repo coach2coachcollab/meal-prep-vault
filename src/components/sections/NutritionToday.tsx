@@ -271,7 +271,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
     const { error } = await supabase.from("water_logs").upsert({ user_id: user.id, date, glasses: newCount, goal: waterGoal }, { onConflict: "user_id,date" });
     if (error) console.error("Water log error", error);
     if (newCount === waterGoal && newCount > 0) toast.success("💧 Daily water goal reached!");
-    invalidateAll();
+    invalidateForWater();
   };
 
   const saveWaterGoal = async () => {
@@ -290,7 +290,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
     } else {
       await supabase.from("habit_logs").upsert({ habit_id: habit.id, user_id: user.id, date, completed: true }, { onConflict: "habit_id,date" });
     }
-    invalidateAll();
+    invalidateForHabit();
   };
 
   const addHabit = async () => {
@@ -298,13 +298,13 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
     await supabase.from("user_habits").insert({ user_id: user.id, name: newHabit, sort_order: habits.length });
     setNewHabit("");
     setHabitDialogOpen(false);
-    invalidateAll();
+    invalidateForHabit();
     toast.success("Habit added!");
   };
 
   const deleteHabit = async (id: string) => {
     await supabase.from("user_habits").delete().eq("id", id);
-    invalidateAll();
+    invalidateForHabit();
     toast.success("Habit removed");
   };
 
@@ -349,7 +349,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
       queryClient.setQueryData(qk, prev);
       toast.error("Failed to log meal");
     }
-    invalidateAll();
+    invalidateForJournal();
   };
 
   const addFood = async () => {
@@ -417,7 +417,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
       queryClient.setQueryData(qk, prev);
       toast.error("Failed to log food");
     }
-    invalidateAll();
+    invalidateForJournal();
   };
 
   const deleteEntry = async (id: string) => {
@@ -430,7 +430,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
       queryClient.setQueryData(qk, prev);
       toast.error("Failed to delete entry");
     }
-    invalidateAll();
+    invalidateForJournal();
   };
 
   const saveDailyNote = async () => {
