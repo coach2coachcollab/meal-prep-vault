@@ -474,28 +474,24 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
   // One-tap re-log: insert directly using previously-used meal_type + servings
   const relogRecent = async (r: any) => {
     if (!user) return;
+    const payload = buildRelogPayload(user.id, date, r);
     const optimistic: JournalEntry = {
       id: `temp-${Date.now()}`,
-      meal_type: r.meal_type,
-      food_name: r.food_name,
-      calories: Number(r.calories) || 0,
-      protein_g: Number(r.protein_g) || 0,
-      carbs_g: Number(r.carbs_g) || 0,
-      fat_g: Number(r.fat_g) || 0,
-      recipe_id: r.recipe_id,
-      image_url: r.image_url,
-      servings: Number(r.servings) || 1,
+      meal_type: payload.meal_type,
+      food_name: payload.food_name,
+      calories: payload.calories,
+      protein_g: payload.protein_g,
+      carbs_g: payload.carbs_g,
+      fat_g: payload.fat_g,
+      recipe_id: payload.recipe_id,
+      image_url: payload.image_url,
+      servings: payload.servings,
     };
     const qk = queryKeys.journalEntries(user.id, date);
     const prev = queryClient.getQueryData<JournalEntry[]>(qk);
     queryClient.setQueryData(qk, [...(prev || []), optimistic]);
-    toast.success(`${r.food_name} logged!`);
-    const { error } = await supabase.from("journal_entries").insert({
-      user_id: user.id, date, meal_type: optimistic.meal_type, food_name: optimistic.food_name,
-      calories: optimistic.calories, protein_g: optimistic.protein_g,
-      carbs_g: optimistic.carbs_g, fat_g: optimistic.fat_g,
-      recipe_id: optimistic.recipe_id, servings: optimistic.servings, image_url: optimistic.image_url,
-    });
+    toast.success(`${payload.food_name} logged!`);
+    const { error } = await supabase.from("journal_entries").insert(payload);
     if (error) { queryClient.setQueryData(qk, prev); toast.error("Failed to log"); }
     invalidateForJournal();
   };
@@ -891,7 +887,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
                     <div className="space-y-2 flex-1 overflow-y-auto min-h-0 max-h-[40vh]">
                       {filteredMeals.map((meal) => (
                         <button key={meal.id} onClick={() => {
-                          if ((meal.servings || 1) === 1) {
+                          if (shouldSkipServingPicker(meal)) {
                             logFromRecipe(meal, 1);
                           } else {
                             setSelectedVaultMeal(meal); setVaultServings(1);
