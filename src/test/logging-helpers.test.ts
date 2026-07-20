@@ -96,9 +96,9 @@ describe("buildRelogPayload (one-tap recent-meals relog)", () => {
 });
 
 describe("end-to-end: recent-meals relog → supabase insert", () => {
-  const insertMock = vi.fn();
-  const fromMock = vi.fn(() => ({ insert: insertMock }));
-  const supabase = { from: fromMock };
+  const insertMock: ReturnType<typeof vi.fn> = vi.fn();
+  const fromMock: ReturnType<typeof vi.fn> = vi.fn(() => ({ insert: insertMock }));
+  const supabase = { from: fromMock as any };
 
   beforeEach(() => {
     insertMock.mockReset().mockResolvedValue({ error: null });
