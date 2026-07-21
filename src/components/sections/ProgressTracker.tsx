@@ -88,10 +88,13 @@ export function ProgressTracker() {
       const logIds = logs.map((l) => l.id);
 
       // Convert legacy public URLs -> storage paths, then sign in batch (bucket is now private)
-      const extractPath = (url: string | null): string | null => {
-        if (!url) return null;
-        const m = url.match(/\/progress-photos\/(.+?)(\?|$)/);
-        return m ? m[1] : null;
+      const extractPath = (val: string | null): string | null => {
+        if (!val) return null;
+        const m = val.match(/\/progress-photos\/(.+?)(\?|$)/);
+        if (m) return m[1];
+        // Bare storage path (new format): "<uid>/..." — treat as path if it looks like one
+        if (!/^https?:/i.test(val) && val.includes("/")) return val;
+        return null;
       };
       const pathsToSign = new Set<string>();
       logs.forEach((l) => { const p = extractPath(l.photo_url); if (p) pathsToSign.add(p); });
