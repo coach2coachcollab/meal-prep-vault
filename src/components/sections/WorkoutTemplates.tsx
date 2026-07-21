@@ -109,7 +109,7 @@ export function WorkoutTemplates({ onStartFromTemplate }: WorkoutTemplatesProps)
     queryFn: async () => {
       if (creatorIds.length === 0) return {};
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("user_id, name")
         .in("user_id", creatorIds);
       const map: Record<string, string> = {};

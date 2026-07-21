@@ -74,7 +74,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
       if (!postData) return { posts: [] as PostData[], nextOffset: null };
 
       const userIds = [...new Set(postData.map((p) => p.user_id))];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, name, avatar_url").in("user_id", userIds);
+      const { data: profiles } = await supabase.from("public_profiles").select("user_id, name, avatar_url").in("user_id", userIds);
       const profileMap = Object.fromEntries((profiles || []).map((p) => [p.user_id, p]));
 
       const postIds = postData.map((p) => p.id);
@@ -200,7 +200,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     const { data } = await supabase.from("post_comments").select("*").eq("post_id", postId).order("created_at", { ascending: true });
     if (!data) return [];
     const uids = [...new Set(data.map((c) => c.user_id))];
-    const { data: profiles } = await supabase.from("profiles").select("user_id, name").in("user_id", uids);
+    const { data: profiles } = await supabase.from("public_profiles").select("user_id, name").in("user_id", uids);
     const nm = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "User"]));
     const commentIds = data.map((c) => c.id);
     const { data: allLikes } = commentIds.length > 0
