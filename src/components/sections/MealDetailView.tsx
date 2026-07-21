@@ -118,7 +118,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const loadComments = async () => {
     const { data } = await supabase
       .from("post_comments")
-      .select("*, profiles:profiles!post_comments_user_id_fkey1(name)")
+      .select("*")
       .eq("post_id", meal.id)
       .order("created_at", { ascending: true });
 
@@ -140,7 +140,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
       if (postComments && postComments.length > 0) {
         const userIds = [...new Set(postComments.map((c) => c.user_id))];
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("public_profiles")
           .select("user_id, name")
           .in("user_id", userIds);
 

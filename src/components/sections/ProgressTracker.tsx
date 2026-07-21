@@ -86,6 +86,19 @@ export function ProgressTracker() {
       const logs = (data || []) as ProgressLog[];
       let logPhotos: Record<string, ProgressPhoto[]> = {};
       const logIds = logs.map((l) => l.id);
+
+      // Convert legacy public URLs -> storage paths, then sign in batch (bucket is now private)
+      const extractPath = (val: string | null): string | null => {
+        if (!val) return null;
+        const m = val.match(/\/progress-photos\/(.+?)(\?|$)/);
+        if (m) return m[1];
+        // Bare storage path (new format): "<uid>/..." — treat as path if it looks like one
+        if (!/^https?:/i.test(val) && val.includes("/")) return val;
+        return null;
+      };
+      const pathsToSign = new Set<string>();
+      logs.forEach((l) => { const p = extractPath(l.photo_url); if (p) pathsToSign.add(p); });
+
       if (logIds.length > 0) {
         const { data: photos } = await supabase
           .from("progress_photos")
@@ -95,9 +108,26 @@ export function ProgressTracker() {
           (photos as ProgressPhoto[]).forEach((p) => {
             if (!logPhotos[p.progress_log_id]) logPhotos[p.progress_log_id] = [];
             logPhotos[p.progress_log_id].push(p);
+            const path = extractPath(p.photo_url);
+            if (path) pathsToSign.add(path);
           });
         }
       }
+
+      const signedMap: Record<string, string> = {};
+      if (pathsToSign.size > 0) {
+        const { data: signed } = await supabase.storage
+          .from("progress-photos")
+          .createSignedUrls(Array.from(pathsToSign), 3600);
+        (signed || []).forEach((s) => { if (s.signedUrl && s.path) signedMap[s.path] = s.signedUrl; });
+      }
+      const swap = (url: string | null): string | null => {
+        const p = extractPath(url);
+        return p && signedMap[p] ? signedMap[p] : url;
+      };
+      logs.forEach((l) => { l.photo_url = swap(l.photo_url); });
+      Object.values(logPhotos).forEach((arr) => arr.forEach((p) => { p.photo_url = swap(p.photo_url) || p.photo_url; }));
+
       return { logs, logPhotos };
     },
     enabled: !!user,
@@ -159,6 +189,11 @@ export function ProgressTracker() {
     openPhotoViewer(list, Math.max(0, idx));
   };
 
+  const signedUrlFor = async (path: string): Promise<string | null> => {
+    const { data } = await supabase.storage.from("progress-photos").createSignedUrl(path, 3600);
+    return data?.signedUrl || null;
+  };
+
   const uploadAnglePhoto = async (angle: Angle, file: File): Promise<string | null> => {
     if (!user) return null;
     const ext = file.name.split(".").pop();
@@ -168,8 +203,8 @@ export function ProgressTracker() {
       toast.error(`${ANGLE_LABELS[angle]} photo upload failed`);
       return null;
     }
-    const { data } = supabase.storage.from("progress-photos").getPublicUrl(path);
-    return data.publicUrl;
+    // Store the storage path; the read query converts paths to signed URLs.
+    return path;
   };
 
   const resetPhotoState = () => {
@@ -186,14 +221,12 @@ export function ProgressTracker() {
 
     // Use first available photo as the legacy photo_url for thumbnails
     const firstFile = angleFiles.front || angleFiles.side || angleFiles.back;
-    let legacyPhotoUrl: string | null = null;
+    let legacyPhotoPath: string | null = null;
     if (firstFile) {
       const ext = firstFile.name.split(".").pop();
       const path = `${user.id}/${form.date}-thumb-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("progress-photos").upload(path, firstFile);
-      if (!error) {
-        legacyPhotoUrl = supabase.storage.from("progress-photos").getPublicUrl(path).data.publicUrl;
-      }
+      if (!error) legacyPhotoPath = path;
     }
 
     const { data: logData, error } = await supabase.from("progress_logs").upsert({
@@ -207,7 +240,7 @@ export function ProgressTracker() {
       thighs_cm: toMetricCm(form.thighs) ? Math.round(toMetricCm(form.thighs)! * 10) / 10 : null,
       body_fat_pct: form.body_fat ? parseFloat(form.body_fat) : null,
       notes: form.notes || null,
-      ...(legacyPhotoUrl ? { photo_url: legacyPhotoUrl } : {}),
+      ...(legacyPhotoPath ? { photo_url: legacyPhotoPath } : {}),
     }, { onConflict: "user_id,date" }).select("id").single();
 
     if (error || !logData) {

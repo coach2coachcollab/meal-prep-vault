@@ -37,7 +37,7 @@ export function useNotifications() {
       const postIds = [...new Set(data.map((n) => n.post_id).filter(Boolean))] as string[];
 
       const [{ data: profiles }, { data: posts }] = await Promise.all([
-        supabase.from("profiles").select("user_id, name").in("user_id", actorIds),
+        supabase.from("public_profiles").select("user_id, name").in("user_id", actorIds),
         postIds.length > 0
           ? supabase.from("community_posts").select("id, text").in("id", postIds)
           : Promise.resolve({ data: [] }),
