@@ -86,6 +86,16 @@ export function ProgressTracker() {
       const logs = (data || []) as ProgressLog[];
       let logPhotos: Record<string, ProgressPhoto[]> = {};
       const logIds = logs.map((l) => l.id);
+
+      // Convert legacy public URLs -> storage paths, then sign in batch (bucket is now private)
+      const extractPath = (url: string | null): string | null => {
+        if (!url) return null;
+        const m = url.match(/\/progress-photos\/(.+?)(\?|$)/);
+        return m ? m[1] : null;
+      };
+      const pathsToSign = new Set<string>();
+      logs.forEach((l) => { const p = extractPath(l.photo_url); if (p) pathsToSign.add(p); });
+
       if (logIds.length > 0) {
         const { data: photos } = await supabase
           .from("progress_photos")
@@ -95,9 +105,26 @@ export function ProgressTracker() {
           (photos as ProgressPhoto[]).forEach((p) => {
             if (!logPhotos[p.progress_log_id]) logPhotos[p.progress_log_id] = [];
             logPhotos[p.progress_log_id].push(p);
+            const path = extractPath(p.photo_url);
+            if (path) pathsToSign.add(path);
           });
         }
       }
+
+      const signedMap: Record<string, string> = {};
+      if (pathsToSign.size > 0) {
+        const { data: signed } = await supabase.storage
+          .from("progress-photos")
+          .createSignedUrls(Array.from(pathsToSign), 3600);
+        (signed || []).forEach((s) => { if (s.signedUrl && s.path) signedMap[s.path] = s.signedUrl; });
+      }
+      const swap = (url: string | null): string | null => {
+        const p = extractPath(url);
+        return p && signedMap[p] ? signedMap[p] : url;
+      };
+      logs.forEach((l) => { l.photo_url = swap(l.photo_url); });
+      Object.values(logPhotos).forEach((arr) => arr.forEach((p) => { p.photo_url = swap(p.photo_url) || p.photo_url; }));
+
       return { logs, logPhotos };
     },
     enabled: !!user,
@@ -186,14 +213,14 @@ export function ProgressTracker() {
 
     // Use first available photo as the legacy photo_url for thumbnails
     const firstFile = angleFiles.front || angleFiles.side || angleFiles.back;
-    let legacyPhotoUrl: string | null = null;
+    const firstFile = angleFiles.front || angleFiles.side || angleFiles.back;
+    let legacyPhotoPath: string | null = null;
     if (firstFile) {
       const ext = firstFile.name.split(".").pop();
       const path = `${user.id}/${form.date}-thumb-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("progress-photos").upload(path, firstFile);
-      if (!error) {
-        legacyPhotoUrl = supabase.storage.from("progress-photos").getPublicUrl(path).data.publicUrl;
-      }
+      if (!error) legacyPhotoPath = path;
+    }
     }
 
     const { data: logData, error } = await supabase.from("progress_logs").upsert({
