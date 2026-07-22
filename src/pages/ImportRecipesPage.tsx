@@ -257,7 +257,7 @@ export default function ImportRecipesPage() {
 
     try {
       // Upload the image first
-      const path = `ai-${Date.now()}-${entry.file.name}`;
+      const path = `${user.id}/ai/${Date.now()}-${entry.file.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("recipe-images")
         .upload(path, entry.file, { upsert: true, contentType: entry.file.type });
@@ -367,7 +367,7 @@ export default function ImportRecipesPage() {
     for (let i = 0; i < imageFiles.length; i++) {
       const file = imageFiles[i];
       try {
-        const path = `${file.name}`;
+        const path = `${user!.id}/uploads/${file.name}`;
         const { error } = await supabase.storage
           .from("recipe-images")
           .upload(path, file, { upsert: true, contentType: file.type });
