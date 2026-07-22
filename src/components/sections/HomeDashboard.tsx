@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { useStreak } from "@/hooks/useStreak";
 import { cn } from "@/lib/utils";
+import { buildRelogPayload } from "@/lib/logging-helpers";
 
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
