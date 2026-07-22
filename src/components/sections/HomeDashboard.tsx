@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { useStreak } from "@/hooks/useStreak";
 import { cn } from "@/lib/utils";
+import { buildRelogPayload } from "@/lib/logging-helpers";
 
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
@@ -163,15 +164,9 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   const relogRecent = async (r: any) => {
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
-    const { error } = await supabase.from("journal_entries").insert({
-      user_id: user.id, date: today,
-      meal_type: r.meal_type, food_name: r.food_name,
-      calories: Number(r.calories) || 0,
-      protein_g: Number(r.protein_g) || 0,
-      carbs_g: Number(r.carbs_g) || 0,
-      fat_g: Number(r.fat_g) || 0,
-      recipe_id: r.recipe_id, servings: Number(r.servings) || 1, image_url: r.image_url,
-    });
+    const { error } = await supabase
+      .from("journal_entries")
+      .insert(buildRelogPayload(user.id, today, r));
     if (error) { toast.error("Failed to log"); return; }
     toast.success(`${r.food_name} logged!`);
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id) });
