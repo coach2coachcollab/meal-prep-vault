@@ -241,7 +241,7 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
     // Upload optional photo
     if (sharePhoto) {
       const ext = sharePhoto.name.split(".").pop();
-      const path = `community/${user.id}/${Date.now()}.${ext}`;
+      const path = `${user.id}/community/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("recipe-images")
         .upload(path, sharePhoto, { contentType: sharePhoto.type });
