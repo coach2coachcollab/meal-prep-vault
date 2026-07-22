@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // --- Mocks ---
 const insertMock = vi.fn().mockResolvedValue({ error: null });
-const fromMock = vi.fn(() => ({ insert: insertMock }));
+const fromMock: any = vi.fn(() => ({ insert: insertMock }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: (name: string) => fromMock(name) },
