@@ -397,7 +397,7 @@ export function NutritionToday({ autoOpenLog }: { autoOpenLog?: boolean }) {
     let image_url: string | null = null;
     if (mealPhoto) {
       const ext = mealPhoto.name.split(".").pop();
-      const fileName = `journal/${user.id}/${Date.now()}.${ext}`;
+      const fileName = `${user.id}/journal/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("recipe-images").upload(fileName, mealPhoto);
       if (uploadErr) {
         toast.error("Photo upload failed");
