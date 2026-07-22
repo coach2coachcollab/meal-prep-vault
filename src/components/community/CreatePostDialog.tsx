@@ -53,7 +53,7 @@ export function CreatePostDialog({ open, onClose, userId, onCreated }: CreatePos
 
     if (imageFile) {
       const ext = imageFile.name.split(".").pop();
-      const path = `community/${userId}/${Date.now()}.${ext}`;
+      const path = `${userId}/community/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("recipe-images")
         .upload(path, imageFile, { contentType: imageFile.type });
