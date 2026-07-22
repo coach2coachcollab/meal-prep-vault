@@ -81,7 +81,7 @@ export function UserProfile() {
     }
     setUploadingAvatar(true);
     const ext = file.name.split(".").pop();
-    const path = `avatars/${user.id}/avatar.${ext}`;
+    const path = `${user.id}/avatars/avatar.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("recipe-images")
