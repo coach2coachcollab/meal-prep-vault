@@ -35,23 +35,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
-    if (!user || loading) return;
+    if (loading) return;
+    if (!user) {
+      setCheckingOnboarding(false);
+      return;
+    }
+    let cancelled = false;
+    setCheckingOnboarding(true);
     supabase
       .from("profiles")
       .select("onboarding_completed")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
+        if (cancelled) return;
         setNeedsOnboarding(!data?.onboarding_completed);
         setCheckingOnboarding(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
-  if (loading || checkingOnboarding) {
-    return <AppLoadingSkeleton />;
-  }
-
+  if (loading) return <AppLoadingSkeleton />;
   if (!user) return <Navigate to="/auth" replace />;
+  if (checkingOnboarding) return <AppLoadingSkeleton />;
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }
