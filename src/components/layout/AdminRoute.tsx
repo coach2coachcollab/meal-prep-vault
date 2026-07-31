@@ -15,9 +15,14 @@ export function AdminRoute({ children, allowedRoles = ["admin", "coach"] }: Admi
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    if (!user || loading) return;
+    if (loading) return;
+    if (!user) {
+      setChecking(false);
+      return;
+    }
 
     const checkRoles = async () => {
+      setChecking(true);
       const { data } = await supabase
         .from("user_roles")
         .select("role")
@@ -31,13 +36,14 @@ export function AdminRoute({ children, allowedRoles = ["admin", "coach"] }: Admi
     checkRoles();
   }, [user, loading, allowedRoles]);
 
-  if (loading || checking) {
+  if (loading || (user && checking)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
 
   if (!user) return <Navigate to="/auth" replace />;
   if (!authorized) return <Navigate to="/" replace />;
