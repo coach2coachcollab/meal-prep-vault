@@ -221,19 +221,19 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <h1 className="sr-only">Your nutrition overview</h1>
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-heading">{greeting()}, {profileName || "there"} 👋</h2>
-        <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-xl font-heading truncate">{greeting()}, {profileName || "there"} 👋</h2>
+        <p className="text-muted-foreground text-[11px] shrink-0">{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
       </div>
 
-      {/* Macro Ring - Hero */}
+      {/* Macro Ring - Hero (compact, side-by-side) */}
       <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
-        <CardContent className="pt-6 pb-6">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative h-36 w-36">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-4">
+            <div className="relative h-24 w-24 shrink-0">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
                 <circle cx="50" cy="50" r="42" fill="none" className="stroke-muted" strokeWidth="6" />
                 <circle
@@ -246,27 +246,27 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Flame className="h-5 w-5 text-primary mb-0.5" />
-                <span className="text-2xl font-bold">{todayJournal.calories}</span>
-                <span className="text-[10px] text-muted-foreground">of {macros?.calories || "—"} kcal</span>
+                <Flame className="h-4 w-4 text-primary" />
+                <span className="text-xl font-bold leading-tight">{todayJournal.calories}</span>
+                <span className="text-[9px] text-muted-foreground">of {macros?.calories || "—"} kcal</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
-              <div className="flex flex-col items-center p-2 rounded-lg bg-macro-protein/10">
-                <Beef className="h-4 w-4 text-macro-protein mb-1" />
+            <div className="grid grid-cols-3 gap-2 flex-1">
+              <div className="flex flex-col items-center py-1.5 rounded-lg bg-macro-protein/10">
+                <Beef className="h-3.5 w-3.5 text-macro-protein" />
                 <span className="text-sm font-bold">{todayJournal.protein}g</span>
-                <span className="text-[10px] text-muted-foreground">protein</span>
+                <span className="text-[9px] text-muted-foreground">protein</span>
               </div>
-              <div className="flex flex-col items-center p-2 rounded-lg bg-macro-carbs/10">
-                <Wheat className="h-4 w-4 text-macro-carbs mb-1" />
+              <div className="flex flex-col items-center py-1.5 rounded-lg bg-macro-carbs/10">
+                <Wheat className="h-3.5 w-3.5 text-macro-carbs" />
                 <span className="text-sm font-bold">{todayJournal.carbs}g</span>
-                <span className="text-[10px] text-muted-foreground">carbs</span>
+                <span className="text-[9px] text-muted-foreground">carbs</span>
               </div>
-              <div className="flex flex-col items-center p-2 rounded-lg bg-macro-fat/10">
-                <Droplets className="h-4 w-4 text-macro-fat mb-1" />
+              <div className="flex flex-col items-center py-1.5 rounded-lg bg-macro-fat/10">
+                <Droplets className="h-3.5 w-3.5 text-macro-fat" />
                 <span className="text-sm font-bold">{todayJournal.fat}g</span>
-                <span className="text-[10px] text-muted-foreground">fat</span>
+                <span className="text-[9px] text-muted-foreground">fat</span>
               </div>
             </div>
           </div>
@@ -276,19 +276,19 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       {/* One-tap recent meals */}
       {recentMeals.length > 0 && (
         <div>
-          <p className="text-[10px] font-label uppercase text-muted-foreground mb-2 pl-1">Recent · one tap to re-log</p>
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+          <p className="text-[10px] font-label uppercase text-muted-foreground mb-1 pl-1">Recent · one tap to re-log</p>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
             {recentMeals.map((r: any, i: number) => (
               <button
                 key={`${r.recipe_id || "m"}-${r.food_name}-${i}`}
                 onClick={() => relogRecent(r)}
-                className="shrink-0 w-32 text-left p-2 rounded-lg border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
+                className="shrink-0 w-28 text-left p-1.5 rounded-lg border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
               >
                 {r.image_url ? (
-                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-14 w-full rounded-md object-cover mb-1.5" />
+                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-10 w-full rounded-md object-cover mb-1" />
                 ) : (
-                  <div className="h-14 w-full rounded-md bg-muted flex items-center justify-center mb-1.5">
-                    <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                  <div className="h-10 w-full rounded-md bg-muted flex items-center justify-center mb-1">
+                    <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
                   </div>
                 )}
                 <p className="text-xs font-medium truncate">{r.food_name}</p>
@@ -300,20 +300,22 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       )}
 
       {/* Habits & Water */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:today")}>
-          <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center mb-1">
+          <CardContent className="py-3 px-3 flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center shrink-0">
               <CheckCircle2 className="h-4 w-4 text-foreground" />
             </div>
-            <p className="text-lg font-bold text-foreground">{habitsToday.done}/{habitsToday.total}</p>
-            <p className="text-[10px] text-section-label font-label uppercase">Today's Wins</p>
-            <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1.5 mt-2" />
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-foreground leading-tight">{habitsToday.done}/{habitsToday.total}</p>
+              <p className="text-[9px] text-section-label font-label uppercase truncate">Today's Wins</p>
+              <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1 mt-1" />
+            </div>
           </CardContent>
         </Card>
         <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:today")}>
-          <CardContent className="pt-4 pb-4 flex flex-col items-center">
-            <div className="relative h-12 w-12 mb-1">
+          <CardContent className="py-3 px-3 flex items-center gap-3">
+            <div className="relative h-9 w-9 shrink-0">
               <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
                 <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--water-ring-bg))" strokeWidth="4" />
                 <circle
@@ -325,14 +327,17 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <Droplets className="h-4 w-4 text-water-ring" />
+                <Droplets className="h-3.5 w-3.5 text-water-ring" />
               </div>
             </div>
-            <p className="text-lg font-bold text-foreground">{waterToday.glasses}/{waterToday.goal}</p>
-            <p className="text-[10px] text-section-label font-label uppercase">Glasses of water</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-foreground leading-tight">{waterToday.glasses}/{waterToday.goal}</p>
+              <p className="text-[9px] text-section-label font-label uppercase truncate">Glasses of water</p>
+            </div>
           </CardContent>
         </Card>
       </div>
+
 
       {/* Progress Summary */}
       {progressSummary && (
