@@ -242,7 +242,7 @@ export function WorkoutTemplates({ onStartFromTemplate }: WorkoutTemplatesProps)
       <Card>
         <CardContent className="p-3">
           <div className="flex gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[180px]">
+            <div className="relative w-full sm:flex-1 sm:min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search templates..."
@@ -252,7 +252,7 @@ export function WorkoutTemplates({ onStartFromTemplate }: WorkoutTemplatesProps)
               />
             </div>
             <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Difficulty" /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px]"><SelectValue placeholder="Difficulty" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Levels</SelectItem>
                 <SelectItem value="beginner">Beginner</SelectItem>
@@ -262,7 +262,7 @@ export function WorkoutTemplates({ onStartFromTemplate }: WorkoutTemplatesProps)
             </Select>
             {availableCategories.length > 0 && (
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px]"><SelectValue placeholder="Category" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
                   {availableCategories.map((c) => (
