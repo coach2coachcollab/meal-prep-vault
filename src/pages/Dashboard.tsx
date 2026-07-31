@@ -205,7 +205,7 @@ export default function Dashboard() {
         </div>
       </header>
       <main className="flex-1 overflow-y-auto pb-20">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6">
           <Suspense fallback={<SectionFallback />}>
             {renderContent()}
           </Suspense>
