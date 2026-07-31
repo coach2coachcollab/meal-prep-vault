@@ -192,7 +192,7 @@ export function ExerciseLibrary() {
       <Card>
         <CardContent className="p-3">
           <div className="flex gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search exercises..."
@@ -202,7 +202,7 @@ export function ExerciseLibrary() {
               />
             </div>
             <Select value={muscleFilter} onValueChange={setMuscleFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px]">
                 <SelectValue placeholder="Muscle group" />
               </SelectTrigger>
               <SelectContent>
@@ -213,7 +213,7 @@ export function ExerciseLibrary() {
               </SelectContent>
             </Select>
             <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px]">
                 <SelectValue placeholder="Equipment" />
               </SelectTrigger>
               <SelectContent>

@@ -306,13 +306,13 @@ export function MealVault() {
           <Card>
             <CardContent className="p-3">
               <div className="flex gap-2 flex-wrap">
-                <div className="relative flex-1 min-w-[200px]">
+                <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Search meals, ingredients, or tags..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 {categories.length > 0 && (
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="All categories" /></SelectTrigger>
+                    <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[140px]"><SelectValue placeholder="All categories" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All categories</SelectItem>
                       {categories.map((c) => <SelectItem key={c} value={c!}>{c}</SelectItem>)}
@@ -321,7 +321,7 @@ export function MealVault() {
                 )}
                 {cuisines.length > 0 && (
                   <Select value={cuisineFilter} onValueChange={setCuisineFilter}>
-                    <SelectTrigger className="w-[130px]"><SelectValue placeholder="All cuisines" /></SelectTrigger>
+                    <SelectTrigger className="flex-1 min-w-[130px] sm:flex-none sm:w-[130px]"><SelectValue placeholder="All cuisines" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All cuisines</SelectItem>
                       {cuisines.map((c) => <SelectItem key={c} value={c!}>{c}</SelectItem>)}
@@ -329,14 +329,14 @@ export function MealVault() {
                   </Select>
                 )}
                 <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as "all" | "mine" | "community")}>
-                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="All recipes" /></SelectTrigger>
+                  <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[160px]"><SelectValue placeholder="All recipes" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Recipes</SelectItem>
                     <SelectItem value="mine">My Recipes</SelectItem>
                     <SelectItem value="community">Community Recipes</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
+                <Button className="flex-1 sm:flex-none" variant={showFavoritesOnly ? "default" : "outline"} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
                   <Heart className="h-4 w-4 mr-1" /> Favorites
                 </Button>
               </div>

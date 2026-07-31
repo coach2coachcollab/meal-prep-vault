@@ -72,12 +72,12 @@ export function DashboardSkeleton() {
 export function AppLoadingSkeleton() {
   return (
     <div className="min-h-screen bg-background pb-20">
-      <main className="max-w-lg mx-auto px-4 py-6">
+      <main className="max-w-4xl mx-auto px-4 md:px-6 py-6">
         <DashboardSkeleton />
       </main>
       {/* Bottom nav skeleton */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-card safe-area-bottom">
-        <div className="max-w-lg mx-auto flex justify-around py-2 px-2">
+        <div className="max-w-4xl mx-auto flex justify-around py-2 px-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center gap-1 py-1">
               <Skeleton className="h-5 w-5 rounded" />
