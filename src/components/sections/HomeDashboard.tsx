@@ -387,7 +387,7 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
               )}
             </div>
             {progressSummary.currentWeight != null && (
-              <p className="text-[10px] text-muted-foreground mt-2">
+              <p className="text-[10px] text-muted-foreground mt-1.5">
                 Current: {progressSummary.currentWeight} {progressSummary.useMetric ? "kg" : "lbs"} · {progressSummary.entries} entries
               </p>
             )}
@@ -398,23 +398,23 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       {/* What's next */}
       {whatsNext && (
         <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <p className="text-[10px] font-label uppercase text-primary mb-1">What's next?</p>
-                <p className="text-sm font-semibold text-foreground">{whatsNext.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">{whatsNext.description}</p>
-              </div>
-              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+          <CardContent className="py-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <whatsNext.icon className="h-4 w-4 text-primary" />
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{whatsNext.title}</p>
+                <p className="text-[11px] text-muted-foreground line-clamp-1">{whatsNext.description}</p>
+              </div>
+              <Button size="sm" className="shrink-0 h-8 px-3 text-xs" onClick={whatsNext.onClick}>
+                {whatsNext.cta}
+              </Button>
             </div>
-            <Button size="sm" className="w-full mt-3" onClick={whatsNext.onClick}>
-              {whatsNext.cta}
-            </Button>
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }
