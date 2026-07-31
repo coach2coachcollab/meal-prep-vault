@@ -342,13 +342,14 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       {/* Progress Summary */}
       {progressSummary && (
         <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20" onClick={() => onNavigate("profile")}>
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Activity className="h-4 w-4 text-primary" />
-              <p className="text-xs font-label uppercase text-primary">
+          <CardContent className="py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[10px] font-label uppercase text-primary">
                 {progressSummary.period === "week" ? "Weekly" : "Monthly"} Progress
               </p>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               {progressSummary.weightChange != null && (
                 <div className="flex items-center gap-2">
