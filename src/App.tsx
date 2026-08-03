@@ -4,18 +4,19 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { lazyWithRetry } from "@/lib/lazy-retry";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminRoute } from "./components/layout/AdminRoute";
 import { AppLoadingSkeleton } from "./components/skeletons/DashboardSkeleton";
 
-const AuthPage = lazy(() => import("./pages/AuthPage"));
-const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
-const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
-const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ImportRecipesPage = lazy(() => import("./pages/ImportRecipesPage"));
+const AuthPage = lazyWithRetry(() => import("./pages/AuthPage"));
+const ForgotPasswordPage = lazyWithRetry(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazyWithRetry(() => import("./pages/ResetPasswordPage"));
+const OnboardingPage = lazyWithRetry(() => import("./pages/OnboardingPage"));
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+const ImportRecipesPage = lazyWithRetry(() => import("./pages/ImportRecipesPage"));
 
 
 const queryClient = new QueryClient({

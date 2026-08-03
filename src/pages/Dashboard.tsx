@@ -1,4 +1,5 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, Suspense } from "react";
+import { lazyWithRetry } from "@/lib/lazy-retry";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useTheme } from "@/hooks/useTheme";
 import { NotificationBell } from "@/components/community/NotificationBell";
@@ -12,19 +13,19 @@ import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 // Lazy-load heavy tab sections so recharts/jspdf/confetti/embla stay out of the
 // initial bundle. Each section is only fetched when the user opens its tab.
-const HomeDashboard = lazy(() => import("@/components/sections/HomeDashboard").then(m => ({ default: m.HomeDashboard })));
-const MacroCalculator = lazy(() => import("@/components/sections/MacroCalculator").then(m => ({ default: m.MacroCalculator })));
-const MealVault = lazy(() => import("@/components/sections/MealVault").then(m => ({ default: m.MealVault })));
-const NutritionToday = lazy(() => import("@/components/sections/NutritionToday").then(m => ({ default: m.NutritionToday })));
-const ExerciseLibrary = lazy(() => import("@/components/sections/ExerciseLibrary").then(m => ({ default: m.ExerciseLibrary })));
-const WorkoutLogger = lazy(() => import("@/components/sections/WorkoutLogger").then(m => ({ default: m.WorkoutLogger })));
-const WorkoutTemplates = lazy(() => import("@/components/sections/WorkoutTemplates").then(m => ({ default: m.WorkoutTemplates })));
-const CommunityHub = lazy(() => import("@/components/sections/CommunityHub").then(m => ({ default: m.CommunityHub })));
-const UserProfile = lazy(() => import("@/components/sections/UserProfile").then(m => ({ default: m.UserProfile })));
-const PartnerHub = lazy(() => import("@/components/sections/PartnerHub").then(m => ({ default: m.PartnerHub })));
-const ProgressTracker = lazy(() => import("@/components/sections/ProgressTracker").then(m => ({ default: m.ProgressTracker })));
-const NotificationsPage = lazy(() => import("@/components/sections/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
-const StreakDetails = lazy(() => import("@/components/sections/StreakDetails").then(m => ({ default: m.StreakDetails })));
+const HomeDashboard = lazyWithRetry(() => import("@/components/sections/HomeDashboard").then(m => ({ default: m.HomeDashboard })));
+const MacroCalculator = lazyWithRetry(() => import("@/components/sections/MacroCalculator").then(m => ({ default: m.MacroCalculator })));
+const MealVault = lazyWithRetry(() => import("@/components/sections/MealVault").then(m => ({ default: m.MealVault })));
+const NutritionToday = lazyWithRetry(() => import("@/components/sections/NutritionToday").then(m => ({ default: m.NutritionToday })));
+const ExerciseLibrary = lazyWithRetry(() => import("@/components/sections/ExerciseLibrary").then(m => ({ default: m.ExerciseLibrary })));
+const WorkoutLogger = lazyWithRetry(() => import("@/components/sections/WorkoutLogger").then(m => ({ default: m.WorkoutLogger })));
+const WorkoutTemplates = lazyWithRetry(() => import("@/components/sections/WorkoutTemplates").then(m => ({ default: m.WorkoutTemplates })));
+const CommunityHub = lazyWithRetry(() => import("@/components/sections/CommunityHub").then(m => ({ default: m.CommunityHub })));
+const UserProfile = lazyWithRetry(() => import("@/components/sections/UserProfile").then(m => ({ default: m.UserProfile })));
+const PartnerHub = lazyWithRetry(() => import("@/components/sections/PartnerHub").then(m => ({ default: m.PartnerHub })));
+const ProgressTracker = lazyWithRetry(() => import("@/components/sections/ProgressTracker").then(m => ({ default: m.ProgressTracker })));
+const NotificationsPage = lazyWithRetry(() => import("@/components/sections/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
+const StreakDetails = lazyWithRetry(() => import("@/components/sections/StreakDetails").then(m => ({ default: m.StreakDetails })));
 
 const SectionFallback = () => <DashboardSkeleton />;
 
