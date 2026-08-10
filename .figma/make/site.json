@@ -1,0 +1,7 @@
+{
+  "title": "NutriCoach — Nutrition & Fitness Coaching",
+  "description": "Track meals, macros, workouts and progress with your coach in one place.",
+  "language": "en",
+  "robots": { "index": true },
+  "accessibility": { "addBypassLinks": true }
+}
