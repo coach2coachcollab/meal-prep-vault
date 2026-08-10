@@ -347,44 +347,65 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
 
         {/* Featured / highlight post */}
         {!isLoading && featuredPost && (
-          <div id={`post-${featuredPost.id}`} className="rounded-2xl overflow-hidden border border-border transition-all duration-300">
-            {/* Image or gradient hero */}
+          <div id={`post-${featuredPost.id}`} className="rounded-2xl overflow-hidden border border-border bg-card transition-all duration-300">
+            {/* Hero image */}
             <div className="relative">
               {featuredPost.image_url ? (
-                <img
-                  src={featuredPost.image_url}
-                  alt=""
-                  className="w-full h-52 object-cover"
-                />
+                <img src={featuredPost.image_url} alt="" className="w-full h-56 object-cover" />
               ) : (
-                <div className="w-full h-40 bg-gradient-to-br from-primary/20 via-primary/10 to-accent flex items-center justify-center">
-                  <span className="text-4xl">💬</span>
+                <div className="w-full h-44 bg-gradient-to-br from-primary/20 via-primary/10 to-accent flex items-center justify-center">
+                  <span className="text-5xl">💬</span>
                 </div>
               )}
-              {/* Community Highlight badge */}
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-foreground/80 backdrop-blur-sm text-background text-[11px] font-bold px-2.5 py-1 rounded-full">
+              {/* COMMUNITY HIGHLIGHT badge */}
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-foreground/85 backdrop-blur-sm text-background text-[11px] font-bold px-3 py-1.5 rounded-full">
                 <Star className="h-3 w-3 fill-current" />
                 <span>COMMUNITY HIGHLIGHT</span>
               </div>
-              {/* Author overlay */}
-              <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                {featuredPost.avatar_url ? (
-                  <img src={featuredPost.avatar_url} alt={featuredPost.user_name} className="h-8 w-8 rounded-full border-2 border-white object-cover" />
-                ) : (
-                  <div className="h-8 w-8 rounded-full border-2 border-white bg-primary flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">{featuredPost.user_name?.[0]?.toUpperCase() || "U"}</span>
+              {/* Author overlay at bottom of image */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-4 pb-3 pt-8">
+                <div className="flex items-center gap-2.5">
+                  {featuredPost.avatar_url ? (
+                    <img src={featuredPost.avatar_url} alt={featuredPost.user_name} className="h-9 w-9 rounded-full border-2 border-white object-cover shrink-0" />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full border-2 border-white bg-primary flex items-center justify-center shrink-0">
+                      <span className="text-white text-sm font-bold">{featuredPost.user_name?.[0]?.toUpperCase() || "U"}</span>
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <p className="text-white text-sm font-bold leading-tight drop-shadow">{featuredPost.user_name}</p>
+                      <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary shrink-0">
+                        <span className="text-white text-[9px] font-bold">✓</span>
+                      </span>
+                    </div>
+                    <p className="text-white/80 text-[11px] leading-tight capitalize">
+                      {featuredPost.channel?.replace("_", " ")} · {(() => {
+                        const diff = Math.floor((Date.now() - new Date(featuredPost.created_at).getTime()) / 3600000);
+                        return diff < 24 ? `${diff}h` : `${Math.floor(diff / 24)}d`;
+                      })()}
+                    </p>
                   </div>
-                )}
-                <div>
-                  <p className="text-white text-sm font-bold leading-tight drop-shadow">{featuredPost.user_name}</p>
-                  <p className="text-white/80 text-[11px] leading-tight drop-shadow capitalize">{featuredPost.channel?.replace("_", " ")} · {new Date(featuredPost.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
+
             {/* Post body */}
-            <div className="p-4 bg-card">
+            <div className="p-4">
               {featuredPost.text && (
-                <p className="text-sm text-foreground leading-relaxed mb-3">{featuredPost.text}</p>
+                <>
+                  <p className="text-base font-bold text-foreground leading-snug mb-1">
+                    {featuredPost.text.split(".")[0]}.
+                  </p>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+                      {featuredPost.text.split(".").slice(1).join(".").trim()}
+                    </p>
+                    <button className="shrink-0 border border-border rounded-lg px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors whitespace-nowrap">
+                      View Comments
+                    </button>
+                  </div>
+                </>
               )}
               <div className="flex items-center gap-5">
                 <button
@@ -392,7 +413,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
                   className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-red-500 transition-colors"
                 >
                   <Heart className={cn("h-4 w-4", featuredPost.user_reactions?.includes("❤️") && "fill-red-500 text-red-500")} />
-                  <span>{(featuredPost.reaction_counts?.["❤️"] || 0)}</span>
+                  <span>{featuredPost.reaction_counts?.["❤️"] || 0}</span>
                 </button>
                 <button className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <MessageCircle className="h-4 w-4" />
@@ -404,6 +425,9 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
                 >
                   <Bookmark className={cn("h-4 w-4", featuredPost.is_saved && "fill-current")} />
                   <span>Save</span>
+                </button>
+                <button className="ml-auto flex items-center gap-1 text-sm font-semibold text-primary">
+                  Join Challenge <span>›</span>
                 </button>
               </div>
             </div>
