@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Beef, Wheat, Droplets, Target, Calendar, CheckCircle2, Users, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight, Calculator, UtensilsCrossed } from "lucide-react";
+import { Flame, Droplets, Target, TrendingDown, TrendingUp, Minus, Activity, Utensils, Dumbbell, Zap, ChevronRight, UtensilsCrossed, Footprints } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,10 +16,8 @@ import { buildRelogPayload } from "@/lib/logging-helpers";
 export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const shownMilestones = useRef(new Set<string>());
   const { streak } = useStreak();
 
-  // MERGED: dashboard + nudge in a single round-trip block
   const { data: dashData, isLoading } = useQuery({
     queryKey: queryKeys.dashboard(user?.id),
     queryFn: async () => {
@@ -38,7 +36,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       ] = await Promise.all([
         supabase.from("profiles").select("name").eq("user_id", user.id).single(),
         supabase.from("user_macros").select("calories, protein_g, carbs_g, fat_g").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-        // Fetch a bounded recent slice → powers today's totals + recent-meals strip + hasLoggedToday
         supabase.from("journal_entries")
           .select("food_name, recipe_id, meal_type, servings, calories, protein_g, carbs_g, fat_g, image_url, date, logged_at")
           .eq("user_id", user.id)
@@ -61,7 +58,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       };
       const loggedMealTypes = new Set(todaysEntries.map((j: any) => j.meal_type));
 
-      // Distinct recent (last 5) by (recipe_id + food_name)
       const seen = new Set<string>();
       const recent: any[] = [];
       for (const rr of recentJournal || []) {
@@ -115,7 +111,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
       const weekLogs = recentLogs.filter((l) => new Date(l.date) >= weekAgo);
       const useLogs = weekLogs.length >= 2 ? weekLogs : recentLogs;
       const period = weekLogs.length >= 2 ? "week" as const : "month" as const;
-
       const first = useLogs[0];
       const last = useLogs[useLogs.length - 1];
       const KG_TO_LBS = 2.20462;
@@ -159,8 +154,10 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
   };
 
   const calPercent = macros ? Math.min(100, (todayJournal.calories / macros.calories) * 100) : 0;
+  const proteinPercent = macros ? Math.min(100, (todayJournal.protein / macros.protein_g) * 100) : 0;
+  const carbsPercent = macros ? Math.min(100, (todayJournal.carbs / macros.carbs_g) * 100) : 0;
+  const fatPercent = macros ? Math.min(100, (todayJournal.fat / macros.fat_g) * 100) : 0;
 
-  // One-tap re-log directly from Home
   const relogRecent = async (r: any) => {
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
@@ -176,7 +173,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
   const getWhatsNextNudge = () => {
     if (!dashData) return null;
-
     if (!loggedMealTypes.has("Lunch")) {
       return {
         title: "Lunch not logged yet",
@@ -186,17 +182,15 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         onClick: () => onNavigate("nutrition:today"),
       };
     }
-
     if (streak > 0 && !dashData.hasLoggedToday) {
       return {
-        title: `Keep your 🔥 ${streak}-day streak alive`,
+        title: `Keep your ${streak}-day streak alive 🔥`,
         description: "Log one meal or one habit to protect your streak.",
         cta: "Log now",
         icon: Zap,
         onClick: () => onNavigate("nutrition:today"),
       };
     }
-
     if (!dashData.hasWorkedOutToday && dashData.lastTemplateName) {
       return {
         title: `Looks like a ${dashData.lastTemplateCategory?.replace("_", " ") || "workout"} day`,
@@ -206,7 +200,6 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         onClick: () => onNavigate("fitness"),
       };
     }
-
     return {
       title: "Great momentum today",
       description: "Review your progress or share a win with the community.",
@@ -220,136 +213,252 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
 
   if (isLoading) return <DashboardSkeleton />;
 
+  const circumference = 2 * Math.PI * 44;
+
   return (
-    <div className="space-y-3">
-      <h1 className="sr-only">Your nutrition overview</h1>
-      {/* Header */}
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-xl font-heading truncate">{greeting()}, {profileName || "there"} 👋</h2>
-        <p className="text-muted-foreground text-[11px] shrink-0">{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+    <div className="space-y-4">
+      {/* Greeting */}
+      <div>
+        <h2 className="text-2xl font-heading text-foreground">
+          {greeting()}, {profileName || "there"} 👋
+        </h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Here's your progress for today.</p>
       </div>
 
-      {/* Macro Ring - Hero (compact, side-by-side) */}
-      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
-        <CardContent className="py-4">
-          <div className="flex items-center gap-4">
-            <div className="relative h-24 w-24 shrink-0">
+      {/* Macro Progress Card */}
+      <Card className="shadow-sm border border-border" onClick={() => onNavigate("nutrition")}>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-label text-muted-foreground tracking-widest uppercase">Macro Progress</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onNavigate("nutrition"); }}
+              className="text-xs font-semibold text-primary"
+            >
+              Edit Targets
+            </button>
+          </div>
+
+          <div className="flex items-center gap-5">
+            {/* Ring */}
+            <div className="relative shrink-0 h-28 w-28">
               <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                <circle cx="50" cy="50" r="42" fill="none" className="stroke-muted" strokeWidth="6" />
+                <circle cx="50" cy="50" r="44" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
                 <circle
-                  cx="50" cy="50" r="42" fill="none"
-                  className="stroke-primary"
-                  strokeWidth="6"
+                  cx="50" cy="50" r="44" fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="8"
                   strokeLinecap="round"
-                  strokeDasharray={`${calPercent * 2.64} ${264 - calPercent * 2.64}`}
-                  style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.4))" }}
+                  strokeDasharray={`${(calPercent / 100) * circumference} ${circumference}`}
+                  style={{ filter: "drop-shadow(0 0 6px hsl(221 83% 53% / 0.5))" }}
                 />
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Flame className="h-4 w-4 text-primary" />
-                <span className="text-xl font-bold leading-tight">{todayJournal.calories}</span>
-                <span className="text-[9px] text-muted-foreground">of {macros?.calories || "—"} kcal</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-lg font-black leading-none text-foreground">{Math.round(todayJournal.calories).toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground leading-tight">/ {macros?.calories ?? "—"} kcal</span>
+                <span className="text-sm font-bold text-primary mt-0.5">{Math.round(calPercent)}%</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 flex-1">
-              <div className="flex flex-col items-center py-1.5 rounded-lg bg-macro-protein/10">
-                <Beef className="h-3.5 w-3.5 text-macro-protein" />
-                <span className="text-sm font-bold">{todayJournal.protein}g</span>
-                <span className="text-[9px] text-muted-foreground">protein</span>
-              </div>
-              <div className="flex flex-col items-center py-1.5 rounded-lg bg-macro-carbs/10">
-                <Wheat className="h-3.5 w-3.5 text-macro-carbs" />
-                <span className="text-sm font-bold">{todayJournal.carbs}g</span>
-                <span className="text-[9px] text-muted-foreground">carbs</span>
-              </div>
-              <div className="flex flex-col items-center py-1.5 rounded-lg bg-macro-fat/10">
-                <Droplets className="h-3.5 w-3.5 text-macro-fat" />
-                <span className="text-sm font-bold">{todayJournal.fat}g</span>
-                <span className="text-[9px] text-muted-foreground">fat</span>
-              </div>
+            {/* Macro bars */}
+            <div className="flex-1 space-y-3">
+              {[
+                { label: "Protein", current: todayJournal.protein, target: macros?.protein_g, pct: proteinPercent, color: "hsl(var(--macro-protein))" },
+                { label: "Carbs", current: todayJournal.carbs, target: macros?.carbs_g, pct: carbsPercent, color: "hsl(var(--macro-carbs))" },
+                { label: "Fat", current: todayJournal.fat, target: macros?.fat_g, pct: fatPercent, color: "hsl(var(--macro-fat))" },
+              ].map(({ label, current, target, pct, color }) => (
+                <div key={label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <span className="text-sm font-medium text-foreground">{label}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      <span className="font-semibold text-foreground">{Math.round(current)}</span> / {target ?? "—"}g
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, backgroundColor: color }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* One-tap recent meals */}
+      {/* Mini stat cards */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* Water */}
+        <Card className="border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition:today")}>
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Water</p>
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-base font-bold text-foreground">{waterToday.glasses.toFixed(1)}</span>
+                <span className="text-[11px] text-muted-foreground"> / {waterToday.goal}L</span>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center">
+                <Droplets className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Habits */}
+        <Card className="border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition:today")}>
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Habits</p>
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-base font-bold text-foreground">{habitsToday.done}</span>
+                <span className="text-[11px] text-muted-foreground"> / {habitsToday.total}</span>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center">
+                <Target className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Calories */}
+        <Card className="border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("nutrition")}>
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Energy</p>
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-base font-bold text-foreground">{Math.round(todayJournal.calories)}</span>
+                <span className="text-[11px] text-muted-foreground"> kcal</span>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center">
+                <Zap className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Meal Plan */}
+      <Card className="border border-border shadow-sm overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-label font-semibold text-foreground tracking-widest uppercase">Today's Meal Plan</span>
+            <button onClick={() => onNavigate("nutrition")} className="text-xs font-semibold text-primary">View Plan</button>
+          </div>
+          {recentMeals.length > 0 ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground capitalize mb-0.5">
+                  {(() => {
+                    const h = new Date().getHours();
+                    if (h < 10) return "Breakfast";
+                    if (h < 14) return "Lunch";
+                    if (h < 18) return "Dinner";
+                    return "Snack";
+                  })()}
+                </p>
+                <p className="text-base font-bold text-foreground leading-tight">{recentMeals[0].food_name}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {Math.round(recentMeals[0].calories)} kcal
+                  {recentMeals[0].protein_g ? ` · ${Math.round(recentMeals[0].protein_g)}g P` : ""}
+                  {recentMeals[0].carbs_g ? ` · ${Math.round(recentMeals[0].carbs_g)}g C` : ""}
+                  {recentMeals[0].fat_g ? ` · ${Math.round(recentMeals[0].fat_g)}g F` : ""}
+                </p>
+              </div>
+              {recentMeals[0].image_url ? (
+                <img
+                  src={recentMeals[0].image_url}
+                  alt={recentMeals[0].food_name}
+                  className="h-16 w-16 rounded-xl object-cover shrink-0"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <Utensils className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => onNavigate("nutrition:today")}
+              className="w-full flex items-center gap-3 py-2"
+            >
+              <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center shrink-0">
+                <Utensils className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-foreground">No meals logged yet</p>
+                <p className="text-xs text-muted-foreground">Tap to log your first meal today</p>
+              </div>
+            </button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Today's Workout */}
+      {dashData?.lastTemplateName && (
+        <Card className="border border-border shadow-sm overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-label font-semibold text-foreground tracking-widest uppercase block mb-1">Today's Workout</span>
+                <p className="text-xl font-black text-foreground leading-tight">{dashData.lastTemplateName}</p>
+                <p className="text-xs text-muted-foreground mt-1 capitalize">
+                  {dashData.lastTemplateCategory?.replace("_", " ") || "Strength"}
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3 rounded-full px-5 text-sm font-semibold"
+                  onClick={() => onNavigate("fitness")}
+                >
+                  Start Workout
+                </Button>
+              </div>
+              <div className="h-20 w-20 rounded-2xl bg-accent flex items-center justify-center shrink-0">
+                <Dumbbell className="h-10 w-10 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent meals – one-tap re-log */}
       {recentMeals.length > 0 && (
         <div>
-          <p className="text-[10px] font-label uppercase text-muted-foreground mb-1 pl-1">Recent · one tap to re-log</p>
+          <p className="text-xs font-label text-muted-foreground mb-2 pl-0.5">Recent · tap to re-log</p>
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
             {recentMeals.map((r: any, i: number) => (
               <button
                 key={`${r.recipe_id || "m"}-${r.food_name}-${i}`}
                 onClick={() => relogRecent(r)}
-                className="shrink-0 w-28 text-left p-1.5 rounded-lg border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
+                className="shrink-0 w-28 text-left p-1.5 rounded-xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all"
               >
                 {r.image_url ? (
-                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-10 w-full rounded-md object-cover mb-1" />
+                  <img loading="lazy" decoding="async" src={r.image_url} alt={r.food_name} className="h-14 w-full rounded-lg object-cover mb-1.5" />
                 ) : (
-                  <div className="h-10 w-full rounded-md bg-muted flex items-center justify-center mb-1">
-                    <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
+                  <div className="h-14 w-full rounded-lg bg-muted flex items-center justify-center mb-1.5">
+                    <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
                   </div>
                 )}
-                <p className="text-xs font-medium truncate">{r.food_name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{r.calories} kcal · {r.meal_type}</p>
+                <p className="text-xs font-semibold truncate text-foreground">{r.food_name}</p>
+                <p className="text-[10px] text-muted-foreground">{r.calories} kcal</p>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Habits & Water */}
-      <div className="grid grid-cols-2 gap-2">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:today")}>
-          <CardContent className="py-3 px-3 flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-icon-bg flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-4 w-4 text-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-bold text-foreground leading-tight">{habitsToday.done}/{habitsToday.total}</p>
-              <p className="text-[9px] text-section-label font-label uppercase truncate">Today's Wins</p>
-              <Progress value={habitsToday.total > 0 ? (habitsToday.done / habitsToday.total) * 100 : 0} className="w-full h-1 mt-1" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("nutrition:today")}>
-          <CardContent className="py-3 px-3 flex items-center gap-3">
-            <div className="relative h-9 w-9 shrink-0">
-              <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
-                <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--water-ring-bg))" strokeWidth="4" />
-                <circle
-                  cx="24" cy="24" r="20" fill="none"
-                  stroke="hsl(var(--water-ring))"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={`${Math.min(waterToday.glasses / waterToday.goal, 1) * 125.6} ${125.6 - Math.min(waterToday.glasses / waterToday.goal, 1) * 125.6}`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Droplets className="h-3.5 w-3.5 text-water-ring" />
-              </div>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-bold text-foreground leading-tight">{waterToday.glasses}/{waterToday.goal}</p>
-              <p className="text-[9px] text-section-label font-label uppercase truncate">Glasses of water</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-
       {/* Progress Summary */}
       {progressSummary && (
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20" onClick={() => onNavigate("profile")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border border-border" onClick={() => onNavigate("profile")}>
           <CardContent className="py-3">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="h-3.5 w-3.5 text-primary" />
-              <p className="text-[10px] font-label uppercase text-primary">
+              <p className="text-xs font-label text-primary">
                 {progressSummary.period === "week" ? "Weekly" : "Monthly"} Progress
               </p>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               {progressSummary.weightChange != null && (
                 <div className="flex items-center gap-2">
@@ -386,28 +495,23 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
                 </div>
               )}
             </div>
-            {progressSummary.currentWeight != null && (
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                Current: {progressSummary.currentWeight} {progressSummary.useMetric ? "kg" : "lbs"} · {progressSummary.entries} entries
-              </p>
-            )}
           </CardContent>
         </Card>
       )}
 
-      {/* What's next */}
+      {/* What's next nudge */}
       {whatsNext && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border border-primary/20 bg-accent">
           <CardContent className="py-3">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <whatsNext.icon className="h-4 w-4 text-primary" />
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <whatsNext.icon className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{whatsNext.title}</p>
-                <p className="text-[11px] text-muted-foreground line-clamp-1">{whatsNext.description}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{whatsNext.description}</p>
               </div>
-              <Button size="sm" className="shrink-0 h-8 px-3 text-xs" onClick={whatsNext.onClick}>
+              <Button size="sm" className="shrink-0 h-8 px-3 text-xs rounded-full" onClick={whatsNext.onClick}>
                 {whatsNext.cta}
               </Button>
             </div>
@@ -415,6 +519,22 @@ export function HomeDashboard({ onNavigate }: { onNavigate: (tab: string) => voi
         </Card>
       )}
 
+      {/* Streak banner */}
+      {streak > 0 && (
+        <button
+          onClick={() => onNavigate("streak")}
+          className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:bg-muted/50 transition-colors"
+        >
+          <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center shrink-0">
+            <TrendingUp className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-foreground">You're on a {streak}-day consistency streak.</p>
+            <p className="text-xs text-muted-foreground">Keep it up — small steps, big wins.</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </button>
+      )}
     </div>
   );
 }

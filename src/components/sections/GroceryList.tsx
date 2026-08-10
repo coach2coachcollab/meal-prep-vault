@@ -57,7 +57,7 @@ export function GroceryList() {
       .select("*")
       .eq("grocery_list_id", id)
       .order("created_at", { ascending: true });
-    if (data) setItems(data);
+    if (data) setItems(data.map(i => ({ ...i, is_checked: i.is_checked ?? false })));
   };
 
   const addItem = async () => {

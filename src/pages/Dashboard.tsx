@@ -2,11 +2,15 @@ import { useState, Suspense } from "react";
 import { lazyWithRetry } from "@/lib/lazy-retry";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/community/NotificationBell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { User, Zap, Moon, Sun } from "lucide-react";
+import { Moon, Sun, Zap, FlaskConical } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { EnvSwitcher } from "@/components/EnvSwitcher";
+import { getActiveEnv } from "@/integrations/supabase/client";
 import { useStreak } from "@/hooks/useStreak";
 import { useSeo } from "@/hooks/useSeo";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
@@ -42,6 +46,9 @@ const TAB_SEO: Record<string, { title: string; description: string }> = {
 
 export default function Dashboard() {
   const { isDark, toggle: toggleTheme } = useTheme();
+  const { isDemo } = useAuth();
+  const [envOpen, setEnvOpen] = useState(false);
+  const activeEnv = getActiveEnv();
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("today");
@@ -78,11 +85,15 @@ export default function Dashboard() {
       case "nutrition":
         return (
           <ErrorBoundary fallbackMessage="Nutrition section failed to load.">
+            <div className="mb-4">
+              <h2 className="text-2xl font-black text-foreground">Nutrition</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">Fuel your goals. One meal at a time. 💪</p>
+            </div>
             <Tabs value={nutritionSub} onValueChange={setNutritionSub}>
               <TabsList className="w-full grid grid-cols-3 mb-4">
-                <TabsTrigger value="today">Today</TabsTrigger>
-                <TabsTrigger value="vault">Vault</TabsTrigger>
-                <TabsTrigger value="macros">Macros</TabsTrigger>
+                <TabsTrigger value="today">Macros</TabsTrigger>
+                <TabsTrigger value="macros">Meal Plan</TabsTrigger>
+                <TabsTrigger value="vault">Recipe Vault</TabsTrigger>
               </TabsList>
               <TabsContent value="today"><NutritionToday autoOpenLog={autoOpenLog} /></TabsContent>
               <TabsContent value="vault"><MealVault /></TabsContent>
@@ -169,16 +180,26 @@ export default function Dashboard() {
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
-      <header className="shrink-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b safe-area-top">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 h-12 flex items-center justify-between">
-          <button
-            onClick={() => setActiveTab("streak")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary border border-primary/50 shadow-[0_0_10px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:bg-primary/90 hover:shadow-[0_0_16px_hsl(var(--primary)/0.4)] active:scale-95 ${justIncreased ? "animate-pulse ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : ""}`}
-          >
-            <Zap className={`h-4 w-4 text-primary-foreground transition-transform duration-300 ${justIncreased ? "scale-125" : ""}`} />
-            <span className="text-sm font-extrabold text-primary-foreground">{streak}🔥</span>
+      <EnvSwitcher open={envOpen} onClose={() => setEnvOpen(false)} />
+      <header className="shrink-0 z-40 bg-background border-b border-border safe-area-top">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+          {/* Logo */}
+          <button onClick={() => setActiveTab("home")} className="flex items-center">
+            <span className="text-2xl font-black text-foreground tracking-tight">macro</span>
+            <span className="text-2xl font-black text-primary tracking-tight">/.</span>
           </button>
-          <div className="flex items-center gap-1">
+
+          <div className="flex items-center gap-0.5">
+            {/* Streak pill */}
+            <button
+              onClick={() => setActiveTab("streak")}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-bold transition-all mr-1",
+                justIncreased ? "bg-primary text-white scale-105" : "bg-muted text-foreground"
+              )}
+            >
+              {streak}🔥
+            </button>
             <NotificationBell
               onNavigateToCommunity={() => setActiveTab("community")}
               onViewAll={() => setActiveTab("notifications")}
@@ -191,20 +212,40 @@ export default function Dashboard() {
               onClick={toggleTheme}
               aria-label="Toggle theme"
             >
-              {isDark ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => setActiveTab("profile")}
-              aria-label="Profile"
+              className={cn("h-9 w-9 rounded-full", activeEnv === "qa" && "text-warning")}
+              onClick={() => setEnvOpen(true)}
+              aria-label="Switch environment"
             >
-              <User className="h-5 w-5" />
+              <FlaskConical className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
+      {activeEnv === "qa" && (
+        <div className="shrink-0 bg-warning/10 border-b border-warning/30 px-4 py-1.5 flex items-center gap-2">
+          <FlaskConical className="h-3.5 w-3.5 text-warning shrink-0" />
+          <p className="text-xs font-semibold text-warning">QA environment — test data only</p>
+        </div>
+      )}
+      {isDemo && (
+        <div className="shrink-0 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-xs font-medium text-primary">Demo mode — data won't be saved</p>
+          </div>
+          <button
+            className="text-xs font-semibold text-primary underline"
+            onClick={() => { import("@/hooks/useAuth").then(m => m.exitDemo()); window.location.reload(); }}
+          >
+            Sign in
+          </button>
+        </div>
+      )}
       <main className="flex-1 overflow-y-auto pb-20">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6">
           <Suspense fallback={<SectionFallback />}>

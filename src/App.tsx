@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, Suspense } from "react";
 import { lazyWithRetry } from "@/lib/lazy-retry";
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoMode } from "@/hooks/useAuth";
 import { AdminRoute } from "./components/layout/AdminRoute";
 import { AppLoadingSkeleton } from "./components/skeletons/DashboardSkeleton";
 
@@ -37,10 +38,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      setCheckingOnboarding(false);
-      return;
-    }
+    if (!user) { setCheckingOnboarding(false); return; }
+    // Skip onboarding check in demo mode
+    if (isDemoMode()) { setCheckingOnboarding(false); return; }
     let cancelled = false;
     setCheckingOnboarding(true);
     supabase
@@ -53,9 +53,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         setNeedsOnboarding(!data?.onboarding_completed);
         setCheckingOnboarding(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user, loading]);
 
   if (loading) return <AppLoadingSkeleton />;
@@ -89,7 +87,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Suspense fallback={<AppLoadingSkeleton />}>
             <Routes>
               <Route path="/auth" element={<AuthRoute><AuthPage /></AuthRoute>} />

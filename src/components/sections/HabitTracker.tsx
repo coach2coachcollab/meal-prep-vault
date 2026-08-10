@@ -85,7 +85,7 @@ export function HabitTracker() {
           else if (i === 0) { check.setDate(check.getDate() - 1); continue; }
           else break;
         }
-        return { id: h.id, name: h.name, icon: h.icon, completed: completedSet.has(h.id), streak };
+        return { id: h.id, name: h.name, icon: h.icon ?? "", completed: completedSet.has(h.id), streak };
       });
 
       // Week data

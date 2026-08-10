@@ -48,6 +48,7 @@ export function ProgressTracker() {
   const queryClient = useQueryClient();
   const { useMetric, setUseMetric, KG_TO_LBS, CM_TO_IN } = usePreferredUnits();
   const [showAdd, setShowAdd] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [chartField, setChartField] = useState<"weight" | "waist" | "hips" | "body_fat">("weight");
   const [showCompare, setShowCompare] = useState(false);
   const [compareAngle, setCompareAngle] = useState<Angle>("front");
@@ -58,6 +59,7 @@ export function ProgressTracker() {
   const [goalInput, setGoalInput] = useState("");
   const [showGoalEdit, setShowGoalEdit] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showOldHistory, setShowOldHistory] = useState(false);
 
   // Multi-angle photo state
   const [angleFiles, setAngleFiles] = useState<Record<Angle, File | null>>({ front: null, back: null, side: null });
@@ -269,6 +271,49 @@ export function ProgressTracker() {
     setForm({ date: new Date().toISOString().split("T")[0], weight: "", waist: "", hips: "", chest: "", arms: "", thighs: "", body_fat: "", notes: "" });
     resetPhotoState();
     setShowAdd(false);
+    setEditingLogId(null);
+    invalidateLogs();
+  };
+
+  const openEdit = (log: ProgressLog) => {
+    setEditingLogId(log.id);
+    setShowAdd(false);
+    setForm({
+      date: log.date,
+      weight: log.weight_kg != null ? String(useMetric ? log.weight_kg : Math.round(log.weight_kg * KG_TO_LBS * 10) / 10) : "",
+      waist: log.waist_cm != null ? String(useMetric ? log.waist_cm : Math.round(log.waist_cm * CM_TO_IN * 10) / 10) : "",
+      hips: log.hips_cm != null ? String(useMetric ? log.hips_cm : Math.round(log.hips_cm * CM_TO_IN * 10) / 10) : "",
+      chest: log.chest_cm != null ? String(useMetric ? log.chest_cm : Math.round(log.chest_cm * CM_TO_IN * 10) / 10) : "",
+      arms: log.arms_cm != null ? String(useMetric ? log.arms_cm : Math.round(log.arms_cm * CM_TO_IN * 10) / 10) : "",
+      thighs: log.thighs_cm != null ? String(useMetric ? log.thighs_cm : Math.round(log.thighs_cm * CM_TO_IN * 10) / 10) : "",
+      body_fat: log.body_fat_pct != null ? String(log.body_fat_pct) : "",
+      notes: log.notes || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!user || !editingLogId) return;
+    setUploading(true);
+    const toMetricCm = (v: string) => v ? (useMetric ? parseFloat(v) : parseFloat(v) / CM_TO_IN) : null;
+    const weightKg = form.weight ? (useMetric ? parseFloat(form.weight) : parseFloat(form.weight) / KG_TO_LBS) : null;
+
+    const { error } = await supabase.from("progress_logs").update({
+      date: form.date,
+      weight_kg: weightKg ? Math.round(weightKg * 10) / 10 : null,
+      waist_cm: toMetricCm(form.waist) ? Math.round(toMetricCm(form.waist)! * 10) / 10 : null,
+      hips_cm: toMetricCm(form.hips) ? Math.round(toMetricCm(form.hips)! * 10) / 10 : null,
+      chest_cm: toMetricCm(form.chest) ? Math.round(toMetricCm(form.chest)! * 10) / 10 : null,
+      arms_cm: toMetricCm(form.arms) ? Math.round(toMetricCm(form.arms)! * 10) / 10 : null,
+      thighs_cm: toMetricCm(form.thighs) ? Math.round(toMetricCm(form.thighs)! * 10) / 10 : null,
+      body_fat_pct: form.body_fat ? parseFloat(form.body_fat) : null,
+      notes: form.notes || null,
+    }).eq("id", editingLogId);
+
+    setUploading(false);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("Updated! ✅");
+    setEditingLogId(null);
+    setForm({ date: new Date().toISOString().split("T")[0], weight: "", waist: "", hips: "", chest: "", arms: "", thighs: "", body_fat: "", notes: "" });
     invalidateLogs();
   };
 
@@ -665,52 +710,144 @@ export function ProgressTracker() {
       )}
 
       {/* History */}
-      {logs.length > 0 ? (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">History</h3>
-          {[...logs].reverse().map((log) => {
-            const photos = logPhotos[log.id] || [];
-            return (
-              <Card key={log.id}>
-                <CardContent className="py-3 px-4">
+      {logs.length > 0 ? (() => {
+        const sorted = [...logs].sort((a, b) => b.date.localeCompare(a.date));
+        const latest = sorted[0];
+        const older = sorted.slice(1);
+
+        const renderLogCard = (log: ProgressLog, isLatest = false) => {
+          const photos = logPhotos[log.id] || [];
+          return (
+            <Card key={log.id} className={isLatest ? "border-primary/40 shadow-sm" : ""}>
+              <CardContent className="py-3 px-4">
                   <div className="flex items-start gap-3">
-                    {photos.length > 0 && (
-                      <div className="shrink-0 flex gap-1">
-                        {photos.map((p) => (
-                          <button key={p.id} onClick={() => openLogPhotos(log.id, p.angle)} className="w-10 h-14 rounded-md overflow-hidden bg-muted relative">
-                            <img loading="lazy" decoding="async" src={p.photo_url} alt={p.angle} className="object-cover w-full h-full" />
-                            <span className="absolute bottom-0 inset-x-0 bg-background/70 text-[7px] text-center capitalize">{p.angle[0]}</span>
+                    {/* Summary row (collapsed) */}
+                    {editingLogId !== log.id && (
+                      <>
+                        {photos.length > 0 && (
+                          <div className="shrink-0 flex gap-1">
+                            {photos.map((p) => (
+                              <button key={p.id} onClick={(e) => { e.stopPropagation(); openLogPhotos(log.id, p.angle); }} className="w-10 h-14 rounded-md overflow-hidden bg-muted relative">
+                                <img loading="lazy" decoding="async" src={p.photo_url} alt={p.angle} className="object-cover w-full h-full" />
+                                <span className="absolute bottom-0 inset-x-0 bg-background/70 text-[7px] text-center capitalize">{p.angle[0]}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {!photos.length && log.photo_url && (
+                          <button onClick={(e) => { e.stopPropagation(); openPhotoViewer([{ url: log.photo_url!, label: "Photo" }]); }} className="shrink-0 w-12 h-16 rounded-md overflow-hidden bg-muted">
+                            <img loading="lazy" decoding="async" src={log.photo_url} alt="Progress" className="object-cover w-full h-full" />
                           </button>
-                        ))}
+                        )}
+                        <button className="flex-1 min-w-0 text-left" onClick={() => openEdit(log)}>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(log.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                          </p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-sm">
+                            {log.weight_kg != null && <span className="font-medium">{displayWeight(log.weight_kg)}</span>}
+                            {log.waist_cm != null && <span>Waist: {displayMeasure(log.waist_cm)}</span>}
+                            {log.hips_cm != null && <span>Hips: {displayMeasure(log.hips_cm)}</span>}
+                            {log.body_fat_pct != null && <span>BF: {log.body_fat_pct}%</span>}
+                          </div>
+                          {log.notes && <p className="text-xs text-muted-foreground mt-1">{log.notes}</p>}
+                          <p className="text-[10px] text-primary mt-1">Tap to edit</p>
+                        </button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); deleteLog(log.id); }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
+
+                    {/* Inline edit form */}
+                    {editingLogId === log.id && (
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">Edit Entry</p>
+                          <button onClick={() => setEditingLogId(null)} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Date</Label>
+                          <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Weight ({useMetric ? "kg" : "lbs"})</Label>
+                          <Input type="number" step="0.1" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Waist ({useMetric ? "cm" : "in"})</Label>
+                            <Input type="number" step="0.1" value={form.waist} onChange={(e) => setForm({ ...form, waist: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Hips ({useMetric ? "cm" : "in"})</Label>
+                            <Input type="number" step="0.1" value={form.hips} onChange={(e) => setForm({ ...form, hips: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Chest ({useMetric ? "cm" : "in"})</Label>
+                            <Input type="number" step="0.1" value={form.chest} onChange={(e) => setForm({ ...form, chest: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Arms ({useMetric ? "cm" : "in"})</Label>
+                            <Input type="number" step="0.1" value={form.arms} onChange={(e) => setForm({ ...form, arms: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Thighs ({useMetric ? "cm" : "in"})</Label>
+                            <Input type="number" step="0.1" value={form.thighs} onChange={(e) => setForm({ ...form, thighs: e.target.value })} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Body Fat (%)</Label>
+                            <Input type="number" step="0.1" value={form.body_fat} onChange={(e) => setForm({ ...form, body_fat: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Notes</Label>
+                          <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1 rounded-full" onClick={() => setEditingLogId(null)}>Cancel</Button>
+                          <Button size="sm" className="flex-1 rounded-full" onClick={saveEdit} disabled={uploading}>
+                            {uploading ? "Saving…" : "Save Changes"}
+                          </Button>
+                        </div>
                       </div>
                     )}
-                    {!photos.length && log.photo_url && (
-                      <button onClick={() => openPhotoViewer([{ url: log.photo_url!, label: "Photo" }])} className="shrink-0 w-12 h-16 rounded-md overflow-hidden bg-muted">
-                        <img loading="lazy" decoding="async" src={log.photo_url} alt="Progress" className="object-cover w-full h-full" />
-                      </button>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(log.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                      </p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-sm">
-                        {log.weight_kg != null && <span className="font-medium">{displayWeight(log.weight_kg)}</span>}
-                        {log.waist_cm != null && <span>Waist: {displayMeasure(log.waist_cm)}</span>}
-                        {log.hips_cm != null && <span>Hips: {displayMeasure(log.hips_cm)}</span>}
-                        {log.body_fat_pct != null && <span>BF: {log.body_fat_pct}%</span>}
-                      </div>
-                      {log.notes && <p className="text-xs text-muted-foreground mt-1">{log.notes}</p>}
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => deleteLog(log.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
                   </div>
                 </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
+            </Card>
+          );
+        };
+
+        return (
+          <div className="space-y-3">
+            {/* Latest entry */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Latest Entry</h3>
+              <span className="text-xs text-primary font-medium">
+                {new Date(latest.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              </span>
+            </div>
+            {renderLogCard(latest, true)}
+
+            {/* Older history */}
+            {older.length > 0 && (
+              <>
+                <button
+                  onClick={() => setShowOldHistory((v) => !v)}
+                  className="w-full flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span className="font-medium">Past Entries ({older.length})</span>
+                  <span className="text-xs">{showOldHistory ? "▲ Hide" : "▼ Show"}</span>
+                </button>
+                {showOldHistory && (
+                  <div className="space-y-2">
+                    {older.map((log) => renderLogCard(log, false))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })() : (
         <Card>
           <CardContent className="py-8 text-center">
             <Ruler className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
@@ -719,101 +856,118 @@ export function ProgressTracker() {
         </Card>
       )}
 
-      {/* Add dialog */}
-      <Dialog open={showAdd} onOpenChange={(o) => { setShowAdd(o); if (!o) resetPhotoState(); }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Scale className="h-5 w-5" /> Log Progress</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Date</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+      {/* Inline Log Progress form */}
+      {showAdd && (
+        <Card className="border border-primary/30 bg-card shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Scale className="h-5 w-5 text-primary" />
+                <h3 className="text-base font-bold text-foreground">Log Progress</h3>
+              </div>
+              <button
+                onClick={() => { setShowAdd(false); resetPhotoState(); }}
+                className="text-muted-foreground hover:text-foreground transition-colors text-xl leading-none"
+              >
+                ×
+              </button>
             </div>
 
-            {/* Multi-angle photo upload */}
-            <div className="space-y-2">
-              <Label className="text-xs">Progress Photos (optional)</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {ANGLES.map((angle) => (
-                  <div key={angle} className="space-y-1">
-                    <input
-                      ref={fileRefs[angle]}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={(e) => handleAnglePhotoSelect(angle, e)}
-                    />
-                    {anglePreviews[angle] ? (
-                      <div className="relative">
-                        <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden bg-muted border">
-                          <img loading="lazy" decoding="async" src={anglePreviews[angle]!} alt={angle} className="object-cover w-full h-full" />
-                        </AspectRatio>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-xs">Date</Label>
+                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              </div>
+
+              {/* Multi-angle photo upload */}
+              <div className="space-y-2">
+                <Label className="text-xs">Progress Photos (optional)</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {ANGLES.map((angle) => (
+                    <div key={angle} className="space-y-1">
+                      <input
+                        ref={fileRefs[angle]}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => handleAnglePhotoSelect(angle, e)}
+                      />
+                      {anglePreviews[angle] ? (
+                        <div className="relative">
+                          <AspectRatio ratio={3 / 4} className="rounded-lg overflow-hidden bg-muted border">
+                            <img loading="lazy" decoding="async" src={anglePreviews[angle]!} alt={angle} className="object-cover w-full h-full" />
+                          </AspectRatio>
+                          <button
+                            onClick={() => {
+                              setAngleFiles((prev) => ({ ...prev, [angle]: null }));
+                              setAnglePreviews((prev) => ({ ...prev, [angle]: null }));
+                            }}
+                            className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
                         <button
-                          onClick={() => {
-                            setAngleFiles((prev) => ({ ...prev, [angle]: null }));
-                            setAnglePreviews((prev) => ({ ...prev, [angle]: null }));
-                          }}
-                          className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
+                          onClick={() => fileRefs[angle].current?.click()}
+                          className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg aspect-[3/4] flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 transition-colors"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Camera className="h-5 w-5" />
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => fileRefs[angle].current?.click()}
-                        className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg aspect-[3/4] flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 transition-colors"
-                      >
-                        <Camera className="h-5 w-5" />
-                      </button>
-                    )}
-                    <p className="text-[10px] text-muted-foreground text-center font-medium">{ANGLE_LABELS[angle]}</p>
-                  </div>
-                ))}
+                      )}
+                      <p className="text-[10px] text-muted-foreground text-center font-medium">{ANGLE_LABELS[angle]}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">Weight ({useMetric ? "kg" : "lbs"})</Label>
-              <Input type="number" step="0.1" placeholder={useMetric ? "70.0" : "154.0"} value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+              <div className="space-y-1">
+                <Label className="text-xs">Weight ({useMetric ? "kg" : "lbs"})</Label>
+                <Input type="number" step="0.1" placeholder={useMetric ? "70.0" : "154.0"} value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Waist ({useMetric ? "cm" : "in"})</Label>
+                  <Input type="number" step="0.1" value={form.waist} onChange={(e) => setForm({ ...form, waist: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Hips ({useMetric ? "cm" : "in"})</Label>
+                  <Input type="number" step="0.1" value={form.hips} onChange={(e) => setForm({ ...form, hips: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Chest ({useMetric ? "cm" : "in"})</Label>
+                  <Input type="number" step="0.1" value={form.chest} onChange={(e) => setForm({ ...form, chest: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Arms ({useMetric ? "cm" : "in"})</Label>
+                  <Input type="number" step="0.1" value={form.arms} onChange={(e) => setForm({ ...form, arms: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Thighs ({useMetric ? "cm" : "in"})</Label>
+                  <Input type="number" step="0.1" value={form.thighs} onChange={(e) => setForm({ ...form, thighs: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Body Fat (%)</Label>
+                  <Input type="number" step="0.1" value={form.body_fat} onChange={(e) => setForm({ ...form, body_fat: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Notes (optional)</Label>
+                <Textarea placeholder="How do you feel?" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-full" onClick={() => { setShowAdd(false); resetPhotoState(); }}>
+                  Cancel
+                </Button>
+                <Button className="flex-1 rounded-full" onClick={saveLog} disabled={uploading}>
+                  {uploading ? "Saving..." : "Save Progress"}
+                </Button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Waist ({useMetric ? "cm" : "in"})</Label>
-                <Input type="number" step="0.1" value={form.waist} onChange={(e) => setForm({ ...form, waist: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Hips ({useMetric ? "cm" : "in"})</Label>
-                <Input type="number" step="0.1" value={form.hips} onChange={(e) => setForm({ ...form, hips: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Chest ({useMetric ? "cm" : "in"})</Label>
-                <Input type="number" step="0.1" value={form.chest} onChange={(e) => setForm({ ...form, chest: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Arms ({useMetric ? "cm" : "in"})</Label>
-                <Input type="number" step="0.1" value={form.arms} onChange={(e) => setForm({ ...form, arms: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Thighs ({useMetric ? "cm" : "in"})</Label>
-                <Input type="number" step="0.1" value={form.thighs} onChange={(e) => setForm({ ...form, thighs: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Body Fat (%)</Label>
-                <Input type="number" step="0.1" value={form.body_fat} onChange={(e) => setForm({ ...form, body_fat: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Notes (optional)</Label>
-              <Textarea placeholder="How do you feel?" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </div>
-            <Button className="w-full" onClick={saveLog} disabled={uploading}>
-              {uploading ? "Saving..." : "Save Progress"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Photo viewer with swipe */}
       <Dialog open={!!viewPhoto} onOpenChange={() => setViewPhoto(null)}>

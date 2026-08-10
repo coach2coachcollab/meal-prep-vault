@@ -241,7 +241,8 @@ export function MealPlanView({ searchTerm, showFavoritesOnly, refreshKey, onView
       meals.forEach((meal) => {
         const ings = Array.isArray(meal.ingredients) ? meal.ingredients : [];
         const timesUsed = mealCounts[meal.id] || 1;
-        ings.forEach((ing: string) => {
+        ings.forEach((ing: unknown) => {
+          if (typeof ing !== "string") return;
           const key = ing.toLowerCase().trim();
           if (!key) return;
           const existing = ingredientMap.get(key);

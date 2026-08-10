@@ -275,8 +275,8 @@ export default function OnboardingPage() {
   if (step === 4 && results) {
     const goalObj = GOALS.find((g) => g.id === form.goal);
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-md flex flex-col gap-0">
+      <div className="h-full bg-background flex flex-col overflow-y-auto">
+        <div className="w-full max-w-md flex flex-col gap-0 mx-auto px-6 py-6">
           <div className="flex items-center gap-2.5 justify-center mb-6">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-xl">🍽️</div>
             <span className="text-2xl font-bold tracking-tight">NutriCoach</span>
@@ -343,8 +343,8 @@ export default function OnboardingPage() {
 
   /* ── MAIN FLOW ── */
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md flex flex-col">
+    <div className="h-full bg-background flex flex-col overflow-y-auto">
+      <div className="w-full max-w-md flex flex-col mx-auto px-6 py-6">
         {/* Logo */}
         <div className="flex items-center gap-2.5 justify-center mb-6">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-xl">🍽️</div>

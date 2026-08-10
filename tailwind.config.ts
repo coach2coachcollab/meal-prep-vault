@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ["Georgia", "'Times New Roman'", "serif"],
-        label: ["'Courier Prime'", "'Courier New'", "monospace"],
-        body: ["system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "sans-serif"],
+        heading: ["'Inter'", "system-ui", "sans-serif"],
+        label: ["'Inter'", "system-ui", "sans-serif"],
+        body: ["'Inter'", "system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Bookmark, Loader2 } from "lucide-react";
+import { Plus, Heart, MessageCircle, Bookmark, Loader2, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -12,11 +12,11 @@ import { CommunityPost, PostData, InlineComment } from "@/components/community/C
 import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
 const channels = [
-  { id: "announcements", label: "📣 Announcements" },
-  { id: "wins", label: "🏆 Wins & Progress" },
-  { id: "meals", label: "🥗 Meal Sharing" },
-  { id: "questions", label: "❓ Questions" },
-  { id: "saved", label: "⭐ Favourites" },
+  { id: "wins", label: "Highlights" },
+  { id: "meals", label: "Meals" },
+  { id: "announcements", label: "Workouts" },
+  { id: "questions", label: "Wins" },
+  { id: "saved", label: "Saved" },
 ];
 
 interface CommunityHubProps {
@@ -269,34 +269,52 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
     }
   };
 
+  const featuredPost = posts[0] || null;
+  const feedPosts = posts.slice(1);
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-heading text-foreground">Community</h2>
-          <p className="text-xs text-section-label font-label uppercase">
-            {activeChannel === "saved" ? `${posts.length} favourites` : `${posts.length} posts in this channel`}
-          </p>
-        </div>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Post
-        </Button>
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-heading font-black text-foreground">Community</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Real people, real progress, real inspiration. 💪</p>
       </div>
 
-      <Select value={activeChannel} onValueChange={setActiveChannel}>
-        <SelectTrigger className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {channels.map((ch) => (
-            <SelectItem key={ch.id} value={ch.id}>
-              {ch.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Pill tabs */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+        {channels.map((ch) => (
+          <button
+            key={ch.id}
+            onClick={() => setActiveChannel(ch.id)}
+            className={cn(
+              "shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all",
+              activeChannel === ch.id
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            {ch.label}
+          </button>
+        ))}
+        <button
+          onClick={() => setActiveChannel("saved")}
+          className={cn(
+            "shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all",
+            activeChannel === "saved"
+              ? "bg-foreground text-background"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
+        >
+          Saved
+        </button>
+      </div>
 
-      <div className="space-y-3">
+      {/* Create post button */}
+      <Button size="sm" className="w-full rounded-full" onClick={() => setDialogOpen(true)}>
+        <Plus className="h-4 w-4 mr-1.5" /> Share something
+      </Button>
+
+      <div className="space-y-4">
         {isLoading && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -306,17 +324,19 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
           <Card>
             <CardContent className="py-12 text-center">
               {activeChannel === "saved" ? (
-                 <>
-                   <div className="h-14 w-14 rounded-full bg-icon-bg flex items-center justify-center mx-auto mb-2"><Bookmark className="h-7 w-7 text-foreground" /></div>
-                   <p className="text-foreground font-medium">No favourites yet</p>
-                   <p className="text-sm text-section-label mt-1">Tap the bookmark icon on posts to add them here</p>
-                 </>
+                <>
+                  <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mx-auto mb-2">
+                    <Bookmark className="h-7 w-7 text-primary" />
+                  </div>
+                  <p className="text-foreground font-medium">No favourites yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Tap the bookmark icon on posts to save them here</p>
+                </>
               ) : (
                 <>
                   <p className="text-3xl mb-2">💬</p>
-                   <p className="text-foreground font-medium">No posts yet in this channel</p>
-                   <p className="text-sm text-section-label mt-1">Be the first to share something!</p>
-                  <Button size="sm" className="mt-4" onClick={() => setDialogOpen(true)}>
+                  <p className="text-foreground font-medium">No posts yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Be the first to share something!</p>
+                  <Button size="sm" className="mt-4 rounded-full" onClick={() => setDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" /> Create Post
                   </Button>
                 </>
@@ -324,23 +344,91 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
             </CardContent>
           </Card>
         )}
-        {posts.map((p) => (
+
+        {/* Featured / highlight post */}
+        {!isLoading && featuredPost && (
+          <div id={`post-${featuredPost.id}`} className="rounded-2xl overflow-hidden border border-border transition-all duration-300">
+            {/* Image or gradient hero */}
+            <div className="relative">
+              {featuredPost.image_url ? (
+                <img
+                  src={featuredPost.image_url}
+                  alt=""
+                  className="w-full h-52 object-cover"
+                />
+              ) : (
+                <div className="w-full h-40 bg-gradient-to-br from-primary/20 via-primary/10 to-accent flex items-center justify-center">
+                  <span className="text-4xl">💬</span>
+                </div>
+              )}
+              {/* Community Highlight badge */}
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-foreground/80 backdrop-blur-sm text-background text-[11px] font-bold px-2.5 py-1 rounded-full">
+                <Star className="h-3 w-3 fill-current" />
+                <span>COMMUNITY HIGHLIGHT</span>
+              </div>
+              {/* Author overlay */}
+              <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                {featuredPost.avatar_url ? (
+                  <img src={featuredPost.avatar_url} alt={featuredPost.user_name} className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                ) : (
+                  <div className="h-8 w-8 rounded-full border-2 border-white bg-primary flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">{featuredPost.user_name?.[0]?.toUpperCase() || "U"}</span>
+                  </div>
+                )}
+                <div>
+                  <p className="text-white text-sm font-bold leading-tight drop-shadow">{featuredPost.user_name}</p>
+                  <p className="text-white/80 text-[11px] leading-tight drop-shadow capitalize">{featuredPost.channel?.replace("_", " ")} · {new Date(featuredPost.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+            {/* Post body */}
+            <div className="p-4 bg-card">
+              {featuredPost.text && (
+                <p className="text-sm text-foreground leading-relaxed mb-3">{featuredPost.text}</p>
+              )}
+              <div className="flex items-center gap-5">
+                <button
+                  onClick={() => toggleReaction(featuredPost.id, "❤️")}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-red-500 transition-colors"
+                >
+                  <Heart className={cn("h-4 w-4", featuredPost.user_reactions?.includes("❤️") && "fill-red-500 text-red-500")} />
+                  <span>{(featuredPost.reaction_counts?.["❤️"] || 0)}</span>
+                </button>
+                <button className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MessageCircle className="h-4 w-4" />
+                  <span>{featuredPost.comment_count || 0}</span>
+                </button>
+                <button
+                  onClick={() => toggleSave(featuredPost.id)}
+                  className={cn("flex items-center gap-1.5 text-sm transition-colors", featuredPost.is_saved ? "text-primary" : "text-muted-foreground hover:text-primary")}
+                >
+                  <Bookmark className={cn("h-4 w-4", featuredPost.is_saved && "fill-current")} />
+                  <span>Save</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feed posts */}
+        {feedPosts.map((p) => (
           <div key={p.id} id={`post-${p.id}`} className="transition-all duration-300">
-          <CommunityPost
-            post={p}
-            currentUserId={user?.id || ""}
-            onToggleReaction={toggleReaction}
-            onDeletePost={deletePost}
-            onEditPost={editPost}
-            onToggleSave={toggleSave}
-            onLoadComments={loadComments}
-            onAddComment={addComment}
-            onEditComment={editComment}
-            onDeleteComment={deleteComment}
-            onToggleCommentLike={toggleCommentLike}
-          />
+            <CommunityPost
+              post={p}
+              currentUserId={user?.id || ""}
+              onToggleReaction={toggleReaction}
+              onDeletePost={deletePost}
+              onEditPost={editPost}
+              onToggleSave={toggleSave}
+              onLoadComments={loadComments}
+              onAddComment={addComment}
+              onEditComment={editComment}
+              onDeleteComment={deleteComment}
+              onToggleCommentLike={toggleCommentLike}
+            />
           </div>
         ))}
+
         {hasNextPage && posts.length > 0 && (
           <div className="flex justify-center pt-2">
             <Button variant="outline" size="sm" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
