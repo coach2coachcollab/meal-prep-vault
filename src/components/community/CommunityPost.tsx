@@ -447,14 +447,22 @@ export function CommunityPost({
 
             {post.image_url && (
               <>
-                <div
-                  className="mt-2 w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden cursor-pointer border border-border"
+                <button
+                  type="button"
+                  aria-label="View post image full screen"
+                  className="mt-2 block w-full max-w-lg h-48 sm:h-64 rounded-lg overflow-hidden cursor-zoom-in border border-border bg-muted"
                   onClick={() => setImageOpen(true)}
                 >
-                  <img loading="lazy" decoding="async" src={post.image_url} alt="Post" className="w-full h-full object-cover" />
-                </div>
+                  <img
+                    loading="lazy"
+                    decoding="async"
+                    src={post.image_url}
+                    alt="Post"
+                    className="w-full h-full object-contain"
+                  />
+                </button>
                 <Dialog open={imageOpen} onOpenChange={setImageOpen}>
-                  <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
+                  <DialogContent className="w-[calc(100vw-1rem)] h-[calc(100dvh-1rem)] max-w-none max-h-none p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
                     <PinchZoomImage src={post.image_url} alt="Post full" />
                   </DialogContent>
                 </Dialog>

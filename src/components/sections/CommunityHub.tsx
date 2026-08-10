@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Plus, Heart, MessageCircle, Bookmark, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { CommunityPost, PostData, InlineComment } from "@/components/community/CommunityPost";
+import { PinchZoomImage } from "@/components/community/PinchZoomImage";
 import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
 const channels = [
@@ -31,6 +33,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
   const queryClient = useQueryClient();
   const [activeChannel, setActiveChannel] = useState("wins");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [featuredImageOpen, setFeaturedImageOpen] = useState(false);
 
   // Saved post IDs query
   const { data: savedPostIds = new Set<string>() } = useQuery({
@@ -348,11 +351,18 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
         {/* Featured / highlight post */}
         {!isLoading && featuredPost && (
           <div id={`post-${featuredPost.id}`} className="rounded-2xl overflow-hidden border border-border bg-card transition-all duration-300">
-            {/* Hero image */}
-            <div className="relative">
-              {featuredPost.image_url ? (
-                <img src={featuredPost.image_url} alt="" className="w-full h-56 object-cover" />
-              ) : (
+             {/* Hero image */}
+             <div className="relative">
+               {featuredPost.image_url ? (
+                 <button
+                   type="button"
+                   aria-label="View community highlight image full screen"
+                   className="block w-full h-56 bg-muted cursor-zoom-in"
+                   onClick={() => setFeaturedImageOpen(true)}
+                 >
+                   <img src={featuredPost.image_url} alt="Community highlight" className="w-full h-full object-contain" />
+                 </button>
+               ) : (
                 <div className="w-full h-44 bg-gradient-to-br from-primary/20 via-primary/10 to-accent flex items-center justify-center">
                   <span className="text-5xl">💬</span>
                 </div>
@@ -430,11 +440,16 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
                   Join Challenge <span>›</span>
                 </button>
               </div>
-            </div>
-          </div>
-        )}
+             </div>
+             <Dialog open={featuredImageOpen} onOpenChange={setFeaturedImageOpen}>
+               <DialogContent className="w-[calc(100vw-1rem)] h-[calc(100dvh-1rem)] max-w-none max-h-none p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:h-8 [&>button]:w-8">
+                 <PinchZoomImage src={featuredPost.image_url || ""} alt="Community highlight full" />
+               </DialogContent>
+             </Dialog>
+           </div>
+         )}
 
-        {/* Feed posts */}
+         {/* Feed posts */}
         {feedPosts.map((p) => (
           <div key={p.id} id={`post-${p.id}`} className="transition-all duration-300">
             <CommunityPost
