@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Plus, Heart, MessageCircle, Bookmark, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { CommunityPost, PostData, InlineComment } from "@/components/community/CommunityPost";
+import { PinchZoomImage } from "@/components/community/PinchZoomImage";
 import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
 const channels = [
@@ -31,6 +33,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
   const queryClient = useQueryClient();
   const [activeChannel, setActiveChannel] = useState("wins");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [featuredImageOpen, setFeaturedImageOpen] = useState(false);
 
   // Saved post IDs query
   const { data: savedPostIds = new Set<string>() } = useQuery({
