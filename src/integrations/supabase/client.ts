@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { brokeredPreviewStorage } from './previewAuthStorage';
 
 const PROD_URL = import.meta.env.VITE_SUPABASE_URL || "https://yovtootzxrgfqkllqyxp.supabase.co";
 const PROD_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvdnRvb3R6eHJnZnFrbGxxeXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MzE4NTYsImV4cCI6MjA4NzEwNzg1Nn0.VNpjJqObFGxxiZorE7kB8Vc6fLSfzcMfvE2a9U_jtnQ";
@@ -26,7 +27,7 @@ const { url, key } = getEnvConfig(env);
 
 export const supabase = createClient<Database>(url || PROD_URL, key || PROD_KEY, {
   auth: {
-    storage: localStorage,
+    storage: brokeredPreviewStorage(),
     persistSession: true,
     autoRefreshToken: true,
   },
