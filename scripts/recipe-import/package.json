@@ -1,0 +1,12 @@
+{
+  "name": "recipe-import",
+  "private": true,
+  "type": "module",
+  "description": "Parses the client's single-page recipe PDFs into JSON and a review CSV for the admin importer.",
+  "scripts": {
+    "parse": "node parse-recipes.mjs ../../content-import/pdfs ../../content-import/out"
+  },
+  "dependencies": {
+    "pdfjs-dist": "4.10.38"
+  }
+}
