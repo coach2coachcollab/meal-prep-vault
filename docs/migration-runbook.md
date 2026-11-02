@@ -94,7 +94,6 @@ Then run **Actions → Deploy → Run workflow → staging** once by hand and ch
 
 1. Upgrade `macro-prod` to Pro.
 2. Publish a GitHub release; approve the production deploy.
-3. Update local `.env` to point at staging (it still points at Lovable's project).
 4. Remove Lovable Cloud only after production is verified.
 
 ## Next phase: iOS and Android (Capacitor)
