@@ -1,0 +1,23 @@
+// Cloudflare Workers static-assets hosting for the web app (no server code).
+// Top level = production; `env.staging` = staging. CI deploys with:
+//   wrangler deploy               (production, after `pnpm build:production`)
+//   wrangler deploy --env staging (staging,    after `pnpm build:staging`)
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "macro-app",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Client-side routing (React Router): unknown paths serve index.html.
+    "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "staging": {
+      "name": "macro-app-staging",
+      "assets": {
+        "directory": "./dist",
+        "not_found_handling": "single-page-application"
+      }
+    }
+  }
+}

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { ChefHat, Target, Utensils, Eye, EyeOff, Zap } from "lucide-react";
 import { useSeo } from "@/hooks/useSeo";
-import { enterDemo } from "@/hooks/useAuth";
+import { enterDemo, demoAvailable } from "@/hooks/useAuth";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -203,7 +203,7 @@ export default function AuthPage() {
 
             </form>
 
-            <div className="mt-4">
+            {demoAvailable && <div className="mt-4">
               <div className="relative my-3">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-border" />
@@ -224,7 +224,7 @@ export default function AuthPage() {
                 <Zap className="h-4 w-4" />
                 Try Demo — no account needed
               </Button>
-            </div>
+            </div>}
           </CardContent>
         </Card>
       </div>

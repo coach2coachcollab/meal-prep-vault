@@ -9,8 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Zap, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EnvSwitcher } from "@/components/EnvSwitcher";
-import { getActiveEnv } from "@/integrations/supabase/client";
+import { APP_ENV, isProduction } from "@/lib/app-env";
 import { useStreak } from "@/hooks/useStreak";
 import { useSeo } from "@/hooks/useSeo";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
@@ -47,8 +46,6 @@ const TAB_SEO: Record<string, { title: string; description: string }> = {
 export default function Dashboard() {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { isDemo } = useAuth();
-  const [envOpen, setEnvOpen] = useState(false);
-  const activeEnv = getActiveEnv();
   const { streak, justIncreased } = useStreak();
   const [activeTab, setActiveTab] = useState("home");
   const [nutritionSub, setNutritionSub] = useState("today");
@@ -180,7 +177,6 @@ export default function Dashboard() {
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
-      <EnvSwitcher open={envOpen} onClose={() => setEnvOpen(false)} />
       <header className="shrink-0 z-40 bg-background border-b border-border safe-area-top">
         <div className="max-w-4xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
           {/* Logo */}
@@ -214,22 +210,15 @@ export default function Dashboard() {
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("h-9 w-9 rounded-full", activeEnv === "qa" && "text-warning")}
-              onClick={() => setEnvOpen(true)}
-              aria-label="Switch environment"
-            >
-              <FlaskConical className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
-      {activeEnv === "qa" && (
+      {!isProduction && (
         <div className="shrink-0 bg-warning/10 border-b border-warning/30 px-4 py-1.5 flex items-center gap-2">
           <FlaskConical className="h-3.5 w-3.5 text-warning shrink-0" />
-          <p className="text-xs font-semibold text-warning">QA environment — test data only</p>
+          <p className="text-xs font-semibold text-warning">
+            {APP_ENV === "staging" ? "Staging" : "Local development"} — test data only
+          </p>
         </div>
       )}
       {isDemo && (

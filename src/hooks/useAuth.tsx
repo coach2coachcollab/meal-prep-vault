@@ -1,10 +1,13 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { isProduction } from "@/lib/app-env";
 
 const DEMO_KEY = "nutricoach_demo_mode";
 
-export const isDemoMode = () => localStorage.getItem(DEMO_KEY) === "1";
+// Demo mode (fake user, no session) is for local and staging builds only.
+export const demoAvailable = !isProduction;
+export const isDemoMode = () => demoAvailable && localStorage.getItem(DEMO_KEY) === "1";
 export const enterDemo = () => localStorage.setItem(DEMO_KEY, "1");
 export const exitDemo = () => localStorage.removeItem(DEMO_KEY);
 

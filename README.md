@@ -1,73 +1,65 @@
-# Welcome to your Lovable project
+# macro/.
 
-## Project info
+Nutrition and wellness app: log food and how you feel, and see how the two connect.
+React web app with a Supabase backend, hosted on Cloudflare, packaged for iOS and Android with Capacitor (planned).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Requirements
 
-## How can I edit this code?
+- Node.js 22
+- pnpm 10.34.3
 
-There are several ways of editing your application.
+Both are pinned in `.mise.toml`. With [mise](https://mise.jdx.dev): `mise install`. Without it: install Node 22, then `corepack enable` (the pnpm version comes from `package.json`).
 
-**Use Lovable**
+pnpm is the only supported package manager; `pnpm-lock.yaml` is the only lockfile.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Local start
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-**Edit a file directly in GitHub**
+The app runs at http://localhost:8443 and talks to the **staging** Supabase project.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Environment variables
 
-**Use GitHub Codespaces**
+| Variable | Purpose |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable (anon) key |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Both are public by design: they ship in the app, and access is enforced by row-level security. Secret keys never go in these files or in frontend code. See `.env.example`.
 
-## What technologies are used for this project?
+The app refuses to start if either is missing. To use different values locally, create `.env.local` (gitignored), which overrides `.env`.
 
-This project is built with:
+## Environments
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+There are two backends. The environment is fixed when the app is built; a shipped build can't switch.
 
-## How can I deploy this project?
+| | Staging | Production |
+|---|---|---|
+| Build command | `pnpm build:staging` | `pnpm build:production` |
+| Supabase project | `macro-staging` | `macro-prod` (not created yet) |
+| Cloudflare Worker | `macro-app-staging` | `macro-app` |
+| Deployed by | merge to `main` | publishing a GitHub release |
+| Data | test data | real users |
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+`pnpm dev` is local development against staging, not a third backend. Staging and local builds show a banner and allow demo mode; production builds do neither.
 
-## Can I connect a custom domain to my Lovable project?
+Setup steps that need account access are in [docs/migration-runbook.md](docs/migration-runbook.md).
 
-Yes, you can!
+## Tests and build
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+pnpm typecheck
+pnpm test
+pnpm build:staging
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Pull requests run all three automatically ([ci.yml](.github/workflows/ci.yml)).
+
+## Backend
+
+- `supabase/migrations/`: database schema. Never change a deployed database by hand; add a migration.
+- `supabase/functions/`: edge functions. The AI features need the `GEMINI_API_KEY` secret on each Supabase project.
+- `scripts/recipe-import/`: turns the recipe PDFs into data for the admin import page at `/admin/import-recipes`.

@@ -1,0 +1,93 @@
+# Deploys database migrations, edge functions and the web app to one environment.
+#   push to main        -> staging
+#   GitHub release      -> production (protect the "production" environment with required reviewers)
+#   manual run          -> whichever environment is chosen
+#
+# Per GitHub environment ("staging", "production"):
+#   vars:    VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, SUPABASE_PROJECT_REF
+#   secrets: SUPABASE_DB_PASSWORD
+# Repository-wide:
+#   vars:    CLOUDFLARE_ACCOUNT_ID
+#   secrets: CLOUDFLARE_API_TOKEN, SUPABASE_ACCESS_TOKEN
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: deploy-${{ github.event_name == 'release' && 'production' || inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Off until the accounts and secrets exist (see docs/migration-runbook.md). Set the
+    # repository variable DEPLOYS_ENABLED=true to turn deploys on.
+    if: vars.DEPLOYS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'release' && 'production' || inputs.environment || 'staging' }}
+    env:
+      APP_ENV: ${{ github.event_name == 'release' && 'production' || inputs.environment || 'staging' }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      # Without this, a build with missing variables would fall back to the staging values in .env.
+      - name: Require this environment's settings
+        run: |
+          test -n "${{ vars.VITE_SUPABASE_URL }}" || { echo "VITE_SUPABASE_URL is not set for $APP_ENV"; exit 1; }
+          test -n "${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}" || { echo "VITE_SUPABASE_PUBLISHABLE_KEY is not set for $APP_ENV"; exit 1; }
+          test -n "$SUPABASE_PROJECT_REF" || { echo "SUPABASE_PROJECT_REF is not set for $APP_ENV"; exit 1; }
+          case "$APP_ENV:${{ vars.VITE_SUPABASE_URL }}" in
+            production:*igfxefpkauqofwnifmlh*) echo "Production build is pointing at the staging project"; exit 1 ;;
+          esac
+
+      # 1. Database first, so new code never runs against an old schema.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Apply database migrations
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --password "$SUPABASE_DB_PASSWORD"
+
+      # 2. Edge functions. Listed explicitly so the Figma Make stub ("server") is never deployed.
+      #    send-streak-reminders is not deployed: reminders are moving from email to push
+      #    notifications in the mobile apps.
+      - name: Deploy edge functions
+        run: |
+          for fn in extract-recipe-from-image generate-meal-plan generate-weekly-summary; do
+            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_REF"
+          done
+
+      # 3. Web app.
+      - name: Build web app
+        run: pnpm build:${{ env.APP_ENV }}
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy ${{ env.APP_ENV == 'staging' && '--env staging' || '' }}

@@ -1,4 +1,4 @@
-project_id = "yovtootzxrgfqkllqyxp"
+project_id = "meal-prep-vault"
 
 [functions.extract-recipe-from-image]
 verify_jwt = false

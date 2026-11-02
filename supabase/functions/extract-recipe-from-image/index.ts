@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODEL_VISION, requireAiKey } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,8 +64,7 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const AI_API_KEY = requireAiKey();
 
     const systemPrompt = `You are a recipe extraction assistant. Extract all recipe details from the provided image. The image may contain a recipe card, screenshot of a recipe, or a photo of a written recipe.
 
@@ -89,15 +89,15 @@ Extract and return a JSON object with these fields:
 If you can't determine a value, use null or empty array. Return ONLY valid JSON, no markdown.`;
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      AI_CHAT_URL,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${AI_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_MODEL_VISION,
           messages: [
             { role: "system", content: systemPrompt },
             {
@@ -129,13 +129,13 @@ If you can't determine a value, use null or empty array. Return ONLY valid JSON,
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits in Settings." }),
+          JSON.stringify({ error: "AI quota exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      throw new Error("AI gateway error");
+      console.error("AI API error:", response.status, errText);
+      throw new Error("AI API error");
     }
 
     const data = await response.json();
