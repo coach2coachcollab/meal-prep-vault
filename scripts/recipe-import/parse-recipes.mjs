@@ -148,7 +148,8 @@ async function parsePdf(file) {
   const tc = await page.getTextContent();
   const items = tc.items
     .filter((it) => it.str && it.str.trim())
-    .map((it) => ({ str: it.str, x: it.transform[4], y: it.transform[5], w: it.width, h: it.height }));
+    // Some PDFs encode a hyphen as a NUL byte, which Postgres rejects in text.
+    .map((it) => ({ str: it.str.replace(/\u0000/g, '-'), x: it.transform[4], y: it.transform[5], w: it.width, h: it.height }));
   const pageCount = doc.numPages;
   const isRecipe = items.some((it) => it.str.trim().toUpperCase() === 'INGREDIENTS');
   const photo = isRecipe ? await extractPhoto(page) : null;

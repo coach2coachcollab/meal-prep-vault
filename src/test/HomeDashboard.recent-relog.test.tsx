@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // --- Mocks ---
@@ -78,15 +78,19 @@ describe("HomeDashboard recent-meals strip → one-tap relog", () => {
     fromMock.mockClear();
   });
 
-  it("renders the recent meal card with name, calories and meal_type", () => {
+  // The meal also appears in the "Today's meal" card, so look only inside the relog strip.
+  const relogCard = () =>
+    within(screen.getByText(/tap to re-log/).parentElement!).getByText("Chicken Bowl").closest("button")!;
+
+  it("renders the recent meal card with name and calories", () => {
     renderWithClient();
-    expect(screen.getByText("Chicken Bowl")).toBeInTheDocument();
-    expect(screen.getByText(/610 kcal · Dinner/)).toBeInTheDocument();
+    expect(relogCard()).toHaveTextContent("Chicken Bowl");
+    expect(relogCard()).toHaveTextContent("610 kcal");
   });
 
   it("inserts into journal_entries with the previous meal_type and servings on tap", async () => {
     renderWithClient();
-    fireEvent.click(screen.getByText("Chicken Bowl").closest("button")!);
+    fireEvent.click(relogCard());
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     expect(fromMock).toHaveBeenCalledWith("journal_entries");

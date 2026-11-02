@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_CHAT_URL, AI_MODEL_TEXT, requireAiKey } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -130,8 +131,7 @@ serve(async (req) => {
     }
 
     // Call AI
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const AI_API_KEY = requireAiKey();
 
     const systemPrompt = `You are a friendly wellness coach analyzing a user's weekly health data. Generate exactly 3-4 short, specific, actionable insights based on patterns you see in their mood, energy, nutrition, water intake, and habits. Then provide one short encouraging takeaway sentence.
 
@@ -139,14 +139,14 @@ Be specific — reference actual days, numbers, or patterns. Don't be generic. I
 
     const userPrompt = `Here is my wellness data for the past 7 days:\n\n${daySummaries.join("\n")}\n\nAnalyze this and give me insights.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(AI_CHAT_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: AI_MODEL_TEXT,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -189,13 +189,13 @@ Be specific — reference actual days, numbers, or patterns. Don't be generic. I
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits in Settings." }),
+          JSON.stringify({ error: "AI quota exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      throw new Error("AI gateway error");
+      console.error("AI API error:", response.status, errText);
+      throw new Error("AI API error");
     }
 
     const aiData = await response.json();
