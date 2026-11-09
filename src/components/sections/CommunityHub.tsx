@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
-import { CommunityPost, PostData, InlineComment } from "@/components/community/CommunityPost";
+import { CommunityPost, PostData, InlineComment, timeAgo } from "@/components/community/CommunityPost";
 import { PinchZoomImage } from "@/components/community/PinchZoomImage";
 import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
@@ -299,17 +299,6 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
             {ch.label}
           </button>
         ))}
-        <button
-          onClick={() => setActiveChannel("saved")}
-          className={cn(
-            "shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all",
-            activeChannel === "saved"
-              ? "bg-foreground text-background"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          )}
-        >
-          Saved
-        </button>
       </div>
 
       {/* Create post button */}
@@ -390,10 +379,7 @@ export function CommunityHub({ highlightPostId, onHighlightHandled }: CommunityH
                       </span>
                     </div>
                     <p className="text-white/80 text-[11px] leading-tight capitalize">
-                      {featuredPost.channel?.replace("_", " ")} · {(() => {
-                        const diff = Math.floor((Date.now() - new Date(featuredPost.created_at).getTime()) / 3600000);
-                        return diff < 24 ? `${diff}h` : `${Math.floor(diff / 24)}d`;
-                      })()}
+                      {featuredPost.channel?.replace("_", " ")} · {timeAgo(featuredPost.created_at)}
                     </p>
                   </div>
                 </div>

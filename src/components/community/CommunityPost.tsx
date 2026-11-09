@@ -56,7 +56,7 @@ interface CommunityPostProps {
   onToggleCommentLike: (commentId: string, postId: string, reactionType: string) => Promise<void>;
 }
 
-const timeAgo = (dateStr: string) => {
+export const timeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
