@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRef } from "react";
 import { generateStoryCard } from "@/lib/story-card-generator";
+import { r2 } from "@/lib/utils";
 
 interface Meal {
   id: string;
@@ -76,6 +77,14 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
   const ingredientsList: string[] = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const instructionsList: string[] = Array.isArray(meal.instructions) ? meal.instructions : [];
   const totalTime = (meal.prep_time || 0) + (meal.cook_time || 0);
+  // meals stores whole-recipe totals; people read and log one serving, like the vault cards show.
+  const servings = meal.servings || 1;
+  const perServing = {
+    calories: r2((meal.calories || 0) / servings),
+    protein: r2((meal.protein || 0) / servings),
+    carbs: r2((meal.carbs || 0) / servings),
+    fats: r2((meal.fats || 0) / servings),
+  };
 
   const allTags = [
     ...(meal.tags || []),
@@ -276,10 +285,10 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
       const blob = await generateStoryCard({
         title: meal.title,
         imageUrl: sharePhoto ? sharePhotoPreview : meal.image_url,
-        calories: meal.calories || 0,
-        protein: meal.protein || 0,
-        carbs: meal.carbs || 0,
-        fats: meal.fats || 0,
+        calories: perServing.calories,
+        protein: perServing.protein,
+        carbs: perServing.carbs,
+        fats: perServing.fats,
         prepTime: (meal.prep_time || 0) + (meal.cook_time || 0),
         servings: meal.servings || 1,
         caption: shareText.trim() || undefined,
@@ -310,10 +319,10 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
         blob = await generateStoryCard({
           title: meal.title,
           imageUrl: sharePhoto ? sharePhotoPreview : meal.image_url,
-          calories: meal.calories || 0,
-          protein: meal.protein || 0,
-          carbs: meal.carbs || 0,
-          fats: meal.fats || 0,
+          calories: perServing.calories,
+          protein: perServing.protein,
+          carbs: perServing.carbs,
+          fats: perServing.fats,
           prepTime: (meal.prep_time || 0) + (meal.cook_time || 0),
           servings: meal.servings || 1,
           caption: shareText.trim() || undefined,
@@ -495,22 +504,23 @@ export function MealDetailView({ meal, isFavorite, onToggleFavorite, onBack }: M
                 )}
               </div>
 
-              {/* Macro grid */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-3">
+              {/* Macro grid (per serving) */}
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mt-3">Per serving</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
                 <div>
-                  <p className="text-base font-bold">{meal.calories || 0}</p>
+                  <p className="text-base font-bold">{perServing.calories}</p>
                   <p className="text-[10px] text-muted-foreground">Calories</p>
                 </div>
                 <div>
-                  <p className="text-base font-bold">{meal.protein || 0}g</p>
+                  <p className="text-base font-bold">{perServing.protein}g</p>
                   <p className="text-[10px] text-muted-foreground">Protein</p>
                 </div>
                 <div>
-                  <p className="text-base font-bold">{meal.carbs || 0}g</p>
+                  <p className="text-base font-bold">{perServing.carbs}g</p>
                   <p className="text-[10px] text-muted-foreground">Carbs</p>
                 </div>
                 <div>
-                  <p className="text-base font-bold">{meal.fats || 0}g</p>
+                  <p className="text-base font-bold">{perServing.fats}g</p>
                   <p className="text-[10px] text-muted-foreground">Fats</p>
                 </div>
               </div>

@@ -557,11 +557,11 @@ export function MealJournal({ autoOpenLog }: {autoOpenLog?: boolean;}) {
                         <p className="font-medium text-sm truncate">{meal.title}</p>
                         {meal.description && <p className="text-xs text-muted-foreground truncate">{meal.description}</p>}
                         <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                          <span>{meal.calories || 0} cal</span>
-                          <span>{meal.protein || 0}g P</span>
-                          <span>{meal.carbs || 0}g C</span>
-                          <span>{meal.fats || 0}g F</span>
-                          {(meal.servings || 1) > 1 && <span>· {meal.servings} srv</span>}
+                          <span>{r2((meal.calories || 0) / (meal.servings || 1))} cal</span>
+                          <span>{r2((meal.protein || 0) / (meal.servings || 1))}g P</span>
+                          <span>{r2((meal.carbs || 0) / (meal.servings || 1))}g C</span>
+                          <span>{r2((meal.fats || 0) / (meal.servings || 1))}g F</span>
+                          <span>· per serving{(meal.servings || 1) > 1 ? ` (makes ${meal.servings})` : ""}</span>
                         </div>
                       </div>
                     </button>
